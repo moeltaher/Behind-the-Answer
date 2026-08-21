@@ -10,24 +10,19 @@ import { taskPanel } from './task-flow.js';
 
 const NO_GUIDANCE_SCENES = new Set([
   'mineOrientation','mineInspection','mineEnd','transportMontage','abstract1',
-  'factoryOrientation','factoryOutcome','abstract2','hardwareMontage',
-  'dcCoolingOutcome','abstract3',
+  'factoryOrientation','factoryOutcome','hardwareMontage','abstract2',
+  'dcCoolingOutcome','dcWorkers','abstract3',
   'dataCleanSummary','abstract4',
   'annotationIntro','annotationReview','annotationEnd','abstract5',
-  'trainingEval',
+  'trainingEval','abstract6',
   'safetyOutcome','launchOutcome','abstract7',
   'onCall','deployEnd','abstract8',
   'pipelineAssemble','aiAbstraction','finalAnswer','timelineReveal','peopleReveal','results','finalMessage','methodology'
 ]);
 
-function annotationRejected(state) {
-  return state.flags.annotationResults.some(result => !result.acceptedAsReasonable);
-}
-
 function statusFor(scene, state) {
   if (scene === 'mineTask' && state.flags.miningWarning) return 'decision';
   if (scene === 'factoryIncident' || scene === 'dcCooling' || scene === 'trainingRun' || scene === 'launchDecision') return 'decision';
-  if (scene === 'annotationReview' && annotationRejected(state)) return 'decision';
   if (scene === 'deployIncident' && state.flags.deployTabs.length === 3) return 'decision';
   return 'active';
 }
@@ -37,11 +32,10 @@ function progressFor(stage, state, scene) {
     case 'mining': return `الحصة: ${state.flags.miningCount}/12 وحدة`;
     case 'factory': return scene === 'factoryIncident' ? 'تجاوز حد الجسيمات: قرار مطلوب' : 'الدفعة قيد المراقبة';
     case 'datacenter':
-      if (scene === 'dcWorkers') return `الأدوار المطلوبة: ${Math.min(state.flags.revealedWorkers.length, 3)}/3`;
       if (scene === 'dcCooling') return 'اختبار المجموعة: قرار تبريد مطلوب';
       return `تركيب الخادم: ${state.flags.serverSteps.length}/4`;
     case 'data':
-      if (scene === 'dataOrigins') return `مصادر مطلوبة: ${Math.min(state.flags.dataOrigins.length, 3)}/3`;
+      if (scene === 'dataOrigins') return `استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;
       return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length}`;
     case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length}`;
     case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات مخصصة` : 'إعداد السعة ونقطة الحفظ';
