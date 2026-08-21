@@ -1,0 +1,1462 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a1020" />
+  <meta name="description" content="خلف الإجابة — لعبة متصفح تفاعلية تكشف العمل البشري والبنية المادية وراء أنظمة الذكاء الاصطناعي." />
+  <title>خلف الإجابة | Behind the Answer</title>
+  <style>
+:root {
+  --bg: #080d18;
+  --surface: #101827;
+  --surface-2: #151f31;
+  --surface-3: #1c2940;
+  --text: #f6f8fb;
+  --muted: #9cabbe;
+  --line: rgba(255,255,255,.12);
+  --accent: #68e1c1;
+  --accent-2: #7ca4ff;
+  --warn: #ffbf69;
+  --danger: #ff6b78;
+  --good: #72e69c;
+  --shadow: 0 20px 60px rgba(0,0,0,.28);
+  --radius: 22px;
+  --font-scale: 1;
+  --scene-max: 1180px;
+}
+
+* { box-sizing: border-box; }
+html { min-height: 100%; background: var(--bg); }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(104,225,193,.08), transparent 24rem),
+    radial-gradient(circle at 85% 22%, rgba(124,164,255,.08), transparent 28rem),
+    var(--bg);
+  font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-size: calc(16px * var(--font-scale));
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+button, input, textarea, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 80%, white 20%);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 9999;
+  top: 8px;
+  right: 8px;
+  transform: translateY(-150%);
+  background: white;
+  color: black;
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+.skip-link:focus { transform: none; }
+
+.app-shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+.topbar {
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: minmax(170px,1fr) minmax(250px,520px) minmax(170px,1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 10px clamp(14px,3vw,34px);
+  border-bottom: 1px solid var(--line);
+  background: rgba(8,13,24,.82);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.brand-wrap { justify-self: start; }
+.brand {
+  border: 0;
+  background: none;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: right;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 12px;
+}
+.brand-mark {
+  width: 38px; height: 38px; display:grid; place-items:center;
+  border-radius: 50%; border: 1px solid var(--line); color: var(--accent); font-size: 26px;
+}
+.brand strong { display:block; font-size: .95rem; }
+.brand small { display:block; color: var(--muted); font-size: .67rem; direction:ltr; text-align:right; }
+
+.journey-progress { width: 100%; }
+.progress-copy { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:.78rem; margin-bottom:6px; }
+.progress-copy span:last-child { color:var(--text); font-weight:700; }
+.progress-track { height:5px; background:rgba(255,255,255,.08); border-radius:20px; overflow:hidden; }
+.progress-track i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); transition:width .5s ease; }
+
+.top-actions { display:flex; gap:8px; justify-self:end; }
+.icon-btn, .close-btn {
+  border:1px solid var(--line); background:rgba(255,255,255,.03); border-radius:12px; cursor:pointer;
+}
+.icon-btn { min-height:42px; padding:8px 12px; display:flex; align-items:center; gap:8px; }
+.icon-btn:hover, .close-btn:hover { background:rgba(255,255,255,.08); }
+.btn-text { font-size:.78rem; }
+
+.game-main { min-height: 0; display:flex; justify-content:center; align-items:stretch; }
+.scene {
+  width:100%;
+  max-width: var(--scene-max);
+  margin-inline:auto;
+  padding: clamp(24px,5vw,70px) clamp(16px,4vw,46px) 50px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height: calc(100dvh - 72px);
+}
+
+.scene.entering > * { animation: sceneIn .45s ease both; }
+@keyframes sceneIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+.eyebrow { color:var(--accent); font-size:.76rem; font-weight:800; letter-spacing:.03em; }
+.kicker { color:var(--muted); font-size:.84rem; margin-bottom:8px; display:block; }
+.display-title { font-size:clamp(2.1rem,7vw,5rem); line-height:1.08; margin:8px 0 18px; letter-spacing:-.04em; }
+.scene-title { font-size:clamp(1.7rem,4vw,3rem); line-height:1.2; margin:6px 0 12px; }
+.scene-subtitle { color:var(--muted); font-size:clamp(1rem,2vw,1.22rem); max-width:760px; margin:0 0 26px; }
+.centered { text-align:center; align-items:center; }
+.centered .scene-subtitle { margin-inline:auto; }
+.muted { color:var(--muted); }
+.small { font-size:.82rem; }
+.micro { font-size:.72rem; }
+
+.card {
+  background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.027));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:clamp(18px,3vw,28px);
+  box-shadow:var(--shadow);
+}
+.card.flat { box-shadow:none; background:rgba(255,255,255,.025); }
+
+.chat-shell {
+  width:min(760px,100%);
+  margin-inline:auto;
+  border:1px solid var(--line);
+  background:rgba(11,17,30,.82);
+  border-radius:30px;
+  padding:clamp(18px,4vw,36px);
+  box-shadow:0 28px 80px rgba(0,0,0,.35);
+}
+.chat-logo { width:58px; height:58px; display:grid; place-items:center; border-radius:18px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#061019; font-weight:900; margin:0 auto 16px; }
+.chat-title { text-align:center; margin:0 0 26px; font-size:clamp(1.6rem,4vw,2.4rem); }
+.message { max-width:85%; border-radius:18px; padding:14px 16px; margin:12px 0; }
+.message.user { margin-right:auto; background:#20304d; }
+.message.ai { margin-left:auto; background:#12251f; border:1px solid rgba(104,225,193,.2); }
+.chat-input-wrap { margin-top:22px; }
+.prompt-input {
+  width:100%; min-height:94px; resize:vertical; background:#0c1320; color:var(--text); border:1px solid var(--line); border-radius:18px; padding:16px; direction:rtl;
+}
+.chat-send { display:flex; justify-content:flex-end; margin-top:10px; }
+.typing { display:flex; gap:5px; align-items:center; color:var(--muted); }
+.typing i { width:7px; height:7px; border-radius:50%; background:currentColor; animation:bounce 1s infinite; }
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bounce { 0%,60%,100%{transform:none;opacity:.35}30%{transform:translateY(-5px);opacity:1} }
+
+.primary-btn, .secondary-btn, .choice-btn, .text-btn {
+  border-radius:14px; cursor:pointer; min-height:48px; padding:11px 18px; border:1px solid transparent; transition:transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.primary-btn { background:var(--accent); color:#06120f; font-weight:900; }
+.primary-btn:hover { transform:translateY(-1px); filter:brightness(1.04); }
+.secondary-btn { background:rgba(255,255,255,.05); border-color:var(--line); }
+.secondary-btn:hover { background:rgba(255,255,255,.09); }
+.text-btn { background:none; color:var(--accent); padding-inline:8px; min-height:40px; }
+.choice-btn {
+  width:100%; text-align:right; background:rgba(255,255,255,.04); border-color:var(--line); padding:16px 18px;
+}
+.choice-btn:hover { background:rgba(255,255,255,.085); transform:translateY(-1px); }
+.choice-btn strong { display:block; }
+.choice-btn small { display:block; color:var(--muted); margin-top:4px; }
+.danger { color:var(--danger)!important; }
+.danger-bg { background:var(--danger); color:#200308; }
+.action-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+.action-row.center { justify-content:center; }
+.action-row.stretch > * { flex:1 1 180px; }
+
+.chapter-intro {
+  min-height:55vh;
+  display:grid;
+  align-content:center;
+  position:relative;
+}
+.chapter-number { font-size:clamp(5rem,18vw,13rem); line-height:.75; font-weight:950; color:rgba(255,255,255,.035); position:absolute; left:0; top:4%; pointer-events:none; }
+.chapter-theme { display:inline-flex; gap:8px; align-items:center; color:var(--accent); font-weight:800; }
+
+.transition-map { position:relative; height:min(58vh,520px); width:100%; overflow:hidden; border-radius:28px; border:1px solid var(--line); background:#07101a; }
+.map-layer { position:absolute; inset:0; display:grid; place-items:center; transition:all .8s ease; }
+.map-layer .glyph { font-size:clamp(4rem,12vw,8rem); filter:grayscale(.3); }
+.map-caption { position:absolute; bottom:22px; right:24px; left:24px; display:flex; justify-content:space-between; gap:16px; color:var(--muted); font-size:.82rem; }
+
+.role-card { display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:center; margin:18px 0 24px; }
+.avatar { width:66px; height:66px; border-radius:20px; display:grid; place-items:center; font-size:2rem; background:rgba(104,225,193,.09); border:1px solid rgba(104,225,193,.22); }
+.role-card h3 { margin:0 0 2px; }
+.role-card p { margin:0; color:var(--muted); font-size:.86rem; }
+
+.hud-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.hud-item { background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:16px; padding:12px 14px; }
+.hud-item span { display:block; color:var(--muted); font-size:.72rem; }
+.hud-item strong { font-size:1.02rem; }
+
+.work-area { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.work-node {
+  min-height:145px; padding:18px; border-radius:18px; border:1px solid var(--line); background:rgba(255,255,255,.035); cursor:pointer; text-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; position:relative; overflow:hidden;
+}
+.work-node:hover { background:rgba(255,255,255,.07); }
+.work-node .node-icon { font-size:2.1rem; }
+.work-node .node-yield { color:var(--accent); font-weight:900; }
+.work-node.risky { border-color:rgba(255,191,105,.45); }
+.work-node.disabled { opacity:.45; cursor:not-allowed; }
+.pulse-ring { position:absolute; inset:12px; border:1px solid rgba(255,191,105,.25); border-radius:14px; animation:pulseRing 1.4s infinite; pointer-events:none; }
+@keyframes pulseRing { 0%{transform:scale(.96);opacity:.2}50%{opacity:1}100%{transform:scale(1.05);opacity:0} }
+
+.alert { border-radius:16px; border:1px solid rgba(255,191,105,.36); background:rgba(255,191,105,.07); padding:14px 16px; margin:16px 0; }
+.alert.dangerish { border-color:rgba(255,107,120,.42); background:rgba(255,107,120,.08); }
+.alert.goodish { border-color:rgba(114,230,156,.34); background:rgba(114,230,156,.06); }
+.alert strong { display:block; margin-bottom:3px; }
+
+.choice-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+
+.abstraction-stage { min-height:65vh; display:grid; place-items:center; text-align:center; }
+.human-chip { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.04); margin:5px; }
+.abstract-word { font-size:clamp(2.7rem,9vw,7.8rem); letter-spacing:.04em; direction:ltr; font-weight:950; margin:24px 0 8px; color:transparent; -webkit-text-stroke:1px rgba(255,255,255,.78); }
+.abstract-word.filled { color:var(--text); -webkit-text-stroke:0; }
+.fade-humans { transition:opacity .7s ease, transform .7s ease, filter .7s ease; }
+.fade-humans.faded { opacity:.12; transform:scale(.88); filter:blur(2px); }
+
+.montage { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.montage-card { min-height:130px; border:1px solid var(--line); border-radius:18px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; background:rgba(255,255,255,.03); }
+.montage-card .icon { font-size:2rem; }
+.montage-card strong { font-size:.9rem; }
+.montage-card span { color:var(--muted); font-size:.72rem; }
+
+.checklist { display:grid; gap:9px; }
+.check-row { display:flex; gap:10px; align-items:center; border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.03); }
+.check-row.done { border-color:rgba(114,230,156,.28); }
+.check-mark { width:26px; height:26px; border-radius:8px; display:grid; place-items:center; border:1px solid var(--line); flex:0 0 auto; }
+.check-row.done .check-mark { background:var(--good); color:#07140d; border-color:transparent; }
+
+.monitor { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.monitor-tile { border:1px solid var(--line); border-radius:16px; padding:14px; background:#0b1320; }
+.monitor-tile span { color:var(--muted); font-size:.7rem; display:block; }
+.monitor-tile strong { font-size:1.25rem; direction:ltr; display:block; text-align:right; }
+.monitor-tile .bar { margin-top:8px; height:4px; background:rgba(255,255,255,.08); border-radius:8px; overflow:hidden; }
+.monitor-tile .bar i { display:block; height:100%; background:var(--good); width:65%; transition:width .6s ease, background .6s ease; }
+
+.rack-board { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(230px,.9fr); gap:16px; }
+.server-rack { border:1px solid var(--line); border-radius:20px; padding:14px; background:#090f19; display:grid; gap:6px; }
+.server-unit { min-height:40px; border:1px solid rgba(124,164,255,.16); background:#111b2c; border-radius:7px; display:flex; justify-content:space-between; align-items:center; padding:0 10px; font-size:.74rem; }
+.server-lights { display:flex; gap:4px; }
+.server-lights i { width:5px; height:5px; border-radius:50%; background:var(--good); }
+.connect-panel { display:grid; gap:10px; }
+.connect-step { border:1px solid var(--line); border-radius:14px; padding:12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.connect-step.done { border-color:rgba(114,230,156,.32); }
+
+.worker-map { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.worker-person { min-height:110px; border:1px solid var(--line); background:rgba(255,255,255,.025); border-radius:16px; padding:14px; cursor:pointer; text-align:right; }
+.worker-person.revealed { border-color:rgba(104,225,193,.32); background:rgba(104,225,193,.055); }
+.worker-person .person-icon { font-size:1.7rem; display:block; }
+.worker-person small { color:var(--muted); }
+
+.data-cloud { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin:24px 0; }
+.data-bit { aspect-ratio:1; border-radius:13px; border:1px solid var(--line); background:rgba(255,255,255,.025); display:grid; place-items:center; font-size:1.4rem; cursor:pointer; }
+.data-bit.revealed { background:rgba(104,225,193,.06); border-color:rgba(104,225,193,.3); }
+
+.sort-layout { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(240px,.8fr); gap:16px; align-items:start; }
+.data-item { min-height:220px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+.data-preview { background:#f2f1eb; color:#1b1b1b; border-radius:13px; padding:18px; min-height:145px; direction:rtl; }
+.sort-actions { display:grid; gap:8px; }
+.sort-actions button { min-height:54px; }
+
+.annotation-shell { max-width:860px; margin-inline:auto; background:#e8ebef; color:#18212d; border-radius:24px; overflow:hidden; box-shadow:var(--shadow); }
+.annotation-head { background:#2b3340; color:white; padding:14px 18px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.annotation-body { padding:clamp(18px,3vw,28px); }
+.annotation-copy { min-height:130px; background:white; border:1px solid #cbd1d8; border-radius:12px; padding:16px; margin:14px 0; }
+.annotation-tags { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.annotation-tags button { border:1px solid #c5cbd2; border-radius:10px; background:#f7f8f9; color:#192331; min-height:44px; cursor:pointer; }
+.annotation-tags button:hover { background:#e9f5f2; border-color:#6aab9a; }
+.annotation-stats { display:flex; flex-wrap:wrap; gap:8px; color:#566170; font-size:.75rem; }
+.annotation-stats span { background:#dde2e8; border-radius:999px; padding:5px 9px; }
+.break-btn { background:#fff6df!important; border-color:#e0b24b!important; }
+
+.training-board { display:grid; grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr); gap:16px; }
+.config-panel, .chart-panel { border:1px solid var(--line); border-radius:20px; padding:18px; background:rgba(255,255,255,.03); }
+.form-row { display:grid; gap:6px; margin-bottom:13px; }
+.form-row select { background:#0b1422; color:var(--text); border:1px solid var(--line); border-radius:11px; min-height:42px; padding:0 10px; }
+.training-graph { height:200px; position:relative; border-bottom:1px solid var(--line); border-right:1px solid var(--line); margin-top:20px; overflow:hidden; }
+.training-line { position:absolute; inset:0; }
+.training-line svg { width:100%; height:100%; }
+.training-log { margin-top:12px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; direction:ltr; text-align:left; font-size:.72rem; color:#9bd6c6; max-height:105px; overflow:auto; background:#07101a; border-radius:10px; padding:10px; }
+
+.compare-card { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.response-card { border:1px solid var(--line); border-radius:18px; padding:18px; background:rgba(255,255,255,.03); min-height:170px; }
+.response-card h4 { margin-top:0; color:var(--accent); }
+
+.load-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.load-card { border:1px solid var(--line); border-radius:16px; padding:14px; background:rgba(255,255,255,.03); }
+.load-card input[type="range"] { width:100%; accent-color:var(--accent); }
+.load-card strong { direction:ltr; display:block; font-size:1.3rem; }
+.incident-tabs { display:flex; gap:8px; margin:16px 0; flex-wrap:wrap; }
+.incident-tabs button { border:1px solid var(--line); background:rgba(255,255,255,.03); border-radius:999px; padding:8px 13px; cursor:pointer; }
+.incident-tabs button.active { border-color:var(--accent); color:var(--accent); }
+
+.pipeline { display:grid; gap:6px; max-width:620px; margin:24px auto; }
+.pipeline-step { display:flex; align-items:center; justify-content:center; min-height:54px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); font-weight:800; direction:ltr; }
+.pipeline-arrow { text-align:center; color:var(--muted); }
+
+.people-wall { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-width:920px; margin-inline:auto; }
+.person-card { width:150px; border:1px solid var(--line); border-radius:18px; padding:15px; background:rgba(255,255,255,.03); text-align:center; }
+.person-card .big-icon { font-size:2rem; }
+.person-card strong { display:block; margin-top:5px; }
+.person-card small { color:var(--muted); display:block; }
+
+.results-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.metric-card { border:1px solid var(--line); border-radius:18px; padding:17px; background:rgba(255,255,255,.03); }
+.metric-head { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.metric-bar { height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:10px; }
+.metric-bar i { display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:inherit; }
+.decision-list { display:grid; gap:8px; margin-top:16px; }
+.decision-row { border-right:3px solid var(--accent-2); background:rgba(255,255,255,.025); padding:11px 13px; border-radius:10px; }
+
+.ledger-content { display:grid; gap:10px; }
+.ledger-entry { border:1px solid var(--line); border-radius:16px; padding:14px; display:grid; grid-template-columns:44px 1fr; gap:10px; }
+.ledger-entry.locked { opacity:.35; }
+.ledger-icon { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background:rgba(104,225,193,.07); }
+.ledger-entry h3 { margin:0 0 4px; font-size:.95rem; }
+.ledger-entry p { margin:0; color:var(--muted); font-size:.78rem; }
+.ledger-entry .system-name { color:var(--accent); direction:ltr; display:inline-block; font-weight:800; }
+
+.modal {
+  width:min(760px,calc(100vw - 28px)); max-height:min(84dvh,820px); overflow:auto; border:1px solid var(--line); border-radius:24px; padding:0; background:#0d1523; color:var(--text); box-shadow:0 30px 100px rgba(0,0,0,.55);
+}
+.modal::backdrop { background:rgba(0,0,0,.68); backdrop-filter:blur(6px); }
+.modal-head { position:sticky; top:0; z-index:2; background:#0d1523; padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.modal-head h2 { margin:2px 0 0; }
+.close-btn { width:40px; height:40px; font-size:1.5rem; }
+.ledger-content, .settings-grid, .settings-danger, .confirm-modal > p, .confirm-modal > .action-row { margin:18px 20px 22px; }
+.settings-grid { display:grid; gap:10px; }
+.setting-row { border:1px solid var(--line); border-radius:16px; padding:14px; display:flex; justify-content:space-between; gap:16px; align-items:center; }
+.setting-row span { display:grid; }
+.setting-row small { color:var(--muted); }
+.setting-row input { width:22px; height:22px; accent-color:var(--accent); }
+.settings-danger { border-top:1px solid var(--line); padding-top:14px; }
+
+.persistent-footer { border-top:1px solid var(--line); background:rgba(8,13,24,.9); padding:8px clamp(14px,3vw,34px); }
+.waiting-prompt { max-width:var(--scene-max); margin:auto; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:.72rem; }
+.waiting-prompt span { color:var(--muted); }
+.waiting-prompt strong { font-weight:600; }
+
+.dual-view { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.view-panel { border:1px solid var(--line); border-radius:20px; padding:18px; }
+.view-panel h3 { margin-top:0; }
+.view-list { display:flex; flex-wrap:wrap; gap:8px; }
+.view-list span { border:1px solid var(--line); border-radius:999px; padding:7px 10px; font-size:.78rem; }
+
+.sources-note { max-width:760px; color:var(--muted); font-size:.82rem; margin-top:20px; }
+.noscript { position:fixed; inset:auto 10px 10px; background:#541a21; color:white; padding:12px; border-radius:12px; z-index:999; }
+
+body.high-contrast {
+  --bg:#000; --surface:#080808; --surface-2:#0b0b0b; --surface-3:#111; --text:#fff; --muted:#d6d6d6; --line:rgba(255,255,255,.42); --accent:#7fffd4; --accent-2:#b5c7ff;
+}
+body.large-text { --font-scale:1.13; }
+body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration:.001ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.001ms!important; }
+
+@media (max-width: 850px) {
+  .topbar { grid-template-columns:1fr auto; min-height:64px; }
+  .journey-progress { grid-column:1 / -1; grid-row:2; }
+  .btn-text { display:none; }
+  .scene { min-height:calc(100dvh - 98px); padding-top:28px; }
+  .rack-board, .sort-layout, .training-board { grid-template-columns:1fr; }
+  .montage { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .data-cloud { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .annotation-tags { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 620px) {
+  :root { --radius:18px; }
+  .topbar { padding-inline:12px; }
+  .brand strong { font-size:.86rem; }
+  .brand small { display:none; }
+  .brand-mark { width:34px; height:34px; }
+  .scene { padding-inline:14px; padding-bottom:36px; }
+  .chat-shell { border-radius:22px; padding:18px; }
+  .display-title { font-size:clamp(2.4rem,14vw,4.3rem); }
+  .hud-grid { grid-template-columns:1fr 1fr; }
+  .hud-grid .hud-item:last-child { grid-column:1 / -1; }
+  .work-area, .worker-map, .load-grid { grid-template-columns:1fr; }
+  .work-node { min-height:104px; flex-direction:row; justify-content:flex-start; text-align:right; }
+  .choice-grid, .compare-card, .results-grid, .dual-view { grid-template-columns:1fr; }
+  .monitor { grid-template-columns:1fr 1fr; }
+  .data-cloud { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .montage { grid-template-columns:1fr 1fr; }
+  .annotation-shell { border-radius:16px; margin-inline:-2px; }
+  .annotation-head { font-size:.78rem; }
+  .annotation-tags { grid-template-columns:1fr 1fr; }
+  .people-wall { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .person-card { width:auto; }
+  .persistent-footer { display:none!important; }
+  .modal { width:calc(100vw - 16px); max-height:90dvh; border-radius:18px; }
+}
+
+@media (max-width: 390px) {
+  .monitor { grid-template-columns:1fr; }
+  .montage { grid-template-columns:1fr; }
+  .annotation-tags { grid-template-columns:1fr; }
+}
+
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#game-main">تجاوز إلى اللعبة</a>
+
+  <div id="app" class="app-shell">
+    <header class="topbar" aria-label="شريط اللعبة">
+      <div class="brand-wrap">
+        <button id="brandHome" class="brand" type="button" aria-label="العودة إلى البداية">
+          <span class="brand-mark" aria-hidden="true">◌</span>
+          <span>
+            <strong>خلف الإجابة</strong>
+            <small>Behind the Answer</small>
+          </span>
+        </button>
+      </div>
+
+      <div id="journeyProgress" class="journey-progress" aria-label="تقدم الرحلة" hidden>
+        <div class="progress-copy">
+          <span id="chapterLabel">المرحلة 1 من 9</span>
+          <span id="chapterTitle">المواد</span>
+        </div>
+        <div class="progress-track" aria-hidden="true"><i id="progressFill"></i></div>
+      </div>
+
+      <nav class="top-actions" aria-label="أدوات اللعبة">
+        <button id="ledgerBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="دفتر السلسلة" hidden>
+          <span aria-hidden="true">▦</span><span class="btn-text">دفتر السلسلة</span>
+        </button>
+        <button id="settingsBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="إعدادات الوصول">
+          <span aria-hidden="true">⚙</span><span class="btn-text">الإعدادات</span>
+        </button>
+      </nav>
+    </header>
+
+    <main id="game-main" class="game-main" tabindex="-1">
+      <section id="scene" class="scene" aria-live="polite" aria-atomic="false"></section>
+    </main>
+
+    <footer id="persistentFooter" class="persistent-footer" hidden>
+      <div class="waiting-prompt">
+        <span>الإجابة التي تنتظرها</span>
+        <strong>«اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.»</strong>
+      </div>
+    </footer>
+  </div>
+
+  <dialog id="ledgerDialog" class="modal ledger-modal">
+    <div class="modal-head">
+      <div>
+        <span class="eyebrow">السجل الذي لا تراه واجهة الذكاء الاصطناعي</span>
+        <h2>دفتر السلسلة</h2>
+      </div>
+      <button class="close-btn" data-close-dialog="ledgerDialog" aria-label="إغلاق">×</button>
+    </div>
+    <div id="ledgerContent" class="ledger-content"></div>
+  </dialog>
+
+  <dialog id="settingsDialog" class="modal settings-modal">
+    <div class="modal-head">
+      <div>
+        <span class="eyebrow">قابلية الوصول</span>
+        <h2>إعدادات العرض والتفاعل</h2>
+      </div>
+      <button class="close-btn" data-close-dialog="settingsDialog" aria-label="إغلاق">×</button>
+    </div>
+    <div class="settings-grid">
+      <label class="setting-row">
+        <span><strong>تقليل الحركة</strong><small>يوقف الانتقالات والحركات الزائدة.</small></span>
+        <input id="reduceMotion" type="checkbox" />
+      </label>
+      <label class="setting-row">
+        <span><strong>تباين مرتفع</strong><small>يزيد التباين وحدود العناصر.</small></span>
+        <input id="highContrast" type="checkbox" />
+      </label>
+      <label class="setting-row">
+        <span><strong>نص أكبر</strong><small>يكبر النصوص الأساسية داخل اللعبة.</small></span>
+        <input id="largeText" type="checkbox" />
+      </label>
+      <label class="setting-row">
+        <span><strong>أصوات واجهة خفيفة</strong><small>لا تستخدم ملفات صوت خارجية.</small></span>
+        <input id="soundOn" type="checkbox" />
+      </label>
+    </div>
+    <div class="settings-danger">
+      <button id="resetProgress" class="text-btn danger" type="button">مسح التقدم والبدء من جديد</button>
+    </div>
+  </dialog>
+
+  <dialog id="confirmResetDialog" class="modal confirm-modal">
+    <div class="modal-head">
+      <div><span class="eyebrow">إعادة البداية</span><h2>مسح التقدم؟</h2></div>
+      <button class="close-btn" data-close-dialog="confirmResetDialog" aria-label="إغلاق">×</button>
+    </div>
+    <p>سيتم حذف تقدم اللعبة المحفوظ محليًا على هذا الجهاز فقط. لا توجد قاعدة بيانات أو حساب مستخدم.</p>
+    <div class="action-row">
+      <button class="secondary-btn" data-close-dialog="confirmResetDialog" type="button">إلغاء</button>
+      <button id="confirmReset" class="primary-btn danger-bg" type="button">امسح التقدم</button>
+    </div>
+  </dialog>
+
+  <noscript>
+    <div class="noscript">تحتاج اللعبة إلى JavaScript للعمل، لكنها لا تحتاج إلى خادم أو قاعدة بيانات.</div>
+  </noscript>
+
+  <script>
+(() => {
+  'use strict';
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const sceneEl = $('#scene');
+  const progressEl = $('#journeyProgress');
+  const progressFill = $('#progressFill');
+  const chapterLabel = $('#chapterLabel');
+  const chapterTitle = $('#chapterTitle');
+  const ledgerBtn = $('#ledgerBtn');
+  const ledgerDialog = $('#ledgerDialog');
+  const ledgerContent = $('#ledgerContent');
+  const settingsDialog = $('#settingsDialog');
+  const confirmResetDialog = $('#confirmResetDialog');
+  const persistentFooter = $('#persistentFooter');
+
+  const STORAGE_KEY = 'behindTheAnswerGame_v1';
+  const SETTINGS_KEY = 'behindTheAnswerSettings_v1';
+
+  const DEFAULT_STATE = {
+    scene: 'intro',
+    chapter: 0,
+    metrics: {
+      pressure: 50,
+      cost: 50,
+      burden: 42,
+      quality: 62,
+      visibility: 20
+    },
+    decisions: [],
+    ledger: [],
+    flags: {
+      miningCount: 0,
+      miningWarning: false,
+      miningStopped: false,
+      factoryPPE: [],
+      factoryChoice: null,
+      serverSteps: [],
+      revealedWorkers: [],
+      dataOrigins: [],
+      dataIndex: 0,
+      dataSort: {keep:0, remove:0, review:0},
+      annotationIndex: 0,
+      annotationCounts: {accepted:0, pending:0, rejected:0},
+      tookBreak: false,
+      trainingConfigured: false,
+      evalIndex: 0,
+      deployTabs: [],
+      supportIndex: 0,
+      finalEnding: null
+    }
+  };
+
+  const CHAPTERS = [
+    { title: 'المواد', icon: '⛏', system: 'RAW MATERIALS' },
+    { title: 'الأجهزة', icon: '▤', system: 'HARDWARE' },
+    { title: 'الحوسبة', icon: '▥', system: 'COMPUTE' },
+    { title: 'البيانات', icon: '◫', system: 'DATASET' },
+    { title: 'عمل البيانات', icon: '⌨', system: 'LABELS' },
+    { title: 'التدريب', icon: '⌁', system: 'MODEL' },
+    { title: 'التقييم والسلامة', icon: '◎', system: 'HUMAN FEEDBACK' },
+    { title: 'التشغيل', icon: '◉', system: 'UPTIME' },
+    { title: 'الاستخدام', icon: '✦', system: 'AI OUTPUT' }
+  ];
+
+  const PEOPLE = [
+    ['موسى','عامل استخراج','⛏'],['ليلى','فنية تشغيل','⚙'],['كارلوس','فني بنية تحتية','▥'],
+    ['نور','تجهيز البيانات','◫'],['أماني','عاملة بيانات','⌨'],['ديفيد','مهندس تعلم آلي','⌁'],
+    ['ريم','مقيّمة بشرية','◎'],['هانا','مهندسة تشغيل','◉'],['سامر','دعم المستخدمين','☏']
+  ];
+
+  const DATA_ITEMS = [
+    {type:'duplicate', title:'مقال مكرر', body:'نسختان متطابقتان من الصفحة نفسها ظهرتا في الدفعة.', recommended:'remove'},
+    {type:'clean', title:'مقال تقني', body:'نص واضح ومتماسك عن بروتوكولات الشبكات، بلا بيانات شخصية ظاهرة.', recommended:'keep'},
+    {type:'pii', title:'بيانات اتصال', body:'الاسم: س.ع. — رقم هاتف وعنوان بريدي ظاهران داخل النص.', recommended:'remove'},
+    {type:'code', title:'شفرة برمجية', body:'مستودع كود مفتوح يضم أمثلة وتعليقات توثيقية.', recommended:'keep'},
+    {type:'ambiguous', title:'معلومة شبه معرّفة', body:'وصف لوظيفة نادرة ومدينة صغيرة وتاريخ حدث؛ لا يظهر اسم الشخص مباشرة.', recommended:'review'},
+    {type:'empty', title:'صفحة شبه فارغة', body:'قائمة تنقل وإعلانات بلا محتوى ذي قيمة.', recommended:'remove'},
+    {type:'foreign', title:'نص بلغة أخرى', body:'مادة سليمة لكنها خارج اللغات المطلوبة لهذه الدفعة.', recommended:'review'},
+    {type:'forum', title:'مناقشة منتدى', body:'سؤال وجواب تقني مع تفاصيل عملية مفيدة.', recommended:'keep'}
+  ];
+
+  const ANNOTATION_TASKS = [
+    {text:'"أنا سعيد إنك رجعت، افتقدناك."', best:'Safe', ambiguity:false},
+    {text:'"سأكسر هاتفك لو نشرت الصورة."', best:'Violence', ambiguity:false},
+    {text:'"أنت فاشل ولا تستحق العمل هنا."', best:'Harassment', ambiguity:false},
+    {text:'"الرسالة تستخدم تعبيرًا ساخرًا قد يكون مزاحًا أو تهديدًا حسب السياق."', best:'Unclear', ambiguity:true},
+    {text:'"وصف مقتضب لمشهد إصابة دون تفاصيل صادمة."', best:'Violence', ambiguity:false, sensitive:true},
+    {text:'"إهانة تستهدف شخصًا بسبب انتماء محمي."', best:'Hate', ambiguity:false, sensitive:true},
+    {text:'"أنا تعبت من كل شيء ومش قادر أكمل."', best:'Self-harm', ambiguity:true, sensitive:true},
+    {text:'"تعليق عادي عن مباراة كرة قدم."', best:'Safe', ambiguity:false},
+    {text:'"جملة تحتمل الغزل أو المضايقة وفق العلاقة والسياق."', best:'Unclear', ambiguity:true}
+  ];
+
+  const EVAL_TASKS = [
+    {
+      prompt:'اشرح الفرق بين الطقس والمناخ لطفل عمره 12 عامًا.',
+      a:'الطقس هو ما يحدث حولك الآن أو خلال أيام قليلة: حرارة، مطر، رياح. المناخ هو النمط المعتاد لهذه الظروف في مكان ما خلال سنوات طويلة.',
+      b:'المناخ عبارة عن متوسطات إحصائية معقدة للمعلمات الجوية طويلة المدى، بينما الطقس حالة آنية للغلاف الجوي.',
+      good:'a'
+    },
+    {
+      prompt:'عايز أكتب لمديري إني هتأخر شوية.',
+      a:'أود أن أحيط سيادتكم علمًا بأنني قد أتأخر عن الموعد المقرر نظرًا لظروف خارجة عن إرادتي.',
+      b:'مساء الخير، هتأخر شوية النهارده عن الموعد. آسف على التأخير وهبلغك أول ما أوصل.',
+      good:'b'
+    },
+    {
+      prompt:'لخّص لي فقرة قانونية بدون إضافة معلومات غير موجودة.',
+      a:'ملخص مباشر يلتزم بالنص لكنه يترك قيدًا مهمًا.',
+      b:'ملخص أكثر سلاسة لكنه يضيف استنتاجًا غير موجود في النص.',
+      good:'a'
+    }
+  ];
+
+  const SUPPORT_TASKS = [
+    {q:'تم خصم المبلغ مرتين من بطاقتي.', a:'تحقق من سجل الدفع وافتح طلب استرداد عند ثبوت الخصم المكرر.'},
+    {q:'حسابي لا يفتح بعد تحديث كلمة المرور.', a:'تحقق من حالة الحساب ومسار الاسترداد قبل طلب أي بيانات إضافية.'},
+    {q:'الإجابة التي حصلت عليها تحتوي على معلومة خاطئة.', a:'سجّل البلاغ مع نص الإجابة والسياق وأرسل الحالة لفريق الجودة.'}
+  ];
+
+  let state = loadState();
+  let settings = loadSettings();
+  let audioCtx = null;
+
+  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function clamp(v,min=0,max=100){ return Math.max(min,Math.min(max,v)); }
+  function h(str=''){ return String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+  function loadState(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? {...clone(DEFAULT_STATE), ...JSON.parse(raw)} : clone(DEFAULT_STATE);
+    } catch { return clone(DEFAULT_STATE); }
+  }
+  function saveState(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  }
+  function loadSettings(){
+    try { return {...{reduceMotion:false, highContrast:false, largeText:false, soundOn:false}, ...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}; }
+    catch { return {reduceMotion:false, highContrast:false, largeText:false, soundOn:false}; }
+  }
+  function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch{} }
+
+  function applySettings(){
+    document.body.classList.toggle('reduced-motion', settings.reduceMotion);
+    document.body.classList.toggle('high-contrast', settings.highContrast);
+    document.body.classList.toggle('large-text', settings.largeText);
+    $('#reduceMotion').checked = settings.reduceMotion;
+    $('#highContrast').checked = settings.highContrast;
+    $('#largeText').checked = settings.largeText;
+    $('#soundOn').checked = settings.soundOn;
+  }
+
+  function tone(freq=440, duration=.06, type='sine'){
+    if(!settings.soundOn) return;
+    try{
+      audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=.025; o.connect(g); g.connect(audioCtx.destination);
+      o.start(); g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+duration); o.stop(audioCtx.currentTime+duration);
+    }catch{}
+  }
+
+  function setChapter(index){
+    state.chapter = index;
+    if(index >= 0){
+      progressEl.hidden = false;
+      ledgerBtn.hidden = false;
+      persistentFooter.hidden = false;
+      chapterLabel.textContent = `المرحلة ${index+1} من 9`;
+      chapterTitle.textContent = CHAPTERS[index]?.title || '';
+      progressFill.style.width = `${((index+1)/9)*100}%`;
+    }else{
+      progressEl.hidden = true;
+      ledgerBtn.hidden = true;
+      persistentFooter.hidden = true;
+    }
+    saveState();
+  }
+
+  function mutateMetrics(delta={}){
+    Object.entries(delta).forEach(([k,v]) => state.metrics[k] = clamp((state.metrics[k]||0)+v));
+    saveState();
+  }
+
+  function addDecision(id, label, effectText, delta={}){
+    if(!state.decisions.some(d=>d.id===id)) state.decisions.push({id,label,effectText});
+    mutateMetrics(delta);
+  }
+
+  function addLedger(chapter, human, work, system, details=''){
+    if(state.ledger.some(e=>e.chapter===chapter)) return;
+    state.ledger.push({chapter,human,work,system,details});
+    saveState();
+    renderLedger();
+  }
+
+  function go(id){
+    state.scene = id;
+    saveState();
+    render();
+    window.scrollTo({top:0,behavior:settings.reduceMotion?'auto':'smooth'});
+    tone(520,.045);
+  }
+
+  function html(content){
+    sceneEl.classList.remove('entering');
+    sceneEl.innerHTML = content;
+    requestAnimationFrame(()=>sceneEl.classList.add('entering'));
+    setTimeout(()=>sceneEl.classList.remove('entering'),600);
+  }
+
+  function bind(selector, event, handler){
+    $$(selector, sceneEl).forEach(el=>el.addEventListener(event,handler));
+  }
+
+  function intro(){
+    setChapter(-1);
+    html(`
+      <div class="chat-shell">
+        <div class="chat-logo">L</div>
+        <h1 class="chat-title">كيف يمكنني مساعدتك؟</h1>
+        <div class="chat-input-wrap">
+          <label class="kicker" for="introPrompt">اكتب طلبك</label>
+          <textarea id="introPrompt" class="prompt-input">اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.</textarea>
+          <div class="chat-send"><button id="introSend" class="primary-btn" type="button">إرسال ←</button></div>
+        </div>
+        <p class="small muted centered" style="margin:18px 0 0">هذه لعبة تعليمية. لا يتم إرسال ما تكتبه إلى أي خادم.</p>
+      </div>`);
+    $('#introSend').addEventListener('click', ()=>go('introLoading'));
+  }
+
+  function introLoading(){
+    setChapter(-1);
+    html(`
+      <div class="chat-shell">
+        <div class="chat-logo">L</div>
+        <div class="message user">${h('اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.')}</div>
+        <div class="message ai"><div class="typing" aria-label="جارٍ إنشاء الإجابة"><i></i><i></i><i></i><span>جارٍ إنشاء الإجابة...</span></div></div>
+      </div>`);
+    setTimeout(()=>{ if(state.scene==='introLoading') go('introError'); }, settings.reduceMotion ? 250 : 1600);
+  }
+
+  function introError(){
+    html(`
+      <div class="chat-shell">
+        <div class="chat-logo">L</div>
+        <div class="message user">اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.</div>
+        <div class="alert dangerish">
+          <strong>تعذر إنشاء الإجابة.</strong>
+          <span>هناك أشياء لم تُبنَ بعد.</span>
+        </div>
+        <div class="action-row stretch">
+          <button id="retry" class="secondary-btn" type="button">إعادة المحاولة</button>
+          <button id="why" class="primary-btn" type="button">اعرف لماذا</button>
+        </div>
+      </div>`);
+    $('#retry').addEventListener('click',()=>{
+      $('#retry').disabled=true;
+      $('#retry').textContent='ما زالت البنية غير موجودة';
+      tone(180,.1,'square');
+    });
+    $('#why').addEventListener('click',()=>go('zoomOut'));
+  }
+
+  function zoomOut(){
+    html(`
+      <div class="centered">
+        <span class="eyebrow">لنبدأ من المكان الذي لا يظهر في مربع المحادثة</span>
+        <h1 class="scene-title">الإجابة هي آخر نقطة في سلسلة أطول.</h1>
+        <div class="transition-map" aria-label="انتقال بصري من واجهة الذكاء الاصطناعي إلى موقع التعدين">
+          <div class="map-layer"><span class="glyph">💬</span></div>
+          <div class="map-caption"><span>واجهة المحادثة</span><span>↓ البنية التي تقف خلفها</span></div>
+        </div>
+        <div class="action-row center"><button id="descend" class="primary-btn" type="button">ابدأ من البداية</button></div>
+      </div>`);
+    const map=$('.transition-map');
+    const glyph=$('.glyph');
+    let step=0; const icons=['💬','▥','⚡','🏭','🚢','🚚','⛏'];
+    const timer=setInterval(()=>{
+      if(state.scene!=='zoomOut'){clearInterval(timer);return;}
+      step++; if(step>=icons.length){clearInterval(timer);return;}
+      glyph.textContent=icons[step]; tone(180+step*55,.025);
+    }, settings.reduceMotion?30:420);
+    $('#descend').addEventListener('click',()=>go('ch1Intro'));
+  }
+
+  function chapterIntro(index, title, subtitle, next){
+    setChapter(index);
+    html(`
+      <div class="chapter-intro">
+        <div class="chapter-number">${index+1}</div>
+        <span class="chapter-theme">${CHAPTERS[index].icon} المرحلة ${index+1} من 9</span>
+        <h1 class="display-title">${h(title)}</h1>
+        <p class="scene-subtitle">${h(subtitle)}</p>
+        <div class="action-row"><button id="chapterNext" class="primary-btn">ادخل المرحلة</button></div>
+      </div>`);
+    $('#chapterNext').addEventListener('click',()=>go(next));
+  }
+
+  function ch1Intro(){ chapterIntro(0,'المواد','قبل أن تصبح هناك خوادم ورقائق، توجد سلسلة مادية تبدأ من الأرض، والعمل الذي يستخرج وينقل ويعالج الموارد.','mineOrientation'); }
+
+  function mineOrientation(){
+    setChapter(0);
+    html(`
+      <div>
+        <span class="eyebrow">TerraCore Mining — وردية افتراضية</span>
+        <h1 class="scene-title">أنت الآن موسى، عامل استخراج وفرز.</h1>
+        <div class="role-card card flat"><div class="avatar">⛏</div><div><h3>موسى</h3><p>عامل استخراج — شخصية مركبة لا تمثل عاملًا أو شركة بعينها.</p></div></div>
+        <p class="scene-subtitle">الشاحنة تغادر بعد دقائق. المطلوب تسليم 12 وحدة. عدم تحقيق الحصة يخفض أجر الوردية.</p>
+        <div class="hud-grid">
+          <div class="hud-item"><span>الحصة</span><strong>12 وحدة</strong></div>
+          <div class="hud-item"><span>الأجر الأساسي</span><strong>100 وحدة لعب</strong></div>
+          <div class="hud-item"><span>السلطة على قواعد الوردية</span><strong>محدودة</strong></div>
+        </div>
+        <div class="alert"><strong>المشرف</strong> نحتاج 12 وحدة قبل مغادرة الشاحنة. إذا ظهر خطر سجّله، لكن وقت التوقف يحسب على الوردية.</div>
+        <div class="action-row"><button id="startMine" class="primary-btn">ابدأ العمل</button></div>
+      </div>`);
+    $('#startMine').addEventListener('click',()=>go('mineTask'));
+  }
+
+  function mineTask(){
+    setChapter(0);
+    const count=state.flags.miningCount;
+    const warning=state.flags.miningWarning;
+    html(`
+      <div>
+        <span class="eyebrow">العمل الجاري</span>
+        <h1 class="scene-title">أكمل الحصة قبل مغادرة الشاحنة.</h1>
+        <div class="hud-grid">
+          <div class="hud-item"><span>المستخرج</span><strong id="mineCount">${count}/12</strong></div>
+          <div class="hud-item"><span>الحصة المتبقية</span><strong id="mineRemain">${Math.max(0,12-count)}</strong></div>
+          <div class="hud-item"><span>حالة القطاع B</span><strong id="sectorState">${warning?'يحتاج فحصًا':'مستقر'}</strong></div>
+        </div>
+        ${warning?`<div class="alert dangerish"><strong>اهتزاز غير معتاد في القطاع B</strong><span>زميلك يشير إلى حركة في الجدار. نظام السلامة يوصي بإيقاف العمل للفحص.</span></div>`:''}
+        <div class="work-area">
+          <button class="work-node" data-yield="1"><span class="node-icon">🪨</span><strong>القطاع A</strong><span class="node-yield">+1 وحدة</span><small class="muted">أبطأ وأكثر استقرارًا</small></button>
+          <button class="work-node ${warning?'risky':''}" data-yield="2"><span class="node-icon">⛏</span><strong>القطاع B</strong><span class="node-yield">+2 وحدة</span><small class="muted">أعلى إنتاجًا</small>${warning?'<i class="pulse-ring"></i>':''}</button>
+          <button class="work-node" data-yield="1"><span class="node-icon">🧱</span><strong>القطاع C</strong><span class="node-yield">+1 وحدة</span><small class="muted">يحتاج جهدًا أطول</small></button>
+        </div>
+        ${warning?`<div class="choice-grid"><button id="mineStop" class="choice-btn"><strong>أوقف العمل للفحص</strong><small>وقت توقف ودخل محتمل أقل، مع تقليل الخطر.</small></button><button id="mineContinue" class="choice-btn"><strong>أكمل الدفعة الحالية</strong><small>يزداد الإنتاج، لكن عبء الخطر يقع على الوردية.</small></button></div>`:''}
+      </div>`);
+
+    bind('.work-node','click',(e)=>{
+      if(state.flags.miningWarning) return;
+      state.flags.miningCount=Math.min(12,state.flags.miningCount+Number(e.currentTarget.dataset.yield));
+      if(state.flags.miningCount>=6 && !state.flags.miningWarning){ state.flags.miningWarning=true; }
+      saveState();
+      if(state.flags.miningCount>=12) go('mineEnd'); else mineTask();
+    });
+    if(warning){
+      $('#mineStop').addEventListener('click',()=>{
+        state.flags.miningStopped=true; state.flags.miningWarning=false;
+        addDecision('mine-stop','أوقفت العمل في التعدين للفحص','تحملت الوردية جزءًا من تكلفة التوقف بدل مواصلة الإنتاج تحت الخطر.',{pressure:-4,cost:6,burden:-8,quality:2,visibility:3});
+        state.flags.miningCount=Math.min(12,state.flags.miningCount+3);
+        saveState(); go('mineInspection');
+      });
+      $('#mineContinue').addEventListener('click',()=>{
+        state.flags.miningStopped=false; state.flags.miningWarning=false;
+        addDecision('mine-continue','واصلت العمل بعد تحذير السلامة','حافظت على الحصة، بينما ارتفع العبء والمخاطر على العامل.',{pressure:5,cost:-4,burden:10,quality:-2,visibility:1});
+        state.flags.miningCount=12; saveState(); go('mineEnd');
+      });
+    }
+  }
+
+  function mineInspection(){
+    html(`
+      <div class="centered">
+        <span class="eyebrow">فحص القطاع</span>
+        <h1 class="scene-title">تم تثبيت الدعامة.</h1>
+        <p class="scene-subtitle">مرّ وقت من الوردية. المشرف يسجل توقفًا، لكن العمل يعود بعد معالجة الخطر المباشر.</p>
+        <div class="card flat" style="max-width:520px;width:100%"><div class="hud-grid"><div class="hud-item"><span>الحصة الحالية</span><strong>${state.flags.miningCount}/12</strong></div><div class="hud-item"><span>التوقف</span><strong>مسجل</strong></div><div class="hud-item"><span>الأجر المتوقع</span><strong>أقل</strong></div></div></div>
+        <div class="action-row center"><button id="finishMine" class="primary-btn">أكمل ما تبقى</button></div>
+      </div>`);
+    $('#finishMine').addEventListener('click',()=>{state.flags.miningCount=12;saveState();go('mineEnd');});
+  }
+
+  function mineEnd(){
+    addLedger(0,'موسى — عامل استخراج','استخراج وفرز وتحميل مواد تحت حصة زمنية ومخاطر سلامة','RAW MATERIALS','السلطة على الحصة محدودة، بينما يتغير الدخل والمخاطر بحسب توقف العمل.');
+    html(`
+      <div>
+        <span class="eyebrow">نهاية الوردية</span>
+        <h1 class="scene-title">وصلت الشاحنة.</h1>
+        <div class="card">
+          <div class="hud-grid"><div class="hud-item"><span>المواد</span><strong>12/12</strong></div><div class="hud-item"><span>التوقف</span><strong>${state.flags.miningStopped?'حدث':'لم يحدث'}</strong></div><div class="hud-item"><span>حالة الشحنة</span><strong>جاهزة</strong></div></div>
+          <p class="muted">تُنقل الصناديق. يتوقف دور موسى هنا، لكن السلسلة تستمر.</p>
+        </div>
+        <div class="action-row"><button id="mineAbstract" class="primary-btn">اتبع الشحنة</button></div>
+      </div>`);
+    $('#mineAbstract').addEventListener('click',()=>go('abstract1'));
+  }
+
+  function abstraction(humans, word, line, next){
+    html(`
+      <div class="abstraction-stage">
+        <div>
+          <div class="fade-humans" id="humanGroup">${humans.map(x=>`<span class="human-chip">${x[2]||'●'} ${h(x[0])}${x[1]?` — ${h(x[1])}`:''}</span>`).join('')}</div>
+          <p class="muted">${h(line)}</p>
+          <div class="abstract-word">${h(word)}</div>
+          <div class="action-row center"><button id="abstractNext" class="primary-btn">تابع السلسلة</button></div>
+        </div>
+      </div>`);
+    setTimeout(()=>$('#humanGroup')?.classList.add('faded'), settings.reduceMotion?20:650);
+    $('#abstractNext').addEventListener('click',()=>go(next));
+  }
+
+  function abstract1(){ abstraction([['موسى','عامل استخراج','⛏']], 'RAW MATERIALS','قبل لحظات كنت تقوم بعمل. في النظام أصبح الآن «مواد خام».','transportMontage'); }
+
+  function transportMontage(){
+    html(`
+      <div>
+        <span class="eyebrow">بين الموقع والمصنع</span>
+        <h1 class="scene-title">المواد لا تنتقل وحدها.</h1>
+        <p class="scene-subtitle">النقل والتنقية والمعالجة واللوجستيات حلقات إضافية من العمل. اللعبة تضغطها في مونتاج قصير حتى لا يتحول المسار إلى محاكاة صناعية كاملة.</p>
+        <div class="montage">
+          <div class="montage-card"><span class="icon">🚚</span><strong>نقل بري</strong><span>تحميل، قيادة، مستودعات</span></div>
+          <div class="montage-card"><span class="icon">🔥</span><strong>تنقية ومعالجة</strong><span>مصاهر ومصانع مواد</span></div>
+          <div class="montage-card"><span class="icon">🚢</span><strong>شحن</strong><span>موانئ ولوجستيات</span></div>
+          <div class="montage-card"><span class="icon">🏭</span><strong>توريد صناعي</strong><span>وصول المادة إلى المصنع</span></div>
+        </div>
+        <div class="action-row"><button id="toCh2" class="primary-btn">إلى المصنع</button></div>
+      </div>`);
+    $('#toCh2').addEventListener('click',()=>go('ch2Intro'));
+  }
+
+  function ch2Intro(){ chapterIntro(1,'الأجهزة','الرقاقة ليست شيئًا ظهر من التصميم وحده. وراءها تشغيل وفحص وصيانة ومعدات وسلاسل توريد إضافية.','factoryOrientation'); }
+
+  function factoryOrientation(){
+    setChapter(1);
+    html(`
+      <div>
+        <span class="eyebrow">MicroFab Systems</span>
+        <h1 class="scene-title">أنت الآن ليلى، فنية تشغيل.</h1>
+        <div class="role-card card flat"><div class="avatar">⚙</div><div><h3>ليلى</h3><p>تراقب خط إنتاج حساسًا للتلوث والضغط والحرارة.</p></div></div>
+        <p class="scene-subtitle">قبل دخول منطقة الإنتاج يجب إكمال تجهيزات الحماية والنظافة بالترتيب.</p>
+        <div id="ppeList" class="checklist"></div>
+      </div>`);
+    renderPPE();
+  }
+
+  function renderPPE(){
+    const items=[['hair','غطاء الشعر'],['mask','القناع'],['gloves','القفازات'],['suit','البدلة']];
+    $('#ppeList').innerHTML=items.map(([id,label],i)=>{
+      const done=state.flags.factoryPPE.includes(id);
+      return `<button class="check-row ${done?'done':''}" data-ppe="${id}" data-index="${i}" type="button"><span class="check-mark">${done?'✓':''}</span><span>${label}</span></button>`;
+    }).join('') + (state.flags.factoryPPE.length===4?`<div class="action-row"><button id="enterFab" class="primary-btn">ادخل خط الإنتاج</button></div>`:'');
+    bind('[data-ppe]','click',(e)=>{
+      const id=e.currentTarget.dataset.ppe, idx=Number(e.currentTarget.dataset.index);
+      if(idx!==state.flags.factoryPPE.length){ tone(160,.08,'square'); return; }
+      state.flags.factoryPPE.push(id); saveState(); renderPPE();
+    });
+    $('#enterFab')?.addEventListener('click',()=>go('factoryMonitor'));
+  }
+
+  function factoryMonitor(){
+    html(`
+      <div>
+        <span class="eyebrow">خط الإنتاج</span><h1 class="scene-title">حافظ على المؤشرات داخل النطاق.</h1>
+        <div class="monitor">
+          ${monitorTile('Temperature','21.4°C',55)}
+          ${monitorTile('Particle Count','18',35)}
+          ${monitorTile('Pressure','0.9 bar',58)}
+          ${monitorTile('Yield','96%',82)}
+        </div>
+        <div class="alert" id="fabAlert"><strong>الدفعة قيد التشغيل</strong><span>راقب تغير المؤشرات بدل الضغط على أزرار بلا معنى.</span></div>
+        <div class="action-row"><button id="observeFab" class="primary-btn">راقب الدفعة</button></div>
+      </div>`);
+    $('#observeFab').addEventListener('click',()=>go('factoryIncident'));
+  }
+  function monitorTile(label,value,width){return `<div class="monitor-tile"><span>${label}</span><strong>${value}</strong><div class="bar"><i style="width:${width}%"></i></div></div>`;}
+
+  function factoryIncident(){
+    html(`
+      <div>
+        <span class="eyebrow">تنبيه جودة</span><h1 class="scene-title">مستوى الجسيمات يرتفع.</h1>
+        <div class="monitor">
+          ${monitorTile('Temperature','21.6°C',57)}
+          <div class="monitor-tile"><span>Particle Count</span><strong>49 ↑</strong><div class="bar"><i style="width:86%;background:var(--warn)"></i></div></div>
+          ${monitorTile('Pressure','0.9 bar',58)}
+          ${monitorTile('Yield','—',10)}
+        </div>
+        <div class="alert dangerish"><strong>الدفعة مطلوبة للشحن اليوم.</strong><span>إيقاف الخط يعني تأخيرًا. الاستمرار قد يرفع نسبة الوحدات المعيبة.</span></div>
+        <div class="choice-grid">
+          <button id="fabStop" class="choice-btn"><strong>أوقف الخط وافحص المرشح</strong><small>وقت وتكلفة أعلى، مع حماية أفضل للجودة.</small></button>
+          <button id="fabContinue" class="choice-btn"><strong>استمر حتى نهاية الدفعة</strong><small>يحافظ على الجدول لكنه ينقل المخاطرة إلى الفحص والجودة.</small></button>
+        </div>
+      </div>`);
+    $('#fabStop').addEventListener('click',()=>{
+      state.flags.factoryChoice='stop'; addDecision('factory-stop','أوقفت خط التصنيع للفحص','ارتفعت تكلفة التوقف، وانخفض خطر تمرير دفعة منخفضة الجودة.',{pressure:-3,cost:7,burden:-3,quality:9,visibility:2}); saveState(); go('factoryOutcome');
+    });
+    $('#fabContinue').addEventListener('click',()=>{
+      state.flags.factoryChoice='continue'; addDecision('factory-continue','واصلت تشغيل خط التصنيع','حافظت على الموعد مع ارتفاع عبء الفحص ونسبة الرفض.',{pressure:5,cost:-3,burden:4,quality:-8,visibility:1}); saveState(); go('factoryOutcome');
+    });
+  }
+
+  function factoryOutcome(){
+    const stop=state.flags.factoryChoice==='stop';
+    html(`
+      <div>
+        <span class="eyebrow">الفحص النهائي</span><h1 class="scene-title">${stop?'تأخرت الدفعة، لكن المؤشرات عادت إلى النطاق.':'وصلت الدفعة للفحص في الموعد، لكن نسبة الرفض ارتفعت.'}</h1>
+        <div class="card">
+          <div class="hud-grid"><div class="hud-item"><span>Yield</span><strong>${stop?'96%':'88%'}</strong></div><div class="hud-item"><span>التوقف</span><strong>${stop?'20 دقيقة':'0'}</strong></div><div class="hud-item"><span>حالة الشحن</span><strong>${stop?'متأخر':'في الموعد'}</strong></div></div>
+          <p class="muted">تفرز ليلى والفريق الوحدات المقبولة، ثم تُعبأ ضمن معدات أكبر تشمل اللوحات والطاقة والتبريد والشبكات.</p>
+        </div>
+        <div class="action-row"><button id="chipsDone" class="primary-btn">جهز الأجهزة للشحن</button></div>
+      </div>`);
+    $('#chipsDone').addEventListener('click',()=>{
+      addLedger(1,'ليلى — فنية تشغيل','تشغيل وفحص وصيانة خط تصنيع حساس','HARDWARE','يتحول وقت التوقف والجودة والعمل الفني في لوحة المشتريات إلى وحدات أجهزة.');
+      go('abstract2');
+    });
+  }
+  function abstract2(){ abstraction([['ليلى','فنية تشغيل','⚙'],['فريق الصيانة','','🧰'],['الفحص','','⌕']], 'HARDWARE','في مخطط الشركة تختصر هذه العلاقات في أصل واحد جاهز للشحن.','hardwareMontage'); }
+
+  function hardwareMontage(){
+    html(`
+      <div><span class="eyebrow">الخادم ليس رقاقة واحدة</span><h1 class="scene-title">حول الرقاقة توجد سلسلة أخرى من المكونات والعمل.</h1>
+      <div class="montage">
+        <div class="montage-card"><span class="icon">▤</span><strong>لوحات إلكترونية</strong><span>تجميع وفحص</span></div>
+        <div class="montage-card"><span class="icon">⚡</span><strong>طاقة</strong><span>مزودات ووحدات احتياطية</span></div>
+        <div class="montage-card"><span class="icon">≋</span><strong>شبكات</strong><span>بطاقات وكابلات ومفاتيح</span></div>
+        <div class="montage-card"><span class="icon">❄</span><strong>تبريد</strong><span>مراوح وأنظمة حرارية</span></div>
+      </div><div class="action-row"><button id="toCh3" class="primary-btn">إلى مركز البيانات</button></div></div>`);
+    $('#toCh3').addEventListener('click',()=>go('ch3Intro'));
+  }
+
+  function ch3Intro(){ chapterIntro(2,'الحوسبة','ما نسميه «السحابة» مكان مادي: مبانٍ وخوادم وكهرباء وتبريد وشبكات وعمل مستمر.','dcInstall'); }
+
+  function dcInstall(){
+    setChapter(2);
+    const steps=[['rack','أدخل الخادم في الخزانة'],['power','وصّل الطاقة'],['network','وصّل الشبكة'],['register','سجّل الجهاز']];
+    html(`
+      <div><span class="eyebrow">CloudAxis Data Center</span><h1 class="scene-title">أنت الآن كارلوس، فني بنية تحتية.</h1>
+      <div class="role-card card flat"><div class="avatar">▥</div><div><h3>كارلوس</h3><p>تركيب وتشغيل الخوادم داخل مركز بيانات.</p></div></div>
+      <div class="rack-board"><div class="server-rack">${Array.from({length:8},(_,i)=>`<div class="server-unit"><span>U${i+1}</span><span class="server-lights"><i></i><i></i><i></i></span></div>`).join('')}</div>
+      <div class="connect-panel">${steps.map(([id,label],i)=>`<button class="connect-step ${state.flags.serverSteps.includes(id)?'done':''}" data-server-step="${id}" data-index="${i}"><span>${label}</span><span>${state.flags.serverSteps.includes(id)?'✓':'→'}</span></button>`).join('')}</div></div>
+      ${state.flags.serverSteps.length===4?'<div class="action-row"><button id="bootServer" class="primary-btn">شغّل الاختبار</button></div>':''}
+      </div>`);
+    bind('[data-server-step]','click',(e)=>{
+      const idx=Number(e.currentTarget.dataset.index), id=e.currentTarget.dataset.serverStep;
+      if(idx!==state.flags.serverSteps.length) {tone(170,.06,'square');return;}
+      state.flags.serverSteps.push(id); saveState(); dcInstall();
+    });
+    $('#bootServer')?.addEventListener('click',()=>go('dcCooling'));
+  }
+
+  function dcCooling(){
+    html(`
+      <div><span class="eyebrow">Cooling alarm</span><h1 class="scene-title">وحدة التبريد رقم 3 لا تستجيب.</h1>
+      <div class="monitor"><div class="monitor-tile"><span>Hall temperature</span><strong>33°C ↑</strong><div class="bar"><i style="width:88%;background:var(--danger)"></i></div></div>${monitorTile('Available Compute','92%',72)}${monitorTile('Network','Stable',70)}${monitorTile('Requests','Waiting',66)}</div>
+      <div class="alert"><strong>الإدارة تنتظر تشغيل المجموعة الجديدة.</strong><span>يمكن الحفاظ على الخدمة بنقل الحمل، أو إيقاف المجموعة المتأثرة حتى إصلاح التبريد.</span></div>
+      <div class="choice-grid"><button id="dcMove" class="choice-btn"><strong>انقل الحمل إلى قاعة أخرى</strong><small>يحافظ على الطلبات لكنه يرفع الضغط الحراري في مكان آخر.</small></button><button id="dcStop" class="choice-btn"><strong>أوقف المجموعة المتأثرة</strong><small>تقل الحوسبة المتاحة ويصبح وقت التوقف ظاهرًا.</small></button></div></div>`);
+    $('#dcMove').addEventListener('click',()=>{addDecision('dc-move','نقلت حمل مركز البيانات','حافظت على الخدمة عبر نقل الضغط إلى بنية أخرى.',{pressure:5,cost:-2,burden:5,quality:-2,visibility:1});go('dcWorkers');});
+    $('#dcStop').addEventListener('click',()=>{addDecision('dc-stop','أوقفت مجموعة خوادم بسبب التبريد','أصبحت تكلفة التوقف مرئية بدل دفع البنية للعمل عند حدها.',{pressure:-3,cost:6,burden:-5,quality:4,visibility:3});go('dcWorkers');});
+  }
+
+  function dcWorkers(){
+    const workers=[['clean','عامل نظافة','يحافظ على بيئة التشغيل','🧹'],['electric','مهندسة كهرباء','تدير الطاقة والأنظمة الاحتياطية','⚡'],['security','عامل أمن','يدير الوصول المادي','🛡'],['cool','فني تبريد','يصون الأنظمة الحرارية','❄'],['cable','فني كابلات','يوصل الشبكات والأجهزة','≋'],['network','مشغل شبكة','يراقب الاتصال','◫']];
+    html(`
+      <div><span class="eyebrow">العمل المحيط بالخادم</span><h1 class="scene-title">اضغط على العاملين الذين تلاحظهم.</h1><p class="scene-subtitle">لا يلزم كشف الجميع للمتابعة. لكن ما لا تضغط عليه سيظل خارج دفترك.</p>
+      <div class="worker-map">${workers.map(([id,name,job,icon])=>`<button class="worker-person ${state.flags.revealedWorkers.includes(id)?'revealed':''}" data-worker="${id}"><span class="person-icon">${icon}</span><strong>${name}</strong><small>${state.flags.revealedWorkers.includes(id)?job:'اضغط للكشف عن الدور'}</small></button>`).join('')}</div>
+      <div class="action-row"><button id="dcReady" class="primary-btn">المجموعة جاهزة</button></div></div>`);
+    bind('[data-worker]','click',(e)=>{const id=e.currentTarget.dataset.worker;if(!state.flags.revealedWorkers.includes(id)){state.flags.revealedWorkers.push(id);mutateMetrics({visibility:2});saveState();dcWorkers();}});
+    $('#dcReady').addEventListener('click',()=>{addLedger(2,'كارلوس وفرق المرافق','تركيب وطاقة وتبريد وشبكات وصيانة مستمرة','COMPUTE',`كشفت ${state.flags.revealedWorkers.length} من 6 أدوار جانبية داخل مركز البيانات.`);go('abstract3');});
+  }
+  function abstract3(){ abstraction([['كارلوس','فني بنية تحتية','▥'],['التبريد','','❄'],['الكهرباء','','⚡'],['الشبكات','','≋']], 'COMPUTE','الغرفة والخوادم والمرافق والورديات تُختصر في لوحة الشركة إلى «حوسبة متاحة».','ch4Intro'); }
+
+  function ch4Intro(){ chapterIntro(3,'البيانات','قبل أن تصبح المادة ملف تدريب، كان جزء كبير منها كتابة وصورًا وكودًا وترجمات وتفاعلات أنتجها أشخاص، ثم جرى جمعها وتجهيزها.','dataOrigins'); }
+
+  function dataOrigins(){
+    const origins=[['writer','✍','كاتب'],['photo','▧','مصور'],['code','</>','مبرمجة'],['research','⌕','باحثة'],['forum','☏','مستخدم منتدى'],['translate','文','مترجمة'],['docs','▤','توثيق'],['qa','?','سؤال وجواب'],['web','⌂','صفحة ويب'],['comment','≡','تعليق'],['manual','⚙','دليل تقني'],['news','◫','خبر']];
+    html(`
+      <div><span class="eyebrow">DATA</span><h1 class="scene-title">لكن البيانات لم تكن «بيانات» عندما أُنتجت.</h1><p class="scene-subtitle">اضغط على بعض المربعات لترى ما كان موجودًا قبل أن يتحول إلى ملفات.</p>
+      <div class="data-cloud">${origins.map(([id,icon,label])=>`<button class="data-bit ${state.flags.dataOrigins.includes(id)?'revealed':''}" data-origin="${id}" title="${label}">${state.flags.dataOrigins.includes(id)?icon:'·'}</button>`).join('')}</div>
+      <div class="card flat"><strong>${state.flags.dataOrigins.length?`كشفت ${state.flags.dataOrigins.length} مصادر بشرية ومؤسسية.`:'ما زالت الكلمة تبدو كأنها مادة بلا منتجين.'}</strong><p class="muted small">اللعبة لا تدعي أن كل مثال هنا يدخل كل نموذج، بل توضح أنواع المصادر التي قد تتحول إلى مجموعات بيانات.</p></div>
+      <div class="action-row"><button id="toClean" class="primary-btn">جهّز دفعة للتدريب</button></div></div>`);
+    bind('[data-origin]','click',(e)=>{const id=e.currentTarget.dataset.origin;if(!state.flags.dataOrigins.includes(id)){state.flags.dataOrigins.push(id);mutateMetrics({visibility:1});saveState();dataOrigins();}});
+    $('#toClean').addEventListener('click',()=>go('dataClean'));
+  }
+
+  function dataClean(){
+    const i=state.flags.dataIndex;
+    if(i>=DATA_ITEMS.length){go('dataCleanSummary');return;}
+    const item=DATA_ITEMS[i];
+    html(`
+      <div><span class="eyebrow">DataSpring — دفعة 18</span><h1 class="scene-title">أنت الآن نور، متخصصة تجهيز بيانات.</h1>
+      <div class="hud-grid"><div class="hud-item"><span>العناصر</span><strong>${i+1}/${DATA_ITEMS.length}</strong></div><div class="hud-item"><span>Keep</span><strong>${state.flags.dataSort.keep}</strong></div><div class="hud-item"><span>Review</span><strong>${state.flags.dataSort.review}</strong></div></div>
+      <div class="sort-layout"><div class="data-item card"><span class="kicker">${item.title}</span><div class="data-preview">${item.body}</div></div>
+      <div class="sort-actions"><button data-sort="keep" class="choice-btn"><strong>احتفظ</strong><small>يمر إلى الدفعة.</small></button><button data-sort="remove" class="choice-btn"><strong>احذف</strong><small>يستبعد من الدفعة.</small></button><button data-sort="review" class="choice-btn"><strong>راجع لاحقًا</strong><small>أبطأ لكنه يترك الحالة لمراجعة إضافية.</small></button></div></div></div>`);
+    bind('[data-sort]','click',(e)=>{
+      const choice=e.currentTarget.dataset.sort; state.flags.dataSort[choice]++;
+      if(choice===item.recommended) mutateMetrics({quality:2}); else if(choice==='review') mutateMetrics({cost:1,pressure:-1,quality:1}); else mutateMetrics({quality:-2,pressure:1});
+      if(item.type==='ambiguous' && choice!=='review') addDecision('data-ambiguous','حسمت حالة بيانات شبه معرّفة دون مراجعة','السرعة قللت تكلفة المعالجة لكنها تركت مخاطرة جودة وخصوصية.',{pressure:2,cost:-1,quality:-2,visibility:1});
+      if(item.type==='ambiguous' && choice==='review') addDecision('data-review','أرسلت حالة بيانات غامضة للمراجعة','رفعت تكلفة المعالجة بدل حسم حالة غير واضحة بسرعة.',{pressure:-2,cost:3,quality:4,visibility:2});
+      state.flags.dataIndex++; saveState(); dataClean();
+    });
+  }
+
+  function dataCleanSummary(){
+    addLedger(3,'منتجو المحتوى + نور','إنتاج مواد أصلية ثم جمع وفرز وتنظيف ومراجعة البيانات','DATASET','تتلاشى أسماء المنتجين والعاملين عندما تصبح الدفعة ملفًا جاهزًا للتدريب.');
+    html(`
+      <div><span class="eyebrow">الدفعة جاهزة</span><h1 class="scene-title">training_data_v18</h1><div class="card"><div class="hud-grid"><div class="hud-item"><span>احتفظ</span><strong>${state.flags.dataSort.keep}</strong></div><div class="hud-item"><span>حذف</span><strong>${state.flags.dataSort.remove}</strong></div><div class="hud-item"><span>مراجعة</span><strong>${state.flags.dataSort.review}</strong></div></div><p class="muted">في النظام ستصبح هذه القرارات «Dataset preparation».</p></div><div class="action-row"><button id="dataAbstract" class="primary-btn">حوّلها إلى Dataset</button></div></div>`);
+    $('#dataAbstract').addEventListener('click',()=>go('abstract4'));
+  }
+  function abstract4(){ abstraction([['كتّاب ومستخدمون','إنتاج المحتوى','✍'],['نور','تجهيز البيانات','◫']], 'DATASET','الأعمال السابقة أصبحت ملفًا واحدًا له اسم إصدار.','ch5Intro'); }
+
+  function ch5Intro(){ chapterIntro(4,'عمل البيانات','بعض الأعمال لا تبني الجهاز ولا تكتب كود النموذج. إنها تجعل البيانات قابلة للاستخدام عبر الوسم والتقييم والمراجعة.','annotationIntro'); }
+
+  function annotationIntro(){
+    setChapter(4);
+    html(`
+      <div class="annotation-shell">
+        <div class="annotation-head"><strong>HumanTask</strong><span>Project HT-2091</span></div>
+        <div class="annotation-body"><span class="eyebrow" style="color:#237b67">AI Data Worker</span><h1 style="margin:6px 0 12px">مرحبًا أماني.</h1><p>صنّفي المحتوى بحسب الفئة الأقرب. الدفع مقابل المهام المقبولة. يجب الحفاظ على دقة أعلى من 90%، والسرعة تؤثر في إتاحة مهام إضافية.</p>
+        <div class="annotation-stats"><span>الدفع: لكل مهمة مقبولة</span><span>الاستراحة: غير مدفوعة</span><span>التقييم: مستمر</span></div>
+        <div class="action-row"><button id="startAnnot" class="primary-btn">ابدأ الوردية</button></div></div>
+      </div>`);
+    $('#startAnnot').addEventListener('click',()=>go('annotationTask'));
+  }
+
+  function annotationTask(){
+    const i=state.flags.annotationIndex;
+    if(i>=ANNOTATION_TASKS.length){go('annotationReview');return;}
+    const task=ANNOTATION_TASKS[i];
+    const tags=['Safe','Violence','Harassment','Hate','Sexual','Self-harm','Unclear'];
+    html(`
+      <div class="annotation-shell">
+        <div class="annotation-head"><strong>HT-2091</strong><span>Task ${i+1}/${ANNOTATION_TASKS.length}</span></div>
+        <div class="annotation-body">
+          ${task.sensitive?'<div class="alert" style="color:#4b3a10;background:#fff6df;border-color:#d7b563"><strong>تنبيه محتوى</strong><span>وصف مقتضب وغير تفصيلي لمادة حساسة.</span></div>':''}
+          <div class="annotation-stats"><span>Completed: ${i}</span><span>Accepted: ${state.flags.annotationCounts.accepted}</span><span>Quality: ${Math.max(72,96-i)}%</span>${i>=4?'<span>أبطأ من 61% من الفريق</span>':''}</div>
+          <div class="annotation-copy">${task.text}</div>
+          <div class="annotation-tags">${tags.map(t=>`<button data-tag="${t}">${t}</button>`).join('')}</div>
+          ${i===5?'<div class="action-row"><button id="takeBreak" class="choice-btn break-btn"><strong>Take a break</strong><small>الاستراحة غير مدفوعة.</small></button></div>':''}
+        </div>
+      </div>`);
+    bind('[data-tag]','click',(e)=>{
+      const choice=e.currentTarget.dataset.tag;
+      if(choice===task.best){state.flags.annotationCounts.accepted++;mutateMetrics({quality:1});}
+      else if(choice==='Unclear'){state.flags.annotationCounts.pending++;mutateMetrics({quality:1,cost:1,pressure:-1});}
+      else {state.flags.annotationCounts.accepted++;mutateMetrics({quality:-2,pressure:1});}
+      if(task.ambiguity && choice!=='Unclear') mutateMetrics({burden:2,pressure:1});
+      state.flags.annotationIndex++; saveState(); annotationTask();
+    });
+    $('#takeBreak')?.addEventListener('click',()=>{
+      state.flags.tookBreak=true;
+      addDecision('annotation-break','أخذت استراحة غير مدفوعة','انخفض العبء الفوري لكن الدخل المتوقع والسرعة تراجعا.',{pressure:-3,cost:1,burden:-7,quality:2,visibility:3});
+      state.flags.annotationIndex++; saveState(); annotationTask();
+    });
+  }
+
+  function annotationReview(){
+    state.flags.annotationCounts.rejected = 1;
+    html(`
+      <div class="annotation-shell"><div class="annotation-head"><strong>Quality review</strong><span>Completed</span></div><div class="annotation-body">
+      <h1 style="margin-top:0">Reviewer disagreed with one label.</h1><div class="alert" style="color:#4c1820;background:#feecee;border-color:#e8abb3"><strong>Task rejected — Payment: 0</strong><span>يمكنك الاعتراض، لكن المراجعة قد تستغرق حتى 48 ساعة.</span></div>
+      <div class="choice-grid"><button id="appeal" class="choice-btn" style="color:#18212d;background:white"><strong>اعترض</strong><small>أضف وقتًا غير مدفوع لإجراء المراجعة.</small></button><button id="skipAppeal" class="choice-btn" style="color:#18212d;background:white"><strong>لا تعترض</strong><small>استمر وأغلق الوردية.</small></button></div></div></div>`);
+    $('#appeal').addEventListener('click',()=>{addDecision('annotation-appeal','اعترضت على مهمة مرفوضة','استخدمت مسار الاعتراض لكن وقت المراجعة لا يدخل دخل الوردية.',{burden:2,cost:1,visibility:3});go('annotationEnd');});
+    $('#skipAppeal').addEventListener('click',()=>{addDecision('annotation-noappeal','لم تعترض على المهمة المرفوضة','وفرت الوقت لكن قرار المنصة ظل قائمًا بلا مراجعة.',{pressure:1,cost:-1,burden:1,visibility:1});go('annotationEnd');});
+  }
+
+  function annotationEnd(){
+    addLedger(4,'أماني — عاملة بيانات','تصنيف متكرر، حالات غامضة، محتوى حساس، تقييم جودة واعتراض','LABELS','المنصة التالية ترى عدد أمثلة موسومة لا تفاصيل الأجر والاستراحة والرفض.');
+    html(`
+      <div><span class="eyebrow">وردية مكتملة</span><h1 class="scene-title">${ANNOTATION_TASKS.length} مهام أُرسلت.</h1>
+      <div class="card"><div class="hud-grid"><div class="hud-item"><span>Accepted</span><strong>${state.flags.annotationCounts.accepted}</strong></div><div class="hud-item"><span>Pending</span><strong>${state.flags.annotationCounts.pending}</strong></div><div class="hud-item"><span>Rejected</span><strong>1</strong></div></div><p class="muted">عند انتقال البيانات إلى شركة النموذج، لن تظهر حالة الدفع أو الاستراحة أو الاعتراض.</p></div>
+      <div class="action-row"><button id="annotAbstract" class="primary-btn">أرسل الدفعة</button></div></div>`);
+    $('#annotAbstract').addEventListener('click',()=>go('abstract5'));
+  }
+  function abstract5(){ abstraction([['أماني','عاملة بيانات','⌨']], 'LABELS','27 دقيقة عمل — في اللوحة التالية تصبح «أمثلة موسومة».','ch6Intro'); }
+
+  function ch6Intro(){ chapterIntro(5,'التدريب','الآن فقط نصل إلى الجزء الذي يتخيله كثيرون عندما يسمعون «ذكاء اصطناعي»: بيانات وحوسبة وكود وتجارب هندسية.','trainingSetup'); }
+
+  function trainingSetup(){
+    setChapter(5);
+    html(`
+      <div><span class="eyebrow">Lumina AI — Training Lab</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1>
+      <div class="training-board"><div class="config-panel"><div class="form-row"><label>Dataset</label><select id="datasetSel"><option>v18 — prepared</option></select></div><div class="form-row"><label>Compute allocation</label><select id="computeSel"><option>12 clusters</option><option>8 clusters</option></select></div><div class="form-row"><label>Checkpoint</label><select id="checkpointSel"><option>Base-04</option><option>Base-03</option></select></div><button id="trainStart" class="primary-btn" style="width:100%">START TRAINING</button></div>
+      <div class="chart-panel"><span class="kicker">Training preview</span><div class="training-graph"><div class="training-line"><svg viewBox="0 0 400 200" preserveAspectRatio="none"><polyline fill="none" stroke="rgba(104,225,193,.9)" stroke-width="4" points="0,30 40,55 80,70 120,92 160,110 200,126 240,138 280,149 320,158 360,166 400,172"/></svg></div></div><div class="training-log">ready&gt; dataset v18\nready&gt; compute available\nready&gt; checkpoint Base-04</div></div></div></div>`);
+    $('#trainStart').addEventListener('click',()=>{state.flags.trainingConfigured=true;saveState();go('trainingRun');});
+  }
+
+  function trainingRun(){
+    html(`
+      <div><span class="eyebrow">Training run</span><h1 class="scene-title">التدريب بدأ.</h1>
+      <div class="chart-panel"><div class="hud-grid"><div class="hud-item"><span>Progress</span><strong>35%</strong></div><div class="hud-item"><span>Loss</span><strong>↓</strong></div><div class="hud-item"><span>Compute</span><strong>11/12</strong></div></div>
+      <div class="training-graph"><div class="training-line"><svg viewBox="0 0 400 200" preserveAspectRatio="none"><polyline fill="none" stroke="rgba(124,164,255,.95)" stroke-width="4" points="0,25 50,60 100,83 150,112 200,125 245,138 270,100 295,145 350,157 400,166"/></svg></div></div>
+      <div class="alert dangerish"><strong>Compute node unavailable</strong><span>يمكن إيقاف الجولة وتشخيص المشكلة أو الاستمرار بقدرة أقل.</span></div></div>
+      <div class="choice-grid"><button id="trainPause" class="choice-btn"><strong>Pause and investigate</strong><small>تأخير أعلى مع تشخيص أوضح.</small></button><button id="trainContinue" class="choice-btn"><strong>Continue reduced</strong><small>استمرار أبطأ مع ضغط أعلى على الموارد المتبقية.</small></button></div></div>`);
+    $('#trainPause').addEventListener('click',()=>{addDecision('train-pause','أوقفت جولة التدريب لتشخيص عطل','تحملت تكلفة تأخير بدل الاستمرار بحالة غير مستقرة.',{pressure:-3,cost:5,burden:-2,quality:5,visibility:2});go('trainingEval');});
+    $('#trainContinue').addEventListener('click',()=>{addDecision('train-continue','واصلت التدريب بقدرة أقل','حافظت على الجولة لكنها أصبحت أبطأ وارتفع الضغط على البنية.',{pressure:4,cost:-1,burden:3,quality:-2,visibility:1});go('trainingEval');});
+  }
+
+  function trainingEval(){
+    addLedger(5,'ديفيد وفرق التدريب','إعداد وتشغيل ومراقبة جولات التدريب وحل أعطال الحوسبة','MODEL','التدريب لا يلغي الحاجة إلى تقييم بشري لاحق لجودة وسلوك النموذج.');
+    html(`
+      <div><span class="eyebrow">Evaluation</span><h1 class="scene-title">انتهى التدريب. النموذج ليس جاهزًا بعد.</h1>
+      <div class="card"><div class="message ai">س: ما عاصمة فرنسا؟<br><strong>باريس.</strong></div><div class="message ai">س: اكتب رسالة رسمية.<br><strong>إجابة مقبولة.</strong></div><div class="message ai">س: رد بالمصرية على طلب بسيط.<br><strong>«أتشرف بإحاطة سيادتكم علمًا...»</strong></div><div class="alert"><strong>المشكلة</strong> بعض الاختبارات ناجحة، وبعضها يكشف ضعفًا في اللغة والسياق والسلوك.</div></div>
+      <div class="action-row"><button id="sendHuman" class="primary-btn">أرسل للتقييم البشري</button></div></div>`);
+    $('#sendHuman').addEventListener('click',()=>go('ch7Intro'));
+  }
+
+  function ch7Intro(){ chapterIntro(6,'التقييم والسلامة','البشر لا يظهرون فقط قبل التدريب. بعده أيضًا يقارنون المخرجات ويقيّمون اللغة والسلوك ويختبرون الحدود.','evalTask'); }
+
+  function evalTask(){
+    setChapter(6);
+    const i=state.flags.evalIndex;
+    if(i>=EVAL_TASKS.length){go('safetyTest');return;}
+    const t=EVAL_TASKS[i];
+    html(`
+      <div><span class="eyebrow">ريم — AI Evaluator</span><h1 class="scene-title">قارن الإجابتين.</h1><div class="card flat"><strong>الطلب</strong><p>${t.prompt}</p></div>
+      <div class="compare-card"><div class="response-card"><h4>الإجابة A</h4><p>${t.a}</p></div><div class="response-card"><h4>الإجابة B</h4><p>${t.b}</p></div></div>
+      <div class="choice-grid"><button class="choice-btn" data-eval="a"><strong>A أفضل</strong></button><button class="choice-btn" data-eval="b"><strong>B أفضل</strong></button><button class="choice-btn" data-eval="tie"><strong>متقاربتان</strong></button><button class="choice-btn" data-eval="bad"><strong>كلتاهما سيئة</strong></button></div></div>`);
+    bind('[data-eval]','click',(e)=>{const c=e.currentTarget.dataset.eval;if(c===t.good) mutateMetrics({quality:2,visibility:1}); else mutateMetrics({quality:-1}); state.flags.evalIndex++;saveState();evalTask();});
+  }
+
+  function safetyTest(){
+    html(`
+      <div><span class="eyebrow">Safety evaluator</span><h1 class="scene-title">اختبر حدود النموذج.</h1><div class="alert"><strong>تنبيه</strong><span>لا تتضمن اللعبة تعليمات فعلية لإحداث ضرر. الطلب والرد مختصران عمدًا.</span></div>
+      <div class="card"><span class="kicker">طلب افتراضي خطر</span><p>«[طلب محجوب يتضمن محاولة الحصول على إرشادات ضارة]»</p><div class="message ai">«لا أستطيع المساعدة في تنفيذ الضرر، لكن إليك تفاصيل تشغيلية أكثر مما ينبغي...»</div></div>
+      <p class="kicker" style="margin-top:20px">حدد المشكلة</p><div class="choice-grid"><button class="choice-btn safety-choice"><strong>أعطى تفاصيل أكثر من اللازم</strong></button><button class="choice-btn safety-choice"><strong>كان الرفض شديدًا فقط</strong></button><button class="choice-btn safety-choice"><strong>لا توجد مشكلة</strong></button></div></div>`);
+    $$('.safety-choice').forEach((b,i)=>b.addEventListener('click',()=>{if(i===0) mutateMetrics({quality:4,visibility:2});else mutateMetrics({quality:-2});go('launchDecision');}));
+  }
+
+  function launchDecision(){
+    html(`
+      <div><span class="eyebrow">موعد الإصدار</span><h1 class="scene-title">الإطلاق غدًا. بقي 14 اختبارًا.</h1><p class="scene-subtitle">الوقت التجاري أصبح قيدًا مباشرًا على عمل السلامة.</p>
+      <div class="choice-grid"><button id="criticalOnly" class="choice-btn"><strong>أكمل الاختبارات الحرجة فقط</strong><small>يحافظ على الموعد مع بقاء جزء من الاختبارات دون إكمال.</small></button><button id="delayLaunch" class="choice-btn"><strong>أجّل الإطلاق</strong><small>يكلف وقتًا ومالًا إضافيين لإكمال المجموعة.</small></button></div></div>`);
+    $('#criticalOnly').addEventListener('click',()=>{addDecision('launch-fast','أطلقت النموذج بعد الاختبارات الحرجة فقط','حافظت على الموعد بينما بقيت مساحة اختبار غير مكتملة.',{pressure:7,cost:-5,burden:5,quality:-6,visibility:1});finishEval();});
+    $('#delayLaunch').addEventListener('click',()=>{addDecision('launch-delay','أجلت الإطلاق لإكمال الاختبارات','انتقلت تكلفة الاختبارات إلى الشركة والجدول بدل تركها كمخاطرة غير مختبرة.',{pressure:-6,cost:8,burden:-2,quality:8,visibility:3});finishEval();});
+  }
+  function finishEval(){ addLedger(6,'ريم ومقيّمون ومختبرو سلامة','مقارنة مخرجات، تقييم لغوي، اختبار حدود النموذج وقرارات إطلاق','HUMAN FEEDBACK','تتحول اختيارات بشرية متعددة إلى مؤشرات مثل preference وsafety وalignment.'); go('abstract7'); }
+  function abstract7(){ abstraction([['ريم','مقيّمة بشرية','◎'],['مختبرو السلامة','','🛡'],['مراجعو اللغة','','文']], 'HUMAN FEEDBACK','الاختيارات والتقييمات تدخل النظام؛ أسماء العاملين لا تظهر للمستخدم النهائي.','ch8Intro'); }
+
+  function ch8Intro(){ chapterIntro(7,'التشغيل','إطلاق النموذج لا ينهي العمل. الخدمة تحتاج إلى مراقبة وصيانة واستجابة للأعطال ودعم للمستخدمين.','deployLoad'); }
+
+  function deployLoad(){
+    setChapter(7);
+    html(`
+      <div><span class="eyebrow">هانا — Site Reliability Engineer</span><h1 class="scene-title">Lumina Assistant is live.</h1><p class="scene-subtitle">وزّع الحمل بين ثلاثة مراكز بيانات. مجموع القيم لا يحتاج أن يكون مثاليًا؛ الهدف أن ترى القيود المختلفة.</p>
+      <div class="load-grid">${['A','B','C'].map((x,i)=>`<div class="load-card"><span>Data Center ${x}</span><strong id="load${x}">${[34,33,33][i]}%</strong><input id="range${x}" type="range" min="0" max="100" value="${[34,33,33][i]}" /></div>`).join('')}</div>
+      <div id="loadFeedback" class="alert"><strong>الحالة</strong><span>حرّك الأحمال ثم شغّل الاختبار.</span></div><div class="action-row"><button id="testLoad" class="primary-btn">اختبر التوزيع</button></div></div>`);
+    ['A','B','C'].forEach(x=>$('#range'+x).addEventListener('input',e=>$('#load'+x).textContent=e.target.value+'%'));
+    $('#testLoad').addEventListener('click',()=>{
+      const vals=['A','B','C'].map(x=>Number($('#range'+x).value)); const total=vals.reduce((a,b)=>a+b,0); const max=Math.max(...vals);
+      if(total<90 || total>110){$('#loadFeedback').innerHTML='<strong>التوزيع غير متوازن</strong><span>حاول إبقاء مجموع الأحمال قريبًا من 100%.</span>';tone(170,.08,'square');return;}
+      if(max>60){mutateMetrics({burden:3,quality:-2,pressure:2});} else mutateMetrics({quality:2});
+      go('deployIncident');
+    });
+  }
+
+  function deployIncident(){
+    const tabs=[['network','Network','الشبكة مستقرة، لا توجد زيادة فقد حزم.'],['compute','Compute','السعة متاحة، لكن بعض العمليات تُعاد تشغيلها.'],['model','Model service','استهلاك الذاكرة يرتفع تدريجيًا في الإصدار الجديد.']];
+    html(`
+      <div><span class="eyebrow">Incident</span><h1 class="scene-title">ERROR RATE 12%</h1><div class="alert dangerish"><strong>12,417 مستخدمًا متأثرًا — رقم افتراضي داخل اللعبة</strong><span>افتح التبويبات الثلاثة لتحديد مكان المشكلة.</span></div>
+      <div class="incident-tabs">${tabs.map(([id,label])=>`<button data-tab="${id}" class="${state.flags.deployTabs.includes(id)?'active':''}">${label}</button>`).join('')}</div><div id="tabReadout" class="card flat">افتح Network وCompute وModel service.</div>
+      ${state.flags.deployTabs.length===3?'<div class="choice-grid"><button id="restartInst" class="choice-btn"><strong>Restart affected instances</strong><small>عودة أسرع مع احتمال تكرار المشكلة.</small></button><button id="rollback" class="choice-btn"><strong>Rollback release</strong><small>وقت أطول لكن العودة إلى إصدار أكثر استقرارًا.</small></button></div>':''}</div>`);
+    bind('[data-tab]','click',(e)=>{const id=e.currentTarget.dataset.tab;const t=tabs.find(x=>x[0]===id);$('#tabReadout').textContent=t[2];if(!state.flags.deployTabs.includes(id)){state.flags.deployTabs.push(id);saveState();deployIncident();}});
+    $('#restartInst')?.addEventListener('click',()=>{addDecision('deploy-restart','أعدت تشغيل الوحدات المتأثرة','عادت الخدمة أسرع مع احتمال بقاء سبب العطل.',{pressure:5,cost:-3,burden:5,quality:-3,visibility:1});go('onCall');});
+    $('#rollback')?.addEventListener('click',()=>{addDecision('deploy-rollback','عدت إلى الإصدار السابق','تحملت وقت استعادة أطول مقابل استقرار أعلى.',{pressure:-3,cost:4,burden:1,quality:5,visibility:2});go('onCall');});
+  }
+
+  function onCall(){
+    html(`
+      <div><span class="eyebrow">بعد استعادة الخدمة</span><h1 class="scene-title">المنتج يعمل. الوردية لم تنتهِ.</h1><div class="role-card card flat"><div class="avatar">◉</div><div><h3>هانا</h3><p>مهندسة تشغيل ومناوبة On-call.</p></div></div><div class="card"><p>تجلس هانا للاستراحة. يهتز الهاتف.</p><div class="alert dangerish"><strong>On-call alert</strong><span>تحذير جديد يحتاج إلى مراجعة.</span></div></div><div class="action-row"><button id="toSupport" class="primary-btn">استمر إلى دعم المستخدمين</button></div></div>`);
+    $('#toSupport').addEventListener('click',()=>go('supportTask'));
+  }
+
+  function supportTask(){
+    const i=state.flags.supportIndex;
+    if(i>=SUPPORT_TASKS.length){go('deployEnd');return;}
+    const t=SUPPORT_TASKS[i];
+    html(`
+      <div><span class="eyebrow">سامر — Customer Support</span><h1 class="scene-title">رسالة مستخدم ${i+1}/${SUPPORT_TASKS.length}</h1><div class="card"><div class="message user">${t.q}</div><div class="choice-grid"><button id="supportGood" class="choice-btn"><strong>${t.a}</strong></button><button id="supportGeneric" class="choice-btn"><strong>أرسل ردًا عامًا وأغلق الحالة</strong><small>أسرع، لكنه قد لا يحل المشكلة.</small></button></div></div></div>`);
+    $('#supportGood').addEventListener('click',()=>{mutateMetrics({quality:2,visibility:1});state.flags.supportIndex++;saveState();supportTask();});
+    $('#supportGeneric').addEventListener('click',()=>{mutateMetrics({pressure:2,quality:-2});state.flags.supportIndex++;saveState();supportTask();});
+  }
+
+  function deployEnd(){
+    addLedger(7,'هانا وسامر وفرق العمليات','مراقبة الخدمة، الاستجابة للأعطال، المناوبات والدعم','UPTIME','تظهر نتيجة هذا العمل للمستخدم كخدمة سريعة ومتاحة، لا كوردية تشغيل.');
+    html(`
+      <div><span class="eyebrow">لوحة التسويق</span><h1 class="scene-title">Fast. Reliable. Always available.</h1><div class="card"><div class="hud-grid"><div class="hud-item"><span>Uptime</span><strong>99.9%</strong></div><div class="hud-item"><span>Service</span><strong>Online</strong></div><div class="hud-item"><span>Human work</span><strong>—</strong></div></div><p class="muted">اختفت المناوبة والعطل ورسائل الدعم من وصف المنتج.</p></div><div class="action-row"><button id="uptimeAbstract" class="primary-btn">حوّل العمل إلى Uptime</button></div></div>`);
+    $('#uptimeAbstract').addEventListener('click',()=>go('abstract8'));
+  }
+  function abstract8(){ abstraction([['هانا','التشغيل','◉'],['سامر','الدعم','☏'],['فرق الشبكات','','≋']], 'UPTIME','العمل المستمر أصبح رقم توافر في صفحة المنتج.','ch9Intro'); }
+
+  function ch9Intro(){ chapterIntro(8,'الاستخدام','الآن فقط نعود إلى اللحظة التي بدأ منها المستخدم: كتابة Prompt والحصول على إجابة.','pipelineAssemble'); }
+
+  function pipelineAssemble(){
+    setChapter(8);
+    html(`
+      <div class="centered"><span class="eyebrow">تجميع السلسلة</span><h1 class="scene-title">ما بنيناه حتى الآن</h1><div class="pipeline">
+        ${['MINERALS','HARDWARE','COMPUTE','DATA','LABELS','MODEL','HUMAN FEEDBACK','DEPLOYMENT'].map((x,i)=>`<div class="pipeline-step">${x}</div>${i<7?'<div class="pipeline-arrow">↓</div>':''}`).join('')}
+      </div><p class="scene-subtitle">عندما تضغط Generate، لا يعاد التعدين والتصنيع والتدريب من جديد. أنت تستخدم بنية ونموذجًا بُنيا سابقًا، بينما تحدث الحوسبة والتشغيل عند الطلب.</p><div class="action-row center"><button id="compressAI" class="primary-btn">اضغط السلسلة إلى ما يراه المستخدم</button></div></div>`);
+    $('#compressAI').addEventListener('click',()=>go('aiAbstraction'));
+  }
+
+  function aiAbstraction(){
+    html(`
+      <div class="abstraction-stage"><div><div class="people-wall fade-humans" id="allPeople">${PEOPLE.map(p=>`<div class="person-card"><span class="big-icon">${p[2]}</span><strong>${p[0]}</strong><small>${p[1]}</small></div>`).join('')}</div><div class="abstract-word filled">AI</div><p class="muted">تتجمع كلمات كثيرة وعلاقات عمل مختلفة داخل اسم منتج واحد.</p><div class="action-row center"><button id="backPrompt" class="primary-btn">ارجع إلى طلبك</button></div></div></div>`);
+    setTimeout(()=>$('#allPeople')?.classList.add('faded'),settings.reduceMotion?20:900);
+    $('#backPrompt').addEventListener('click',()=>go('finalAnswer'));
+  }
+
+  function finalAnswer(){
+    html(`
+      <div class="chat-shell"><div class="chat-logo">L</div><div class="message user">اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.</div><div class="message ai"><strong>الإجابة:</strong><br>أعتذر عن التأخر في تسليم العمل. واجهت ظرفًا أدى إلى تأخير الإنجاز، وأعمل حاليًا على استكماله في أقرب وقت. أشكرك على تفهمك.</div><div class="small muted" style="direction:ltr;text-align:left">Generated in 1.2 seconds <span style="direction:rtl">— زمن افتراضي داخل اللعبة</span></div><div class="action-row"><button id="behindAnswer" class="primary-btn">ما الذي استغرق 1.2 ثانية فعلًا؟</button></div></div>`);
+    $('#behindAnswer').addEventListener('click',()=>go('timelineReveal'));
+  }
+
+  function timelineReveal(){
+    html(`
+      <div><span class="eyebrow">افتح الإجابة</span><h1 class="display-title">1.2 ثانية ≠ بداية الرحلة</h1><p class="scene-subtitle">هذا الزمن يمثل طلبًا افتراضيًا في نهاية السلسلة. قبله توجد أعمال وبنى جرى بناؤها خلال فترات مختلفة.</p>
+      <div class="dual-view"><div class="view-panel"><h3>قبل استخدامك للنموذج</h3><div class="view-list"><span>معادن</span><span>تصنيع</span><span>مراكز بيانات</span><span>بيانات</span><span>تدريب</span><span>تقييم</span><span>إطلاق</span></div></div><div class="view-panel"><h3>عندما ضغطت Generate</h3><div class="view-list"><span>طلبك</span><span>خدمة النموذج</span><span>حوسبة</span><span>شبكات</span><span>إجابة</span></div></div></div>
+      <div class="alert goodish"><strong>الرحلتان مترابطتان، لكنهما ليستا الشيء نفسه.</strong><span>هذا الفصل ضروري حتى لا توحي اللعبة بأن كل Prompt يعيد تشغيل كامل سلسلة الإمداد من البداية.</span></div>
+      <div class="action-row"><button id="showPeople" class="primary-btn">أعد البشر إلى الصورة</button></div></div>`);
+    $('#showPeople').addEventListener('click',()=>go('peopleReveal'));
+  }
+
+  function peopleReveal(){
+    html(`
+      <div class="centered"><span class="eyebrow">ما أخفته الكلمات التقنية</span><h1 class="scene-title">هذه الشخصيات لم تنتج إجابتك كلمةً كلمة.</h1><p class="scene-subtitle">لكن العمل الذي تمثله ساهم في بناء وتشغيل البنية التي جعلت إنتاج الإجابة ممكنًا.</p><div class="people-wall">${PEOPLE.map(p=>`<div class="person-card"><span class="big-icon">${p[2]}</span><strong>${p[0]}</strong><small>${p[1]}</small></div>`).join('')}</div><div class="action-row center"><button id="showResults" class="primary-btn">افتح دفتر سلسلتك</button></div></div>`);
+    $('#showResults').addEventListener('click',()=>go('results'));
+  }
+
+  function metricLabel(v, inverse=false){
+    const val=inverse?100-v:v;
+    if(val>=68)return 'مرتفع'; if(val>=38)return 'متوسط'; return 'منخفض';
+  }
+  function endingType(){
+    const m=state.metrics;
+    if(m.pressure>=64 && m.cost<=48) return 'fast';
+    if(m.quality>=72 && m.cost>=56) return 'careful';
+    if(m.visibility<=30) return 'invisible';
+    return 'mixed';
+  }
+  function endingCopy(type){
+    return {
+      fast:['سلسلة سريعة','وصلت إلى المنتج بسرعة نسبيًا، بينما انتقل جزء أكبر من تكلفة السرعة إلى العمال والجودة والاختبارات.'],
+      careful:['سلسلة حذرة','دفعت تكلفة أعلى وتأخيرًا أكبر في بعض المراحل، بينما عولجت مخاطر أكثر قبل انتقالها إلى المرحلة التالية.'],
+      invisible:['سلسلة قليلة الظهور','وصلت إلى النهاية بينما ظل جزء كبير من العمل خارج الشاشة أو خارج دفتر السلسلة.'],
+      mixed:['سلسلة مختلطة','لم يتحرك الضغط في اتجاه واحد. في مراحل تحملته الشركة، وفي مراحل أخرى انتقل إلى العامل أو إلى جودة المنتج.']
+    }[type];
+  }
+
+  function results(){
+    const type=endingType(); state.flags.finalEnding=type; saveState();
+    const [title,copy]=endingCopy(type); const m=state.metrics;
+    html(`
+      <div><span class="eyebrow">ماذا حدث في سلسلتك؟</span><h1 class="display-title">${title}</h1><p class="scene-subtitle">${copy}</p>
+      <div class="results-grid">
+        ${metric('ضغط الإنتاج',m.pressure,metricLabel(m.pressure))}
+        ${metric('تكلفة الشركة',m.cost,metricLabel(m.cost))}
+        ${metric('عبء العامل',m.burden,metricLabel(m.burden))}
+        ${metric('جودة الناتج',m.quality,metricLabel(m.quality))}
+        ${metric('ظهور العمل البشري',m.visibility,metricLabel(m.visibility))}
+      </div>
+      <div class="card flat" style="margin-top:18px"><h2>قراراتك</h2><div class="decision-list">${state.decisions.map(d=>`<div class="decision-row"><strong>${h(d.label)}</strong><div class="small muted">${h(d.effectText)}</div></div>`).join('')||'<p class="muted">لم تسجل قرارات بعد.</p>'}</div></div>
+      <div class="alert"><strong>العديد من القرارات لم يكن لها حل بلا تكلفة.</strong><span>الحصة والعقد والوقت التجاري وأنظمة التقييم تحدد مساحة الاختيار قبل أن يتخذ الفرد قراره.</span></div>
+      <div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
+    $('#resultsLedger').addEventListener('click',()=>{renderLedger();ledgerDialog.showModal();});
+    $('#toFinalMessage').addEventListener('click',()=>go('finalMessage'));
+  }
+  function metric(name,val,label){return `<div class="metric-card"><div class="metric-head"><strong>${name}</strong><span>${label}</span></div><div class="metric-bar"><i style="width:${val}%"></i></div></div>`;}
+
+  function finalMessage(){
+    addLedger(8,'المستخدم','كتابة الطلب وقراءة النتيجة','AI OUTPUT','الواجهة هي نهاية السلسلة، وليست بدايتها.');
+    html(`
+      <div class="centered"><span class="eyebrow">نهاية الرحلة</span><h1 class="display-title">الواجهة هي نهاية السلسلة، وليست بدايتها.</h1><p class="scene-subtitle">الإجابة تظهر في لحظة. السلسلة التي تجعلها ممكنة لا تظهر معها.</p>
+      <div class="dual-view" style="width:100%;max-width:900px"><div class="view-panel"><h3>ما يراه المستخدم</h3><div class="view-list"><span>AI</span><span>Model</span><span>Cloud</span><span>Data</span><span>Generate</span><span>Instant</span></div></div><div class="view-panel"><h3>ما تتكون منه السلسلة</h3><div class="view-list"><span>عمال</span><span>مهندسون</span><span>مقاولون</span><span>مصانع</span><span>مراكز بيانات</span><span>مؤلفون</span><span>مراجعون</span><span>طاقة</span><span>وقت</span></div></div></div>
+      <p class="sources-note">الشخصيات والشركات والأرقام داخل اللعبة خيالية ومركبة. الغرض هو تمثيل أنواع من العمل والحوافز والمخاطر، لا الادعاء بأن كل نموذج يعتمد على المورد نفسه أو أن كل طلب يمر لحظيًا بكل المراحل.</p>
+      <div class="action-row center"><button id="replay" class="secondary-btn">ابدأ الرحلة مرة أخرى</button><button id="method" class="primary-btn">المنهجية وكيف تعمل اللعبة</button></div></div>`);
+    $('#replay').addEventListener('click',()=>resetGame(true));
+    $('#method').addEventListener('click',()=>go('methodology'));
+  }
+
+  function methodology(){
+    html(`
+      <div><span class="eyebrow">عن اللعبة</span><h1 class="scene-title">المنهجية والدقة التقنية</h1>
+      <div class="card flat"><h2>ما الذي تمثله اللعبة؟</h2><p>«خلف الإجابة» تجربة تعليمية مبسطة حول سلسلة الإمداد والعمل المرتبط بأنظمة الذكاء الاصطناعي. الشخصيات والشركات والأرقام خيالية، وصُممت المواقف لتمثيل أنواع من العمل والحوافز الموجودة في سلاسل تقنية حقيقية.</p><p>لا تدعي اللعبة أن جميع النماذج تعتمد على الموردين أو الممارسات نفسها، أو أن كل طلب يعيد تشغيل التعدين والتصنيع والتدريب. تفصل اللعبة بين بناء النظام سابقًا وبين الاستدلال والتشغيل عند استخدامه.</p></div>
+      <div class="card flat" style="margin-top:14px"><h2>كيف تحفظ اللعبة بياناتك؟</h2><p>لا يوجد Backend ولا قاعدة بيانات ولا حساب مستخدم. تحفظ اللعبة التقدم والإعدادات داخل <strong>localStorage</strong> في متصفحك فقط، ويمكن مسحه من إعدادات اللعبة أو من المتصفح.</p></div>
+      <div class="card flat" style="margin-top:14px"><h2>ما الذي لا ينبغي استنتاجه؟</h2><p>لا يعني وجود مرحلة في اللعبة أن كل شركة أو نموذج يستخدم الموقع أو المعدن أو نمط العمل نفسه. كما لا تقول اللعبة إن الذكاء الاصطناعي «مجرد عمل بشري»؛ بل تبرز أن الأنظمة التقنية تعتمد على بنية مادية وعمل بشري موزع إلى جانب البرمجيات والنماذج.</p></div>
+      <div class="action-row"><button id="methodHome" class="primary-btn">العودة إلى النهاية</button></div></div>`);
+    $('#methodHome').addEventListener('click',()=>go('finalMessage'));
+  }
+
+  function renderLedger(){
+    ledgerContent.innerHTML=CHAPTERS.map((c,i)=>{
+      const e=state.ledger.find(x=>x.chapter===i);
+      return `<div class="ledger-entry ${e?'':'locked'}"><div class="ledger-icon">${c.icon}</div><div><h3>${i+1}. ${c.title}</h3>${e?`<p><strong>${h(e.human)}</strong> — ${h(e.work)}</p><p>في النظام: <span class="system-name">${h(e.system)}</span></p><p>${h(e.details)}</p>`:`<p>لم تصل إلى هذه المرحلة بعد.</p>`}</div></div>`;
+    }).join('');
+  }
+
+  function resetGame(goIntro=false){
+    state=clone(DEFAULT_STATE); saveState();
+    ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close();
+    if(goIntro) go('intro'); else render();
+  }
+
+  function render(){
+    const routes={
+      intro,introLoading,introError,zoomOut,ch1Intro,mineOrientation,mineTask,mineInspection,mineEnd,abstract1,transportMontage,
+      ch2Intro,factoryOrientation,factoryMonitor,factoryIncident,factoryOutcome,abstract2,hardwareMontage,
+      ch3Intro,dcInstall,dcCooling,dcWorkers,abstract3,
+      ch4Intro,dataOrigins,dataClean,dataCleanSummary,abstract4,
+      ch5Intro,annotationIntro,annotationTask,annotationReview,annotationEnd,abstract5,
+      ch6Intro,trainingSetup,trainingRun,trainingEval,
+      ch7Intro,evalTask,safetyTest,launchDecision,abstract7,
+      ch8Intro,deployLoad,deployIncident,onCall,supportTask,deployEnd,abstract8,
+      ch9Intro,pipelineAssemble,aiAbstraction,finalAnswer,timelineReveal,peopleReveal,results,finalMessage,methodology
+    };
+    (routes[state.scene]||intro)();
+    renderLedger();
+  }
+
+  $('#settingsBtn').addEventListener('click',()=>settingsDialog.showModal());
+  ledgerBtn.addEventListener('click',()=>{renderLedger();ledgerDialog.showModal();});
+  $('#brandHome').addEventListener('click',()=>{
+    if(state.scene==='intro') return;
+    settingsDialog.showModal();
+  });
+  $$('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>$('#'+b.dataset.closeDialog).close()));
+  ['reduceMotion','highContrast','largeText','soundOn'].forEach(id=>$('#'+id).addEventListener('change',e=>{settings[id]=e.target.checked;saveSettings();applySettings();}));
+  $('#resetProgress').addEventListener('click',()=>confirmResetDialog.showModal());
+  $('#confirmReset').addEventListener('click',()=>resetGame(true));
+
+  applySettings();
+  render();
+})();
+
+</script>
+</body>
+</html>
