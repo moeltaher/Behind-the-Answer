@@ -61,7 +61,7 @@ export const CHARACTERS = {
   }
 };
 
-export const STORY_CHARACTER_IDS = [
+const STORY_CHARACTER_IDS = [
   'moussa',
   'layla',
   'carlos',
@@ -73,10 +73,10 @@ export const STORY_CHARACTER_IDS = [
   'samer'
 ];
 
-export const SCENE_CHARACTER = {
+const SCENE_CHARACTER = {
   intro: 'user',
   introLoading: 'user',
-  introError: 'user',
+  introExplain: 'user',
   finalAnswer: 'user',
 
   mineOrientation: 'moussa',
