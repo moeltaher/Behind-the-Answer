@@ -21,12 +21,12 @@ const SUPPORTING_ACTORS = {
 };
 
 export const DATACENTER_WORKERS = [
-  { id: 'clean', actorId: 'cleaner', icon: '🧹' },
-  { id: 'electric', actorId: 'electricalEngineer', icon: '⚡' },
-  { id: 'security', actorId: 'securityWorker', icon: '🛡' },
-  { id: 'cool', actorId: 'coolingTech', icon: '❄' },
+  { id: 'clean', actorId: 'cleaner', icon: '⌁' },
+  { id: 'electric', actorId: 'electricalEngineer', icon: 'ϟ' },
+  { id: 'security', actorId: 'securityWorker', icon: '◇' },
+  { id: 'cool', actorId: 'coolingTech', icon: '◫' },
   { id: 'cable', actorId: 'cableTech', icon: '≋' },
-  { id: 'network', actorId: 'networkOperator', icon: '◫' }
+  { id: 'network', actorId: 'networkOperator', icon: '◎' }
 ];
 
 export function supportingActor(id) {
