@@ -11,13 +11,19 @@
 
 @media (max-width: 620px) {
   :root { --radius:18px; }
-  .topbar { padding-inline:12px; }
+  .topbar { padding:8px 12px; row-gap:3px; }
   .brand strong { font-size:.86rem; }
   .brand small { display:none; }
-  .brand-mark { width:34px; height:34px; }
-  .scene { padding-inline:14px; padding-bottom:36px; }
+  .brand-mark { width:32px; height:32px; font-size:20px; }
+  .top-actions { gap:5px; }
+  .icon-btn { min-height:36px; padding:6px 9px; }
+  .journey-progress { margin-top:0; }
+  .progress-copy { font-size:.72rem; margin-bottom:3px; }
+  .progress-track { height:4px; }
+  .mini-journey { display:none; }
+  .scene { min-height:calc(100dvh - 82px); padding-inline:14px; padding-top:20px; padding-bottom:72px; }
   .chat-shell { border-radius:22px; padding:18px; }
-  .display-title { font-size:clamp(2.4rem,14vw,4.3rem); }
+  .display-title { font-size:clamp(2.2rem,12vw,3.8rem); }
   .hud-grid { grid-template-columns:1fr 1fr; }
   .hud-grid .hud-item:last-child { grid-column:1 / -1; }
   .work-area, .worker-map, .load-grid { grid-template-columns:1fr; }
@@ -31,8 +37,12 @@
   .annotation-tags { grid-template-columns:1fr 1fr; }
   .people-wall { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
   .person-card { width:auto; }
-  .persistent-footer { display:none!important; }
+  .persistent-footer { display:block!important; position:fixed; right:0; left:0; bottom:0; z-index:35; padding:5px 12px; }
+  .waiting-prompt { font-size:.62rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; text-align:center; }
+  .waiting-prompt span { display:none; }
+  .waiting-prompt strong { display:block; overflow:hidden; text-overflow:ellipsis; }
   .modal { width:calc(100vw - 16px); max-height:90dvh; border-radius:18px; }
+  .learning-grid--essential { grid-template-columns:1fr; }
 }
 
 @media (max-width: 390px) {

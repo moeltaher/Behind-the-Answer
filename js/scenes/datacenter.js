@@ -1,12 +1,69 @@
-export function createDatacenterRoutes(ctx){
-  const $=ctx.$, state=ctx.state;
-  const {setChapter,chapterIntro,html,go,bind,tone,saveState,mutateMetrics,addDecision,addLedger}=ctx;
-  const abstraction=(humans,word,line,next)=>ctx.abstraction(humans,word,line,next);
-  const monitorTile=ctx.monitorTile;
-  function ch3Intro(){chapterIntro(2,'','','dcInstall');}
-  function dcInstall(){setChapter(2);const steps=[['rack','أدخل الخادم في الخزانة'],['power','وصّل الطاقة'],['network','وصّل الشبكة'],['register','سجّل الجهاز في نظام التشغيل']];html(`<div><span class="eyebrow">مركز بيانات افتراضي</span><h1 class="scene-title">أنت الآن كارلوس، فني بنية تحتية.</h1><div class="role-card card flat"><div class="avatar">▥</div><div><h3>كارلوس</h3><p>يركّب الخوادم ويصلها بالطاقة والشبكة داخل مركز البيانات.</p></div></div><div class="reality-note"><strong>ما هو الخادم؟</strong> حاسوب قوي مصمم للعمل المستمر. وعندما توجد أعداد كبيرة منه داخل مبنى واحد يسمى المكان «مركز بيانات».</div><div class="rack-board"><div class="server-rack">${Array.from({length:8},(_,i)=>`<div class="server-unit"><span>وحدة ${i+1}</span><span class="server-lights"><i></i><i></i><i></i></span></div>`).join('')}</div><div class="connect-panel">${steps.map(([id,label],i)=>`<button class="connect-step ${state.flags.serverSteps.includes(id)?'done':''}" data-server-step="${id}" data-index="${i}"><span>${label}</span><span>${state.flags.serverSteps.includes(id)?'✓':'→'}</span></button>`).join('')}</div></div>${state.flags.serverSteps.length===4?'<div class="action-row"><button id="bootServer" class="primary-btn">شغّل اختبار الخادم</button></div>':''}</div>`);bind('[data-server-step]','click',e=>{const idx=Number(e.currentTarget.dataset.index),id=e.currentTarget.dataset.serverStep;if(idx!==state.flags.serverSteps.length){tone(170,.06,'square');return;}state.flags.serverSteps.push(id);saveState();dcInstall();});$('#bootServer')?.addEventListener('click',()=>go('dcCooling'));}
-  function dcCooling(){html(`<div><span class="eyebrow">إنذار التبريد</span><h1 class="scene-title">وحدة التبريد رقم 3 لا تستجيب.</h1><p class="scene-subtitle">الخوادم تنتج حرارة كبيرة. إذا لم تعمل أنظمة التبريد يمكن أن تتعطل الأجهزة أو تضطر الشركة إلى خفض الحمل.</p><div class="monitor"><div class="monitor-tile"><span>حرارة القاعة</span><strong>33° م ↑</strong><div class="bar"><i style="width:88%;background:var(--danger)"></i></div></div>${monitorTile('القدرة الحاسوبية المتاحة','92%',72)}${monitorTile('الشبكة','مستقرة',70)}${monitorTile('طلبات المستخدمين','تنتظر',66)}</div><div class="alert"><strong>الإدارة تنتظر تشغيل المجموعة الجديدة.</strong><span>يمكن الحفاظ على الخدمة بنقل الحمل، أو إيقاف المجموعة المتأثرة حتى إصلاح التبريد.</span></div><div class="choice-grid"><button id="dcMove" class="choice-btn"><strong>انقل الحمل إلى قاعة أخرى</strong><small>يحافظ على الطلبات لكنه يرفع الضغط الحراري في مكان آخر.</small></button><button id="dcStop" class="choice-btn"><strong>أوقف المجموعة المتأثرة</strong><small>تقل القدرة المتاحة ويصبح وقت التوقف ظاهرًا.</small></button></div></div>`);$('#dcMove').addEventListener('click',()=>{addDecision('dc-move','نقلت حمل مركز البيانات','حافظت على الخدمة عبر نقل الضغط إلى بنية أخرى.',{pressure:5,cost:-2,burden:5,quality:-2,visibility:1});go('dcWorkers');});$('#dcStop').addEventListener('click',()=>{addDecision('dc-stop','أوقفت مجموعة خوادم بسبب التبريد','أصبحت تكلفة التوقف مرئية بدل دفع البنية للعمل عند حدها.',{pressure:-3,cost:6,burden:-5,quality:4,visibility:3});go('dcWorkers');});}
-  function dcWorkers(){const workers=[['clean','عامل نظافة','يحافظ على بيئة التشغيل','🧹'],['electric','مهندسة كهرباء','تدير الطاقة والأنظمة الاحتياطية','⚡'],['security','عامل أمن','يدير الوصول المادي','🛡'],['cool','فني تبريد','يصون الأنظمة الحرارية','❄'],['cable','فني كابلات','يوصل الشبكات والأجهزة','≋'],['network','مشغل شبكة','يراقب الاتصال','◫']];html(`<div><span class="eyebrow">العمل المحيط بالخادم</span><h1 class="scene-title">مركز البيانات لا يعمل بفني خوادم واحد.</h1><p class="scene-subtitle">اضغط على العاملين لترى الوظائف التي تجعل «الخدمة السحابية» ممكنة في الواقع.</p><div class="worker-map">${workers.map(([id,name,job,icon])=>`<button class="worker-person ${state.flags.revealedWorkers.includes(id)?'revealed':''}" data-worker="${id}"><span class="person-icon">${icon}</span><strong>${name}</strong><small>${state.flags.revealedWorkers.includes(id)?job:'اضغط للكشف عن الدور'}</small></button>`).join('')}</div><div class="stage-output"><strong>ما الذي تنتجه هذه المرحلة؟</strong>خوادم تعمل ويمكن تخصيص قدرتها لتدريب النموذج أو تشغيله.</div><div class="action-row"><button id="dcReady" class="primary-btn">المجموعة جاهزة</button></div></div>`);bind('[data-worker]','click',e=>{const id=e.currentTarget.dataset.worker;if(!state.flags.revealedWorkers.includes(id)){state.flags.revealedWorkers.push(id);mutateMetrics({visibility:2});saveState();dcWorkers();}});$('#dcReady').addEventListener('click',()=>{addLedger(2,'كارلوس وفرق المرافق','تركيب وطاقة وتبريد وشبكات وصيانة مستمرة','خوادم متاحة للتشغيل',`كشفت ${state.flags.revealedWorkers.length} من 6 أدوار داخل مركز البيانات.`);go('abstract3');});}
-  function abstract3(){abstraction([['كارلوس','فني بنية تحتية','▥'],['التبريد','','❄'],['الكهرباء','','⚡'],['الشبكات','','≋']],'الخوادم جاهزة للعمل','التركيب والكهرباء والتبريد والشبكات والورديات أصبحت في لوحة التشغيل «قدرة حاسوبية متاحة».','ch4Intro');}
-  return {ch3Intro,dcInstall,dcCooling,dcWorkers,abstract3};
+export function createDatacenterRoutes(ctx) {
+  const $ = ctx.$;
+  const state = ctx.state;
+  const { setChapter, chapterIntro, html, go, bind, tone, saveState, mutateMetrics, addDecision, addLedger } = ctx;
+  const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line, next);
+  const monitorTile = ctx.monitorTile;
+
+  function ch3Intro() { chapterIntro(2, '', '', 'dcInstall'); }
+
+  function dcInstall() {
+    setChapter(2);
+    const steps = [
+      ['rack', 'أدخل الخادم في الخزانة'],
+      ['power', 'وصّل الطاقة'],
+      ['network', 'وصّل الشبكة'],
+      ['register', 'سجّل الجهاز في نظام التشغيل']
+    ];
+    html(`<div><span class="eyebrow">مركز بيانات افتراضي</span><h1 class="scene-title">أنت الآن كارلوس، فني بنية تحتية.</h1><div class="role-card card flat"><div class="avatar">▥</div><div><h3>كارلوس</h3><p>يركّب الخوادم ويصلها بالطاقة والشبكة داخل مركز البيانات.</p></div></div><div class="reality-note"><strong>ما هو الخادم؟</strong> حاسوب قوي مصمم للعمل المستمر. وعندما توجد أعداد كبيرة منه داخل مبنى واحد يسمى المكان «مركز بيانات».</div><div class="rack-board"><div class="server-rack">${Array.from({ length: 8 }, (_, i) => `<div class="server-unit"><span>وحدة ${i + 1}</span><span class="server-lights"><i></i><i></i><i></i></span></div>`).join('')}</div><div class="connect-panel">${steps.map(([id, label], i) => `<button class="connect-step ${state.flags.serverSteps.includes(id) ? 'done' : ''}" data-server-step="${id}" data-index="${i}"><span>${label}</span><span>${state.flags.serverSteps.includes(id) ? '✓' : '→'}</span></button>`).join('')}</div></div><div id="serverStepHelp" class="small muted">نفّذ الخطوات بالترتيب من تركيب الخادم إلى تسجيله.</div>${state.flags.serverSteps.length === 4 ? '<div class="action-row"><button id="bootServer" class="primary-btn">شغّل اختبار الخادم</button></div>' : ''}</div>`);
+    bind('[data-server-step]', 'click', event => {
+      const index = Number(event.currentTarget.dataset.index);
+      const id = event.currentTarget.dataset.serverStep;
+      if (index !== state.flags.serverSteps.length) {
+        $('#serverStepHelp').textContent = `ابدأ بالخطوة ${state.flags.serverSteps.length + 1} أولًا.`;
+        tone(170, .06, 'square');
+        return;
+      }
+      state.flags.serverSteps.push(id);
+      saveState();
+      dcInstall();
+    });
+    $('#bootServer')?.addEventListener('click', () => go('dcCooling'));
+  }
+
+  function dcCooling() {
+    html(`<div><span class="eyebrow">إنذار التبريد أثناء اختبار المجموعة</span><h1 class="scene-title">وحدة التبريد رقم 3 لا تستجيب.</h1><p class="scene-subtitle">لم نصل بعد إلى خدمة المستخدمين. نحن نختبر مجموعة خوادم ستُستخدم لاحقًا في التدريب والتشغيل.</p><div class="monitor"><div class="monitor-tile"><span>حرارة القاعة</span><strong>33° م ↑</strong><div class="bar"><i style="width:88%;background:var(--danger)"></i></div></div>${monitorTile('القدرة الحاسوبية المتاحة', '92%', 72)}${monitorTile('الشبكة', 'مستقرة', 70)}${monitorTile('مهام الاختبار', 'تنتظر', 66)}</div><div class="alert"><strong>فريق البنية ينتظر إتمام الاختبار.</strong><span>يمكن نقل عبء الاختبار إلى قاعة أخرى، أو إيقاف المجموعة المتأثرة حتى إصلاح التبريد.</span></div><div class="choice-grid"><button id="dcMove" class="choice-btn"><strong>انقل عبء الاختبار إلى قاعة أخرى</strong><small>يحافظ على الاختبار لكنه يرفع الحمل في مكان آخر.</small></button><button id="dcStop" class="choice-btn"><strong>أوقف المجموعة المتأثرة</strong><small>يؤخر التجهيز لكنه يقلل الضغط على الأجهزة والعمال.</small></button></div></div>`);
+    $('#dcMove').addEventListener('click', () => { addDecision('dc-move', 'نقلت عبء اختبار مركز البيانات', 'حافظت على الجدول عبر نقل الضغط إلى بنية أخرى.', { pressure: 5, cost: -2, burden: 5, quality: -2, visibility: 1 }); go('dcWorkers'); });
+    $('#dcStop').addEventListener('click', () => { addDecision('dc-stop', 'أوقفت مجموعة خوادم بسبب التبريد', 'أصبحت تكلفة التوقف مرئية بدل دفع البنية للعمل عند حدها.', { pressure: -3, cost: 6, burden: -5, quality: 4, visibility: 3 }); go('dcWorkers'); });
+  }
+
+  function dcWorkers() {
+    const workers = [
+      ['clean', 'عامل نظافة', 'يحافظ على بيئة التشغيل', '🧹'],
+      ['electric', 'مهندسة كهرباء', 'تدير الطاقة والأنظمة الاحتياطية', '⚡'],
+      ['security', 'عامل أمن', 'يدير الوصول المادي', '🛡'],
+      ['cool', 'فني تبريد', 'يصون الأنظمة الحرارية', '❄'],
+      ['cable', 'فني كابلات', 'يوصل الشبكات والأجهزة', '≋'],
+      ['network', 'مشغل شبكة', 'يراقب الاتصال', '◫']
+    ];
+    const revealed = state.flags.revealedWorkers.length;
+    html(`<div><span class="eyebrow">العمل المحيط بالخادم</span><h1 class="scene-title">مركز البيانات لا يعمل بفني خوادم واحد.</h1><p class="scene-subtitle">اكشف ثلاثة أدوار على الأقل قبل المتابعة. ما تكشفه هنا يقيس استكشافك للعبة، لا «ظهور» العمل داخل الشركة.</p><div class="worker-map">${workers.map(([id, name, job, icon]) => `<button class="worker-person ${state.flags.revealedWorkers.includes(id) ? 'revealed' : ''}" data-worker="${id}"><span class="person-icon">${icon}</span><strong>${name}</strong><small>${state.flags.revealedWorkers.includes(id) ? job : 'اضغط للكشف عن الدور'}</small></button>`).join('')}</div><div class="stage-output"><strong>ما الذي تنتجه هذه المرحلة؟</strong>خوادم تعمل ويمكن تخصيص قدرتها لتدريب النموذج أو تشغيله.</div><div class="action-row"><button id="dcReady" class="primary-btn" ${revealed < 3 ? 'disabled' : ''}>${revealed < 3 ? `اكشف ${3 - revealed} أدوار أخرى` : 'المجموعة جاهزة'}</button></div></div>`);
+    bind('[data-worker]', 'click', event => {
+      const id = event.currentTarget.dataset.worker;
+      if (!state.flags.revealedWorkers.includes(id)) {
+        state.flags.revealedWorkers.push(id);
+        mutateMetrics({ discovery: 2 });
+        saveState();
+        dcWorkers();
+      }
+    });
+    $('#dcReady')?.addEventListener('click', () => {
+      addLedger(2, 'كارلوس وفرق المرافق', 'تركيب وطاقة وتبريد وشبكات وصيانة مستمرة', 'خوادم متاحة للتشغيل', `استعرضت ${state.flags.revealedWorkers.length} من 6 أدوار داخل مركز البيانات.`);
+      go('abstract3');
+    });
+  }
+
+  function abstract3() { abstraction([['كارلوس', 'فني بنية تحتية', '▥'], ['التبريد', '', '❄'], ['الكهرباء', '', '⚡'], ['الشبكات', '', '≋']], 'الخوادم جاهزة للعمل', 'التركيب والكهرباء والتبريد والشبكات والورديات أصبحت في لوحة التشغيل «قدرة حاسوبية متاحة».', 'ch4Intro'); }
+
+  return { ch3Intro, dcInstall, dcCooling, dcWorkers, abstract3 };
 }
