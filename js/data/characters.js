@@ -1,122 +1,61 @@
 const CHARACTERS = {
   user: {
-    name: 'أنت',
-    role: 'المستخدم',
-    image: './assets/images/characters/user.svg',
+    name: 'أنت', role: 'المستخدم', image: './assets/images/characters/user.svg',
     tagline: 'تبدأ الرحلة من طلب بسيط على شاشة تبدو فورية.'
   },
   moussa: {
-    name: 'موسى',
-    role: 'عامل استخراج',
-    image: './assets/images/characters/moussa.svg',
-    tagline: 'يعمل في بداية السلسلة المادية التي ستصبح لاحقًا أجهزة.'
+    name: 'موسى', role: 'عامل استخراج', image: './assets/images/characters/moussa.svg',
+    tagline: 'شخصية خيالية مركبة تمثل العمل في بداية السلسلة المادية.'
   },
   layla: {
-    name: 'ليلى',
-    role: 'فنية تشغيل',
-    image: './assets/images/characters/layla.svg',
-    tagline: 'تراقب التصنيع والجودة داخل مصنع المكونات الإلكترونية.'
+    name: 'ليلى', role: 'فنية تشغيل', image: './assets/images/characters/layla.svg',
+    tagline: 'شخصية خيالية مركبة تمثل تشغيل وفحص خطوط تصنيع المكونات.'
   },
   carlos: {
-    name: 'كارلوس',
-    role: 'فني بنية تحتية',
-    image: './assets/images/characters/carlos.svg',
-    tagline: 'يركب الخوادم ويعمل وسط الكهرباء والتبريد والشبكات.'
+    name: 'كارلوس', role: 'فني بنية تحتية', image: './assets/images/characters/carlos.svg',
+    tagline: 'شخصية خيالية مركبة تمثل تركيب وتشغيل بنية مراكز البيانات.'
   },
   noor: {
-    name: 'نور',
-    role: 'متخصصة تجهيز بيانات',
-    image: './assets/images/characters/noor.svg',
-    tagline: 'تنظف المواد المجمعة وتقرر ما يصلح للمرحلة التالية.'
+    name: 'نور', role: 'متخصصة تجهيز بيانات', image: './assets/images/characters/noor.svg',
+    tagline: 'شخصية خيالية مركبة تمثل جمع وفرز ومراجعة مواد البيانات.'
   },
   amani: {
-    name: 'أماني',
-    role: 'عاملة تصنيف بيانات',
-    image: './assets/images/characters/amani.svg',
-    tagline: 'تقرأ أمثلة متكررة وتحول أحكامها إلى تصنيفات قابلة للاستخدام.'
+    name: 'أماني', role: 'عاملة تصنيف بيانات', image: './assets/images/characters/amani.svg',
+    tagline: 'شخصية خيالية مركبة تمثل عمال التصنيف والمراجعة عبر منصات المهام.'
   },
   david: {
-    name: 'ديفيد',
-    role: 'مهندس تعلم آلي',
-    image: './assets/images/characters/david.svg',
-    tagline: 'يجمع البيانات والخوادم داخل جولات تدريب وتجارب هندسية.'
+    name: 'ديفيد', role: 'مهندس تعلم آلي', image: './assets/images/characters/david.svg',
+    tagline: 'شخصية خيالية مركبة تمثل فرق التدريب والتجارب الهندسية.'
   },
   reem: {
-    name: 'ريم',
-    role: 'مقيّمة بشرية',
-    image: './assets/images/characters/reem.svg',
-    tagline: 'تقارن الإجابات وتختبر اللغة والجودة والسلامة.'
+    name: 'ريم', role: 'مقيّمة بشرية', image: './assets/images/characters/reem.svg',
+    tagline: 'شخصية خيالية مركبة تمثل تقييم الملاءمة واللغة والسلامة.'
   },
   hana: {
-    name: 'هانا',
-    role: 'مهندسة تشغيل',
-    image: './assets/images/characters/hana.svg',
-    tagline: 'تراقب الخدمة وتتعامل مع الأعطال والضغط بعد الإطلاق.'
+    name: 'هانا', role: 'مهندسة تشغيل', image: './assets/images/characters/hana.svg',
+    tagline: 'شخصية خيالية مركبة تمثل تشغيل الخدمة والاستجابة للأعطال.'
   },
   samer: {
-    name: 'سامر',
-    role: 'دعم المستخدمين',
-    image: './assets/images/characters/samer.svg',
-    tagline: 'يتعامل مع المشكلات التي تصل من المستخدمين بعد تشغيل المنتج.'
+    name: 'سامر', role: 'دعم المستخدمين', image: './assets/images/characters/samer.svg',
+    tagline: 'شخصية خيالية مركبة تمثل فرق الدعم التي تتلقى أثر الأعطال من المستخدمين.'
   }
 };
 
-const STORY_CHARACTER_IDS = [
-  'moussa',
-  'layla',
-  'carlos',
-  'noor',
-  'amani',
-  'david',
-  'reem',
-  'hana',
-  'samer'
-];
+const STORY_CHARACTER_IDS = ['moussa','layla','carlos','noor','amani','david','reem','hana','samer'];
 
+// البطاقة الكبيرة تظهر عند دخول الدور فقط، لا في كل شاشة من المرحلة.
 const SCENE_CHARACTER = {
   intro: 'user',
-  introLoading: 'user',
-  introExplain: 'user',
-  finalAnswer: 'user',
-
   mineOrientation: 'moussa',
-  mineTask: 'moussa',
-  mineInspection: 'moussa',
-  mineEnd: 'moussa',
-
   factoryOrientation: 'layla',
-  factoryMonitor: 'layla',
-  factoryIncident: 'layla',
-  factoryOutcome: 'layla',
-
   dcInstall: 'carlos',
-  dcCooling: 'carlos',
-  dcWorkers: 'carlos',
-
   dataClean: 'noor',
-  dataCleanSummary: 'noor',
-
   annotationIntro: 'amani',
-  annotationTask: 'amani',
-  annotationReview: 'amani',
-  annotationEnd: 'amani',
-
   trainingSetup: 'david',
-  trainingRun: 'david',
-  trainingEval: 'david',
-
   evalTask: 'reem',
-  safetyTest: 'reem',
-  safetyOutcome: 'reem',
-  launchDecision: 'reem',
-  launchOutcome: 'reem',
-
   deployLoad: 'hana',
-  deployIncident: 'hana',
-  onCall: 'hana',
-  deployEnd: 'hana',
-
-  supportTask: 'samer'
+  supportTask: 'samer',
+  finalAnswer: 'user'
 };
 
 export function characterForScene(sceneId) {

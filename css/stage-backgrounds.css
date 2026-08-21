@@ -4,11 +4,9 @@
 .stage-backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,24,.08),rgba(8,13,24,.20) 62%,rgba(8,13,24,.44));pointer-events:none}
 .scene{position:relative;z-index:1}
 
-/* واجهة مقروءة فوق الرسم من دون إخفاء البيئة بالكامل */
 .scene .card,
 .scene .learning-card,
 .scene .journey-node,
-.scene .journey-link,
 .scene .stage-output,
 .scene .reality-note,
 .scene .scene-character,
@@ -38,7 +36,6 @@
 .scene .muted,.scene small{color:#b8c5d6}
 .scene .learning-card h3,.scene .stage-output strong{color:#82efd1}
 
-/* بعض الحاويات لها خلفياتها الخاصة بالفعل، فقط نقوي فصلها عن المشهد */
 .scene .chat-shell,
 .scene .annotation-shell,
 .scene .training-board{
@@ -55,7 +52,6 @@ body.reduced-motion .stage-backdrop{transition:none}
   .scene .card,
   .scene .learning-card,
   .scene .journey-node,
-  .scene .journey-link,
   .scene .stage-output,
   .scene .reality-note,
   .scene .scene-character,
