@@ -32,7 +32,6 @@ validState.flags.safetyRemediated = true;
 validState.flags.launchChoice = 'delay';
 validState.flags.deployRecovery = 'rollback';
 validState.flags.dataSort.redact = 1;
-validState.flags.annotationShiftMinutes = 29;
 saveRaw(STORAGE_KEY, validState);
 assert.deepEqual(loadState(DEFAULT_STATE), validState);
 
@@ -59,6 +58,10 @@ expectDefaultState(legacyFactoryPpe);
 const legacyMetrics = clone(DEFAULT_STATE);
 legacyMetrics.metrics = { pressure: 50, cost: 50, burden: 42 };
 expectDefaultState(legacyMetrics);
+
+const legacyWorkerReveal = clone(DEFAULT_STATE);
+legacyWorkerReveal.flags.revealedWorkers = ['clean'];
+expectDefaultState(legacyWorkerReveal);
 
 const extraStateField = clone(DEFAULT_STATE);
 extraStateField.flags.legacyCompatibility = true;
