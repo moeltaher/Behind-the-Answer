@@ -1,10 +1,22 @@
+import { characterByName } from '../data/characters.js';
+
 export function abstraction(ctx, humans, word, line, next) {
-  const humanItems = humans.map(item => `
-    <span class="human-chip">
-      <span class="human-chip__icon" aria-hidden="true">${item[2] || '●'}</span>
-      <span><strong>${ctx.h(item[0])}</strong>${item[1] ? `<small>${ctx.h(item[1])}</small>` : ''}</span>
-    </span>
-  `).join('');
+  const humanItems = humans.map(item => {
+    const name = item[0];
+    const role = item[1] || '';
+    const character = characterByName(name);
+
+    const visual = character
+      ? `<span class="human-chip__portrait-wrap"><img class="human-chip__portrait" src="${ctx.h(character.image)}" alt="صورة كرتونية لشخصية ${ctx.h(character.name)}" loading="lazy" /></span>`
+      : `<span class="human-chip__icon" aria-hidden="true">${item[2] || '●'}</span>`;
+
+    return `
+      <span class="human-chip ${character ? 'human-chip--character' : 'human-chip--role'}">
+        ${visual}
+        <span class="human-chip__copy"><strong>${ctx.h(name)}</strong>${role ? `<small>${ctx.h(role)}</small>` : ''}</span>
+      </span>
+    `;
+  }).join('');
 
   ctx.html(`
     <div class="abstraction-stage">
