@@ -149,11 +149,12 @@ async function runJourney(viewport, label) {
   if (JSON.stringify(state.flags.dataStatuses) !== JSON.stringify(['excluded','ready','ready','pending','pending'])) throw new Error(`${label}: data readiness states are not preserved explicitly.`);
   await click(page, '#dataAbstract'); await click(page, '#abstractNext');
 
-  await click(page, '#chapterNext'); await click(page, '#startAnnot');
+  await click(page, '#chapterNext');
   await page.locator('.annotation-policy').waitFor({ state: 'visible' });
   for (const policyLabel of ['آمن','عنف','مضايقة أو إساءة','خطاب كراهية','إيذاء النفس','غير واضح']) {
     await page.locator('.annotation-policy').getByText(policyLabel, { exact: true }).first().waitFor({ state: 'visible' });
   }
+  await click(page, '#startAnnot');
   for (const labelChoice of ['آمن','عنف','مضايقة أو إساءة']) await chooseAnnotation(page, labelChoice);
   await page.getByRole('heading', { name: 'وصلت إلى نقطة الاستراحة.', exact: true }).waitFor({ state: 'visible' });
   if (await page.locator('[data-tag]').count()) throw new Error(`${label}: task 4 can bypass the explicit break decision.`);
