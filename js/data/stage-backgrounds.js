@@ -1,12 +1,12 @@
-const STAGE_SCENES = {
+export const SCENES_BY_STAGE = {
   mining: [
     'ch1Intro',
     'mineOrientation',
     'mineTask',
     'mineInspection',
     'mineEnd',
-    'abstract1',
-    'transportMontage'
+    'transportMontage',
+    'abstract1'
   ],
   factory: [
     'ch2Intro',
@@ -49,7 +49,9 @@ const STAGE_SCENES = {
     'ch7Intro',
     'evalTask',
     'safetyTest',
+    'safetyOutcome',
     'launchDecision',
+    'launchOutcome',
     'abstract7'
   ],
   deployment: [
@@ -61,10 +63,10 @@ const STAGE_SCENES = {
     'deployEnd',
     'abstract8'
   ],
-  user: [
+  ending: [
     'intro',
     'introLoading',
-    'introError',
+    'introExplain',
     'zoomOut',
     'ch9Intro',
     'pipelineAssemble',
@@ -87,21 +89,25 @@ export const STAGE_BACKDROPS = {
   training: './assets/images/scenes/06-training.svg',
   evaluation: './assets/images/scenes/07-evaluation.svg',
   deployment: './assets/images/scenes/08-deployment.svg',
-  user: './assets/images/scenes/09-user.svg'
+  ending: './assets/images/scenes/09-user.svg'
 };
 
 const SCENE_TO_STAGE = Object.fromEntries(
-  Object.entries(STAGE_SCENES).flatMap(([stage, scenes]) =>
+  Object.entries(SCENES_BY_STAGE).flatMap(([stage, scenes]) =>
     scenes.map(scene => [scene, stage])
   )
 );
 
+export function stageForScene(sceneId) {
+  return SCENE_TO_STAGE[sceneId] || null;
+}
+
 export function backdropForScene(sceneId) {
-  const group = SCENE_TO_STAGE[sceneId];
-  if (!group) return null;
+  const stage = stageForScene(sceneId);
+  if (!stage) return null;
 
   return {
-    group,
-    image: STAGE_BACKDROPS[group]
+    group: stage,
+    image: STAGE_BACKDROPS[stage]
   };
 }

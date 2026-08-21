@@ -25,6 +25,8 @@ const LEGACY_LABELS = {
 function migrateState(saved) {
   if (!saved || typeof saved !== 'object') return {};
 
+  if (saved.scene === 'introError') saved.scene = 'introExplain';
+
   if (Array.isArray(saved.ledger)) {
     saved.ledger = saved.ledger.map(entry => ({
       ...entry,
@@ -38,6 +40,12 @@ function migrateState(saved) {
   if (saved.flags?.trainingCheckpoint === 'latest') {
     saved.flags.trainingCheckpoint = 'recent';
   }
+
+  if (saved.metrics) {
+    delete saved.metrics.visibility;
+    delete saved.metrics.discovery;
+  }
+  if (saved.flags) delete saved.flags.finalEnding;
 
   return saved;
 }

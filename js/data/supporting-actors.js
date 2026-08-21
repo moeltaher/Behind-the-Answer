@@ -20,6 +20,15 @@ export const SUPPORTING_ACTORS = {
   operationsTeam: { name: 'فرق الشبكات والصيانة', role: 'تساند تشغيل الخدمة واستعادتها', image: './assets/images/characters/support-worker.svg', group: true }
 };
 
+export const DATACENTER_WORKERS = [
+  { id: 'clean', actorId: 'cleaner', icon: '🧹' },
+  { id: 'electric', actorId: 'electricalEngineer', icon: '⚡' },
+  { id: 'security', actorId: 'securityWorker', icon: '🛡' },
+  { id: 'cool', actorId: 'coolingTech', icon: '❄' },
+  { id: 'cable', actorId: 'cableTech', icon: '≋' },
+  { id: 'network', actorId: 'networkOperator', icon: '◫' }
+];
+
 export function supportingActor(id) {
   return SUPPORTING_ACTORS[id] || null;
 }
