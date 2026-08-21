@@ -69,30 +69,26 @@ export function createDataRoutes(ctx) {
       const choice = event.currentTarget.dataset.sort;
       state.flags.dataSort[choice] += 1;
 
-      if (choice === item.recommended) {
-        mutateMetrics({ quality: 2 });
+      if (item.recommended === 'review' && choice === 'review') {
+        addDecision(
+          `data-review-${item.type}`,
+          'أوقفت مادة حتى مراجعة مصدرها أو حقوق استخدامها',
+          'تحملت خطوة أبطأ بدل اعتبار الإتاحة التقنية وحدها كافية.',
+          { cost: 2, pressure: -1, dataQuality: 3 }
+        );
+      } else if (item.recommended === 'review' && choice === 'keep') {
+        addDecision(
+          `data-keep-${item.type}`,
+          'احتفظت بمادة رغم أن حالة استخدامها لم تُحسم',
+          'مررت المادة إلى الدفعة قبل اكتمال التحقق من الحقوق أو الخصوصية.',
+          { cost: -1, pressure: 1, dataQuality: -3 }
+        );
+      } else if (choice === item.recommended) {
+        mutateMetrics({ dataQuality: 2 });
       } else if (choice === 'review') {
-        mutateMetrics({ cost: 1, pressure: -1, quality: 1 });
+        mutateMetrics({ cost: 1, pressure: -1, dataQuality: 1 });
       } else {
-        mutateMetrics({ quality: -2, pressure: 1 });
-      }
-
-      if (item.recommended === 'review') {
-        if (choice === 'review') {
-          addDecision(
-            `data-review-${item.type}`,
-            'أوقفت مادة حتى مراجعة مصدرها أو حقوق استخدامها',
-            'تحملت خطوة أبطأ بدل اعتبار الإتاحة التقنية وحدها كافية.',
-            { cost: 2, pressure: -1, quality: 3 }
-          );
-        } else if (choice === 'keep') {
-          addDecision(
-            `data-keep-${item.type}`,
-            'احتفظت بمادة رغم أن حالة استخدامها لم تُحسم',
-            'مررت المادة إلى الدفعة قبل اكتمال التحقق من الحقوق أو الخصوصية.',
-            { cost: -1, pressure: 1, quality: -3 }
-          );
-        }
+        mutateMetrics({ dataQuality: -2, pressure: 1 });
       }
 
       state.flags.dataIndex += 1;
