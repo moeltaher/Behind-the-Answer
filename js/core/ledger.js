@@ -1,0 +1,3 @@
+import { escapeHtml as h } from './state.js';
+export function addLedger(state,chapter,human,work,system,details=''){if(state.ledger.some(e=>e.chapter===chapter))return;state.ledger.push({chapter,human,work,system,details});}
+export function renderLedger(state,chapters,container){container.innerHTML=chapters.map((c,i)=>{const e=state.ledger.find(x=>x.chapter===i);return `<div class="ledger-entry ${e?'':'locked'}"><div class="ledger-icon">${c.icon}</div><div><h3>${i+1}. ${c.title}</h3>${e?`<p><strong>${h(e.human)}</strong> — ${h(e.work)}</p><p>في النظام: <span class="system-name">${h(e.system)}</span></p><p>${h(e.details)}</p>`:`<p>لم تصل إلى هذه المرحلة بعد.</p>`}</div></div>`;}).join('');}

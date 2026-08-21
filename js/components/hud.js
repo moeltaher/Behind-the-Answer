@@ -1,0 +1,2 @@
+export function monitorTile(label,value,width){return `<div class="monitor-tile"><span>${label}</span><strong>${value}</strong><div class="bar"><i style="width:${width}%"></i></div></div>`;}
+export function metric(name,val,label){return `<div class="metric-card"><div class="metric-head"><strong>${name}</strong><span>${label}</span></div><div class="metric-bar"><i style="width:${val}%"></i></div></div>`;}
