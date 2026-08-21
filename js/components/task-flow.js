@@ -31,7 +31,7 @@ export function actorStrip(actors, label = 'في هذا المشهد') {
   return `<section class="actor-strip" data-actor-strip aria-label="${h(label)}"><span class="actor-strip__label">${h(label)}</span><div class="actor-strip__items">${actors.map(actor => actorChip(actor)).join('')}</div></section>`;
 }
 
-export function actorChip(actor) {
+function actorChip(actor) {
   if (!actor) return '';
   return `<article class="actor-chip ${actor.group ? 'actor-chip--group' : ''}"><img src="${h(actor.image)}" alt="" aria-hidden="true" loading="lazy"/><span><strong>${h(actor.name)}</strong><small>${h(actor.role)}</small></span></article>`;
 }
