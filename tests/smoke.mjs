@@ -57,10 +57,10 @@ async function runJourney(viewport, label) {
   await loadState(page);
 
   await click(page, '#introSend');
-  await page.getByText('الإجابة هي آخر نقطة مرئية في سلسلة أطول.').waitFor({ state: 'visible' });
+  await page.getByRole('heading', { name: 'الإجابة هي آخر نقطة مرئية في سلسلة أطول.', exact: true }).waitFor({ state: 'visible' });
   await click(page, '#descend');
 
-  await page.getByText('استخراج مواد الأجهزة').waitFor({ state: 'visible' });
+  await page.getByRole('heading', { name: 'استخراج مواد الأجهزة', exact: true }).waitFor({ state: 'visible' });
   if (await page.locator('.chapter-brief').count()) throw new Error(`${label}: legacy three-column chapter brief still renders.`);
   await click(page, '#chapterNext');
   const firstCharacter = await page.locator('.scene-character').boundingBox();
@@ -94,7 +94,7 @@ async function runJourney(viewport, label) {
   await page.getByText('عادت الحرارة إلى 24° م', { exact: false }).waitFor({ state: 'visible' });
   await click(page, '#dcAfterCooling');
   if (await page.locator('[data-worker]').count()) throw new Error(`${label}: datacenter roles still require reveal clicks.`);
-  await page.getByText('«الخادم الجاهز» يخفي فريقًا كاملًا.').waitFor({ state: 'visible' });
+  await page.getByRole('heading', { name: '«الخادم الجاهز» يخفي فريقًا كاملًا.', exact: true }).waitFor({ state: 'visible' });
   await click(page, '#dcReady'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
@@ -150,7 +150,7 @@ async function runJourney(viewport, label) {
   const finalAnswer = await page.locator('.message.ai').innerText();
   if (!finalAnswer.includes('أعتذر عن التأخر في تسليم العمل')) throw new Error(`${label}: fixed answer missing.`);
   await click(page, '#behindAnswer'); await click(page, '#showPeople'); await click(page, '#showResults');
-  await page.getByText('النتيجة أدلة من قراراتك، لا متوسط نقاط.').waitFor({ state: 'visible' });
+  await page.getByRole('heading', { name: 'النتيجة أدلة من قراراتك، لا متوسط نقاط.', exact: true }).waitFor({ state: 'visible' });
   await page.getByText('احتفظت بمادة مناسبة ومصرح باستخدامها', { exact: false }).waitFor({ state: 'visible' });
   await page.getByText('أوقفت خلل السلامة قبل الإطلاق', { exact: false }).waitFor({ state: 'visible' });
   if (await page.locator('.metric-card').count()) throw new Error(`${label}: numeric metric cards rendered.`);
@@ -220,6 +220,10 @@ async function runPrecisionChecks() {
   await click(page, '[data-eval="bad"]');
   state = await savedState(page);
   if (state.flags.evalCorrectCount !== 1) throw new Error('Legal evaluation should accept both answers as bad.');
+
+  await loadState(page, { scene: 'factoryMonitor' });
+  const numericDirection = await page.getByText('+12 Pa').evaluate(element => element.closest('strong')?.getAttribute('dir'));
+  if (numericDirection !== 'auto') throw new Error('Monitor values should use dir=auto for mixed RTL/LTR content.');
 
   if (Object.hasOwn(state, 'metrics')) throw new Error('Hidden metrics still exist in state.');
   if (Object.hasOwn(state.flags, 'revealedWorkers')) throw new Error('Legacy click-through worker reveal state still exists.');
