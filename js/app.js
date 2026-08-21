@@ -49,7 +49,7 @@ const state=loadState(DEFAULT_STATE);
 const settings=loadSettings();
 function saveState(){ persistState(state); }
 function addDecision(id,label,effectText){ recordDecision(state,id,label,effectText); saveState(); }
-function addLedger(chapter,human,work,system,details=''){ recordLedger(state,chapter,human,work,system,details); saveState(); drawLedger(state,CHAPTERS,ledgerContent); }
+function addLedger(chapter,human,work,system,details=''){ recordLedger(state,chapter,human,work,system,details); saveState(); }
 function renderLedger(){ drawLedger(state,CHAPTERS,ledgerContent); }
 function tone(frequency=440,duration=.06,type='sine'){ playTone(settings,frequency,duration,type); }
 function updateBackdrop(){
@@ -66,14 +66,14 @@ function updateBackdrop(){
 }
 
 const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, addDecision, addLedger, renderLedger, tone, monitorTile };
-const router=createRouter({state,settings,sceneEl,save:saveState,tone,renderLedger});
+const router=createRouter({state,settings,sceneEl,save:saveState,tone});
 const PRE_JOURNEY_SCENES=new Set(['intro','zoomOut']);
 function currentChapterIndex(){ if(PRE_JOURNEY_SCENES.has(state.scene))return-1; const stage=stageForScene(state.scene); return CHAPTERS.findIndex(chapter=>chapter.key===stage); }
 function sceneHtml(content){ const index=currentChapterIndex(); renderJourneyProgress(ctx,index); promptBtn.hidden=index<0; persistentFooter.hidden=true; updateBackdrop(); const character=characterForScene(state.scene); const guidance=sceneGuidance(state.scene,state); router.html(`${characterCard(character)}${guidance}${content}`); }
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});
 ctx.chapterIntro=(index,next)=>drawChapterIntro(ctx,index,next);
 ctx.abstraction=(humans,word,line,next)=>drawAbstraction(ctx,humans,word,line,next);
-ctx.resetGame=(goToIntro=false)=>{ replaceObjectContents(state,clone(DEFAULT_STATE)); saveState(); ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close(); if(promptDialog.open)promptDialog.close(); if(goToIntro)router.go('intro'); else router.render(); };
+ctx.resetGame=(goToIntro=false)=>{ replaceObjectContents(state,clone(DEFAULT_STATE)); saveState(); ledgerContent.innerHTML=''; ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close(); if(promptDialog.open)promptDialog.close(); if(goToIntro)router.go('intro'); else router.render(); };
 [
   createIntroRoutes,createMiningRoutes,createFactoryRoutes,createDatacenterRoutes,createDataRoutes,
   createAnnotationRoutes,createTrainingRoutes,createEvaluationRoutes,createDeploymentRoutes,createEndingRoutes
