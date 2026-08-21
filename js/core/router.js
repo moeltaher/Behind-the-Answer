@@ -1,4 +1,4 @@
-export function createRouter({ state, settings, sceneEl, save, tone, renderLedger }) {
+export function createRouter({ state, settings, sceneEl, save, tone }) {
   const routes = {};
   let transitionTimer = null;
 
@@ -20,7 +20,6 @@ export function createRouter({ state, settings, sceneEl, save, tone, renderLedge
   function render() {
     const route = routes[state.scene] || routes.intro;
     route();
-    renderLedger();
   }
 
   function focusSceneHeading() {
