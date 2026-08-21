@@ -37,7 +37,7 @@ export function createDatacenterRoutes(ctx) {
   }
 
   function dcWorkers() {
-    const cards=DATACENTER_WORKERS.map(({actorId})=>{ const actor=supportingActor(actorId); return `<article class="worker-person revealed"><img class="worker-person__avatar" src="${ctx.h(actor.image)}" alt="" aria-hidden="true"><strong>${ctx.h(actor.name)}</strong><small>${ctx.h(actor.role)}</small></article>`; }).join('');
+    const cards=DATACENTER_WORKERS.map(({actorId})=>{ const actor=supportingActor(actorId); return `<article class="worker-person revealed"><img class="worker-person__avatar person-icon" src="${ctx.h(actor.image)}" alt="" aria-hidden="true"><strong>${ctx.h(actor.name)}</strong><small>${ctx.h(actor.role)}</small></article>`; }).join('');
     html(`<div><span class="eyebrow">العمل المحيط بالخادم</span><h1 class="scene-title">«الخادم الجاهز» يخفي فريقًا كاملًا.</h1><p class="scene-subtitle">التبريد والكهرباء والكابلات والنظافة والأمن والشبكات أعمال بشرية لازمة للتشغيل، لا أيقونات ثانوية أو إضافات اختيارية بعد اكتمال الخادم.</p><div class="worker-map">${cards}</div><div class="stage-output"><strong>ناتج المرحلة</strong>خوادم اجتازت التركيب والاختبار ويمكن تخصيص قدرتها للتدريب أو تشغيل الخدمة.</div><div class="action-row"><button id="dcReady" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
     $('#dcReady').addEventListener('click',()=>{ addLedger(2,'كارلوس وفرق المرافق','تركيب وطاقة وتبريد وشبكات وصيانة واختبار','خوادم متاحة للتشغيل','عرضت المرحلة الأدوار الداعمة كأشخاص داخل شروط تشغيل الخادم.'); go('abstract3'); });
   }
