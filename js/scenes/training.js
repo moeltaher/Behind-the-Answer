@@ -8,9 +8,19 @@ export function createTrainingRoutes(ctx) {
 
   function annotationInputs() {
     const results=state.flags.annotationResults;
-    const confirmed=results.filter(result=>result.acceptedAsReasonable&&!result.pending).length;
+    const confirmed=results.filter(result=>result.acceptedAsReasonable&&!result.pending&&!result.reviewRejected).length;
     const pending=results.filter(result=>result.pending).length;
-    return { confirmed, pending };
+    const rejected=results.filter(result=>result.reviewRejected||!result.acceptedAsReasonable).length;
+    return { confirmed, pending, rejected };
+  }
+
+  function dataInputs() {
+    const statuses=state.flags.dataStatuses;
+    return {
+      ready: statuses.filter(status=>status==='ready').length,
+      pending: statuses.filter(status=>status==='pending').length,
+      excluded: statuses.filter(status=>status==='excluded').length
+    };
   }
 
   function confirmedExamplesLabel(count) {
@@ -29,17 +39,18 @@ export function createTrainingRoutes(ctx) {
 
   function trainingSetup() {
     const checkpoint=state.flags.trainingCheckpoint;
-    const inputs=annotationInputs();
-    const confirmedLabel=confirmedExamplesLabel(inputs.confirmed);
-    const pendingLabel=pendingCasesLabel(inputs.pending);
-    html(`<div><span class="eyebrow">مختبر تطوير نموذج افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما الذي نحاكيه تحديدًا؟</strong> هذه ليست عملية تدريب نموذج من الصفر. السيناريو يمثل جولة post-training مبسطة تبدأ من نقطة حفظ سابقة. المدخل المؤكد من عمل التصنيف: ${confirmedLabel}. خارج الجولة حتى الحسم: ${pendingLabel}.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد التطوير</label><select disabled><option>الدفعة 18 + ${confirmedLabel}</option></select></div><div class="form-row"><label for="computeSel">مجموعات الحوسبة المخصصة</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute==='12'?'selected':''}>12 مجموعة — تكلفة أعلى وهامش أعطال أكبر</option><option value="8" ${state.flags.trainingCompute==='8'?'selected':''}>8 مجموعات — تكلفة أقل وهامش أعطال أضيق</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ</label><select id="checkpointSel"><option value="validated" ${checkpoint==='validated'?'selected':''}>اختُبرت على نطاق أوسع — تحقق أقل مطلوبًا الآن</option><option value="recent" ${checkpoint==='recent'?'selected':''}>أحدث — تحتاج تحققًا إضافيًا من تغييراتها</option></select></div><button id="trainStart" class="primary-btn training-start">ابدأ الجولة</button></div><div class="chart-panel"><span class="kicker">ما الذي سيتغير فعلًا؟</span><div class="training-log training-config-summary">12 مجموعة: فقد وحدة يترك 11 مجموعة متاحة، أي هامش أعطال أكبر.<br>8 مجموعات: فقد وحدة يترك 7 مجموعات متاحة، أي هامش أضيق.<br>نقطة أكثر اختبارًا: نطاق تحقق إضافي أقل.<br>نقطة أحدث: نطاق تحقق إضافي أكبر قبل الإطلاق.</div></div></div></div>`);
+    const annotation=annotationInputs();
+    const data=dataInputs();
+    const confirmedLabel=confirmedExamplesLabel(annotation.confirmed);
+    const pendingLabel=pendingCasesLabel(annotation.pending);
+    html(`<div><span class="eyebrow">مختبر تطوير نموذج افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما الذي نحاكيه تحديدًا؟</strong> هذه ليست عملية تدريب نموذج من الصفر. السيناريو يمثل جولة post-training مبسطة تبدأ من نقطة حفظ سابقة. من الدفعة 18 يدخل ${data.ready} من ${state.flags.dataStatuses.length||5} عناصر باعتبارها جاهزة، بينما تبقى ${data.pending} معلقة. ومن عمل التصنيف يدخل ${confirmedLabel}، بينما تبقى ${pendingLabel} و${annotation.rejected} مرفوضة خارج المدخل المؤكد.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد التطوير الجاهزة</label><select disabled><option>${data.ready} مواد جاهزة من الدفعة 18 + ${confirmedLabel}</option></select></div><div class="form-row"><label for="computeSel">مجموعات الحوسبة المخصصة</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute==='12'?'selected':''}>12 مجموعة — 12 وحدة حوسبة وهامش أعطال أكبر</option><option value="8" ${state.flags.trainingCompute==='8'?'selected':''}>8 مجموعات — 8 وحدات حوسبة وهامش أعطال أضيق</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ</label><select id="checkpointSel"><option value="validated" ${checkpoint==='validated'?'selected':''}>أكثر اختبارًا — تحقق أقل، من دون تحديث النبرة الأحدث</option><option value="recent" ${checkpoint==='recent'?'selected':''}>أحدث — تتضمن تغييرًا مستهدفًا للنبرة العربية وتحتاج تحققًا إضافيًا</option></select></div><button id="trainStart" class="primary-btn training-start">ابدأ الجولة</button></div><div class="chart-panel"><span class="kicker">المفاضلات قبل البدء</span><div class="training-log training-config-summary"><strong>الحوسبة</strong><br>12 مجموعة: تكلفة 12 وحدة لعب، وفقد مجموعة يترك 11 متاحة.<br>8 مجموعات: تكلفة 8 وحدات لعب، وتوفر 4 وحدات مقابل هامش أضيق.<br><br><strong>نقطة الحفظ</strong><br>الأكثر اختبارًا: مخاطرة تحقق أقل، لكنها لا تتضمن التغيير الأحدث المستهدف لتحسين نبرة الرسائل العربية القصيرة.<br>الأحدث: تحمل هذا التغيير المقصود، لكن فائدته لا تُفترض مسبقًا ويجب التحقق منه قبل الإطلاق.</div></div></div></div>`);
     $('#trainStart').addEventListener('click',()=>{
       state.flags.trainingCompute=$('#computeSel').value;
       state.flags.trainingCheckpoint=$('#checkpointSel').value;
-      if(state.flags.trainingCompute==='12') addDecision('training-compute-12','خصصت 12 مجموعة حوسبة لجولة التطوير','دفعت تكلفة حوسبة أعلى مقابل هامش أكبر إذا خرجت مجموعة من الخدمة.');
-      else addDecision('training-compute-8','خصصت 8 مجموعات حوسبة لجولة التطوير','خفضت تكلفة الحوسبة، لكن فقد مجموعة واحدة ترك هامشًا أضيق.');
-      if(state.flags.trainingCheckpoint==='validated') addDecision('training-checkpoint-validated','بدأت من نقطة حفظ اختُبرت أكثر','احتاجت نقطة البداية إلى نطاق تحقق إضافي أقل في هذه الجولة، من دون افتراض أنها أفضل لغويًا.');
-      else addDecision('training-checkpoint-recent','بدأت من نقطة حفظ أحدث','استخدمت تغييرات أحدث مع حاجة إلى تحقق إضافي قبل الإطلاق.');
+      if(state.flags.trainingCompute==='12') addDecision('training-compute-12','خصصت 12 مجموعة حوسبة لجولة التطوير','أنفقت 12 وحدة حوسبة في السيناريو مقابل هامش أكبر إذا خرجت مجموعة من الخدمة.');
+      else addDecision('training-compute-8','خصصت 8 مجموعات حوسبة لجولة التطوير','أنفقت 8 وحدات حوسبة فقط، موفرًا 4 وحدات مقابل هامش أعطال أضيق.');
+      if(state.flags.trainingCheckpoint==='validated') addDecision('training-checkpoint-validated','بدأت من نقطة حفظ اختُبرت أكثر','قللت نطاق التحقق الإضافي، لكن الجولة لا تتضمن تغيير النبرة العربية الأحدث.');
+      else addDecision('training-checkpoint-recent','بدأت من نقطة حفظ أحدث','اخترت تغييرًا حديثًا مستهدفًا لتحسين نبرة الرسائل العربية القصيرة، مع حاجة إلى تحقق إضافي قبل الإطلاق بدل افتراض نجاحه.');
       saveState(); go('trainingRun');
     });
   }
@@ -48,7 +59,8 @@ export function createTrainingRoutes(ctx) {
     const total=Number(state.flags.trainingCompute);
     const available=Math.max(1,total-1);
     const tight=total===8;
-    html(`<div><span class="eyebrow">جولة التدريب الإضافي</span><h1 class="scene-title">خرجت مجموعة حوسبة واحدة من الخدمة عند 35% من الجولة.</h1><div class="chart-panel"><div class="hud-grid"><div class="hud-item"><span>التقدم</span><strong>35%</strong></div><div class="hud-item"><span>المجموعات المتاحة</span><strong>${available}/${total}</strong></div><div class="hud-item"><span>هامش الأعطال</span><strong>${tight?'أضيق':'أوسع'}</strong></div></div><div class="alert dangerish"><strong>العطل نفسه، لكن أثره ليس نفسه.</strong><span>${tight?'مع 8 مجموعات، خروج وحدة يترك موارد أقل متاحة إذا حدث عطل ثانٍ أو ارتفع الحمل.':'مع 12 مجموعة، تبقى وحدات أكثر متاحة بعد العطل، مع استمرار الحاجة إلى فهم سببه.'}</span></div></div><div class="choice-grid"><button id="trainPause" class="choice-btn"><strong>أوقف الجولة وافحص العطل</strong><small>تدفع وقتًا إضافيًا للحصول على تشخيص أوضح قبل الاستمرار.</small></button><button id="trainContinue" class="choice-btn"><strong>استمر بالسعة المتبقية</strong><small>${tight?'توفر وقت التوقف مقابل هامش أعطال أضيق.':'تستفيد من الهامش الأكبر وتؤجل التشخيص إلى ما بعد الجولة.'}</small></button></div></div>`);
+    const cost=total;
+    html(`<div><span class="eyebrow">جولة التدريب الإضافي</span><h1 class="scene-title">خرجت مجموعة حوسبة واحدة من الخدمة عند 35% من الجولة.</h1><div class="chart-panel"><div class="hud-grid"><div class="hud-item"><span>التقدم</span><strong>35%</strong></div><div class="hud-item"><span>المجموعات المتاحة</span><strong>${available}/${total}</strong></div><div class="hud-item"><span>تكلفة التخصيص</span><strong>${cost} وحدة حوسبة</strong></div><div class="hud-item"><span>هامش الأعطال</span><strong>${tight?'أضيق':'أوسع'}</strong></div></div><div class="alert dangerish"><strong>العطل نفسه، لكن أثره ليس نفسه.</strong><span>${tight?'مع 8 مجموعات، وفرت 4 وحدات حوسبة لكن خروج وحدة يترك موارد أقل إذا حدث عطل ثانٍ أو ارتفع الحمل.':'مع 12 مجموعة، دفعت تكلفة أعلى وتبقى وحدات أكثر متاحة بعد العطل، مع استمرار الحاجة إلى فهم سببه.'}</span></div></div><div class="choice-grid"><button id="trainPause" class="choice-btn"><strong>أوقف الجولة وافحص العطل</strong><small>تدفع وقتًا إضافيًا للحصول على تشخيص أوضح قبل الاستمرار.</small></button><button id="trainContinue" class="choice-btn"><strong>استمر بالسعة المتبقية</strong><small>${tight?'توفر وقت التوقف مقابل هامش أعطال أضيق.':'تستفيد من الهامش الأكبر وتؤجل التشخيص إلى ما بعد الجولة.'}</small></button></div></div>`);
     $('#trainPause').addEventListener('click',()=>{
       state.flags.trainingIncidentChoice='pause';
       addDecision('train-pause','أوقفت جولة التطوير لتشخيص العطل','تحملت تأخيرًا، عزلت المجموعة المعطلة، ثم استأنفت الجولة بعد التحقق.');
@@ -62,11 +74,11 @@ export function createTrainingRoutes(ctx) {
   }
 
   function trainingEval() {
-    addLedger(5,'ديفيد وفرق التطوير','إعداد وتشغيل ومراقبة جولة post-training وحل أعطال الحوسبة','نسخة مطورة من النموذج','يمثل السيناريو جولة post-training مبسطة، ويستبعد الحالات البشرية المعلقة من المدخل المؤكد.');
+    addLedger(5,'ديفيد وفرق التطوير','إعداد وتشغيل ومراقبة جولة post-training وحل أعطال الحوسبة','نسخة مطورة من النموذج','دخلت فقط مواد البيانات والأمثلة البشرية المؤكدة، وبقيت الحالات المعلقة والمرفوضة خارج الجولة.');
     const paused=state.flags.trainingIncidentChoice==='pause';
     const total=Number(state.flags.trainingCompute);
     const checkpoint=state.flags.trainingCheckpoint;
-    html(`<div><span class="eyebrow">نتيجة جولة التطوير</span><h1 class="scene-title">انتهت الجولة، لكن النسخة ما زالت تحتاج إلى تقييم وتحقق.</h1><div class="stage-output"><strong>أثر قرار السعة والعطل</strong>${paused?`توقفت الجولة، عُزلت المجموعة المعطلة، ثم استؤنف العمل بعد الإصلاح مع ${total} مجموعة متاحة.`:`اكتملت الجولة بعد خروج مجموعة من الخدمة؛ كان هامش الأعطال ${total===8?'أضيق':'أوسع'}.`}</div><div class="stage-output"><strong>ما بقي قبل الإطلاق</strong>${checkpoint==='recent'?'تغييرات نقطة الحفظ الأحدث تحتاج إلى حزمة تحقق إضافية قبل قرار الإطلاق.':'نقطة البداية كانت أكثر اختبارًا، لذلك لا تضيف حزمة تحقق خاصة بتغييرات checkpoint في هذا السيناريو.'}</div><div class="action-row"><button id="sendHuman" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة جولة التطوير</span><h1 class="scene-title">انتهت الجولة، لكن النسخة ما زالت تحتاج إلى تقييم وتحقق.</h1><div class="stage-output"><strong>أثر قرار السعة والعطل</strong>${paused?`توقفت الجولة، عُزلت المجموعة المعطلة، ثم استؤنف العمل بعد الإصلاح مع ${total} مجموعة متاحة. تكلفة التخصيص في السيناريو: ${total} وحدة حوسبة.`:`اكتملت الجولة بعد خروج مجموعة من الخدمة؛ كان هامش الأعطال ${total===8?'أضيق مع توفير 4 وحدات حوسبة':'أوسع مقابل تكلفة حوسبة أعلى'}.`}</div><div class="stage-output"><strong>أثر اختيار نقطة الحفظ</strong>${checkpoint==='recent'?'الجولة تضمنت التغيير الأحدث المستهدف لتحسين نبرة الرسائل العربية القصيرة؛ لا تفترض اللعبة نجاحه، ولذلك يضيف حزمة تحقق قبل الإطلاق.':'اخترت نقطة أكثر اختبارًا؛ نطاق التحقق الإضافي أقل، لكن التغيير الأحدث المستهدف للنبرة لم يدخل هذه الجولة.'}</div><div class="action-row"><button id="sendHuman" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
     $('#sendHuman').addEventListener('click',()=>go('abstract6'));
   }
 
