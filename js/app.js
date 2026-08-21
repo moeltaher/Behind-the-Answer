@@ -1,6 +1,6 @@
 import { DEFAULT_STATE, clone, escapeHtml as h, replaceObjectContents } from './core/state.js';
 import { loadState, saveState as persistState, loadSettings, saveSettings } from './core/storage.js';
-import { mutateMetrics as applyMetricDelta, addDecision as recordDecision } from './core/metrics.js';
+import { addDecision as recordDecision } from './core/metrics.js';
 import { tone as playTone } from './core/audio.js';
 import { applySettings } from './core/accessibility.js';
 import { addLedger as recordLedger, renderLedger as drawLedger } from './core/ledger.js';
@@ -48,8 +48,7 @@ const waitingPromptText=$('#waitingPromptText');
 const state=loadState(DEFAULT_STATE);
 const settings=loadSettings();
 function saveState(){ persistState(state); }
-function mutateMetrics(delta){ applyMetricDelta(state,delta); saveState(); }
-function addDecision(id,label,effectText,delta={}){ recordDecision(state,id,label,effectText,delta); saveState(); }
+function addDecision(id,label,effectText){ recordDecision(state,id,label,effectText); saveState(); }
 function addLedger(chapter,human,work,system,details=''){ recordLedger(state,chapter,human,work,system,details); saveState(); drawLedger(state,CHAPTERS,ledgerContent); }
 function renderLedger(){ drawLedger(state,CHAPTERS,ledgerContent); }
 function tone(frequency=440,duration=.06,type='sine'){ playTone(settings,frequency,duration,type); }
@@ -66,11 +65,11 @@ function updateBackdrop(){
   document.body.dataset.stage=backdrop.group;
 }
 
-const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, mutateMetrics, addDecision, addLedger, renderLedger, tone, monitorTile };
+const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, addDecision, addLedger, renderLedger, tone, monitorTile };
 const router=createRouter({state,settings,sceneEl,save:saveState,tone,renderLedger});
 const PRE_JOURNEY_SCENES=new Set(['intro','zoomOut']);
 function currentChapterIndex(){ if(PRE_JOURNEY_SCENES.has(state.scene))return-1; const stage=stageForScene(state.scene); return CHAPTERS.findIndex(chapter=>chapter.key===stage); }
-function sceneHtml(content){ const index=currentChapterIndex(); renderJourneyProgress(ctx,index); promptBtn.hidden=index<0; persistentFooter.hidden=true; updateBackdrop(); const character=characterForScene(state.scene); const guidance=sceneGuidance(state.scene,state); router.html(`${guidance}${characterCard(character)}${content}`); }
+function sceneHtml(content){ const index=currentChapterIndex(); renderJourneyProgress(ctx,index); promptBtn.hidden=index<0; persistentFooter.hidden=true; updateBackdrop(); const character=characterForScene(state.scene); const guidance=sceneGuidance(state.scene,state); router.html(`${characterCard(character)}${guidance}${content}`); }
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});
 ctx.chapterIntro=(index,next)=>drawChapterIntro(ctx,index,next);
 ctx.abstraction=(humans,word,line,next)=>drawAbstraction(ctx,humans,word,line,next);
