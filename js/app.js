@@ -53,11 +53,22 @@ function addDecision(id,label,effectText,delta={}){ recordDecision(state,id,labe
 function addLedger(chapter,human,work,system,details=''){ recordLedger(state,chapter,human,work,system,details); saveState(); drawLedger(state,CHAPTERS,ledgerContent); }
 function renderLedger(){ drawLedger(state,CHAPTERS,ledgerContent); }
 function tone(frequency=440,duration=.06,type='sine'){ playTone(settings,frequency,duration,type); }
-function updateBackdrop(){ const backdrop=backdropForScene(state.scene); if(!backdrop){ stageBackdrop.style.removeProperty('--stage-image'); stageBackdrop.dataset.stage=''; return; } stageBackdrop.style.setProperty('--stage-image',`url("${backdrop.image}")`); stageBackdrop.dataset.stage=backdrop.group; }
+function updateBackdrop(){
+  const backdrop=backdropForScene(state.scene);
+  if(!backdrop){
+    stageBackdrop.style.removeProperty('--stage-image');
+    stageBackdrop.dataset.stage='';
+    delete document.body.dataset.stage;
+    return;
+  }
+  stageBackdrop.style.setProperty('--stage-image',`url("${backdrop.image}")`);
+  stageBackdrop.dataset.stage=backdrop.group;
+  document.body.dataset.stage=backdrop.group;
+}
 
 const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, mutateMetrics, addDecision, addLedger, renderLedger, tone, monitorTile };
 const router=createRouter({state,settings,sceneEl,save:saveState,tone,renderLedger});
-const PRE_JOURNEY_SCENES=new Set(['intro','introLoading','introExplain','zoomOut']);
+const PRE_JOURNEY_SCENES=new Set(['intro','zoomOut']);
 function currentChapterIndex(){ if(PRE_JOURNEY_SCENES.has(state.scene))return-1; const stage=stageForScene(state.scene); return CHAPTERS.findIndex(chapter=>chapter.key===stage); }
 function sceneHtml(content){ const index=currentChapterIndex(); renderJourneyProgress(ctx,index); promptBtn.hidden=index<0; persistentFooter.hidden=true; updateBackdrop(); const character=characterForScene(state.scene); const guidance=sceneGuidance(state.scene,state); router.html(`${guidance}${characterCard(character)}${content}`); }
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});

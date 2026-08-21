@@ -5,7 +5,6 @@ export const DEFAULT_STATE = {
     cost: 50,
     burden: 42,
     dataQuality: 62,
-    modelQuality: 62,
     reliability: 62,
     serviceQuality: 62
   },
@@ -14,16 +13,17 @@ export const DEFAULT_STATE = {
   flags: {
     miningCount: 0,
     miningWarning: false,
-    miningStopped: false,
-    factoryPPE: [],
+    miningIncidentChoice: null,
     factoryChoice: null,
     serverSteps: [],
+    dcCoolingChoice: null,
     revealedWorkers: [],
     dataOrigins: [],
     dataIndex: 0,
     dataSort: {
       keep: 0,
       remove: 0,
+      redact: 0,
       review: 0
     },
     annotationResults: [],
@@ -32,6 +32,7 @@ export const DEFAULT_STATE = {
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
     evalIndex: 0,
+    evalCorrectCount: 0,
     evalFeedback: null,
     safetyChoice: null,
     launchChoice: null,

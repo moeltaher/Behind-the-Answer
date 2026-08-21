@@ -11,7 +11,9 @@ export const DEFAULT_SETTINGS = {
 };
 
 const STATE_NULLABLE_VALIDATORS = {
+  miningIncidentChoice: value => typeof value === 'string',
   factoryChoice: value => typeof value === 'string',
+  dcCoolingChoice: value => typeof value === 'string',
   trainingIncidentChoice: value => typeof value === 'string',
   evalFeedback: value => (
     value &&
