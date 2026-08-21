@@ -1,7 +1,13 @@
 import { chromium } from 'playwright';
+import { DEFAULT_STATE, clone } from '../js/core/state.js';
+import {
+  STORAGE_KEY,
+  SETTINGS_KEY,
+  DEFAULT_SETTINGS
+} from '../js/core/storage.js';
 
 const BASE_URL = 'http://127.0.0.1:4173';
-const SETTINGS = { reduceMotion: true, highContrast: false, largeText: false, soundOn: false };
+const SETTINGS = { ...DEFAULT_SETTINGS, reduceMotion: true };
 
 async function click(page, selector) {
   const target = page.locator(selector);
@@ -32,13 +38,35 @@ async function expectActors(page) {
 async function chooseData(page, choice) { await click(page, `[data-sort="${choice}"]`); }
 async function chooseAnnotation(page, label) { await click(page, `[data-tag="${label}"]`); }
 
-async function loadState(page, savedState) {
+function currentState(patch = {}) {
+  const state = clone(DEFAULT_STATE);
+
+  function merge(target, source) {
+    for (const [key, value] of Object.entries(source)) {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        merge(target[key], value);
+      } else {
+        target[key] = value;
+      }
+    }
+  }
+
+  merge(state, patch);
+  return state;
+}
+
+async function loadState(page, patch = null) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await page.evaluate(({ settings, state }) => {
+  await page.evaluate(({ settingsKey, storageKey, settings, state }) => {
     localStorage.clear();
-    localStorage.setItem('behindTheAnswerSettings_v1', JSON.stringify(settings));
-    if (state) localStorage.setItem('behindTheAnswerGame_v1', JSON.stringify(state));
-  }, { settings: SETTINGS, state: savedState });
+    localStorage.setItem(settingsKey, JSON.stringify(settings));
+    if (state) localStorage.setItem(storageKey, JSON.stringify(state));
+  }, {
+    settingsKey: SETTINGS_KEY,
+    storageKey: STORAGE_KEY,
+    settings: SETTINGS,
+    state: patch ? currentState(patch) : null
+  });
   await page.reload({ waitUntil: 'networkidle' });
 }
 
@@ -48,7 +76,7 @@ async function runJourney(viewport, label) {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
 
-  await loadState(page, null);
+  await loadState(page);
 
   // المقدمة
   await click(page, '#introSend');
@@ -153,36 +181,32 @@ async function runBranchAndResumeChecks() {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
 
-  // حفظ قديم بمشهد لم يعد موجودًا يجب أن يعود إلى البداية بدل حالة هجينة.
-  await loadState(page, { scene: 'removedScene', chapter: 4 });
+  // معرف مشهد غير صالح يعود إلى البداية بدل إبقاء حالة غير قابلة للرسم.
+  await loadState(page, { scene: 'removedScene' });
   await page.locator('#introSend').waitFor({ state: 'visible' });
 
   // التعدين: المسار البديل للاستمرار بعد التحذير.
-  await loadState(page, { scene: 'mineTask', chapter: 0, flags: { miningCount: 6, miningWarning: true } });
+  await loadState(page, { scene: 'mineTask', flags: { miningCount: 6, miningWarning: true } });
   await expectDecision(page, { incident: true });
   await click(page, '#mineContinue');
   await page.getByText('لم يحدث').waitFor({ state: 'visible' });
 
   // المصنع: المسار البديل يجب أن يبقى بعد إعادة التحميل.
-  await loadState(page, { scene: 'factoryIncident', chapter: 1, flags: { factoryPPE: ['hair','mask','gloves','suit'] } });
+  await loadState(page, { scene: 'factoryIncident', flags: { factoryPPE: ['hair','mask','gloves','suit'] } });
   await click(page, '#fabContinue');
   await page.getByText('88%').waitFor({ state: 'visible' });
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByText('88%').waitFor({ state: 'visible' });
 
   // مركز البيانات: نقل الحمل بديل صالح عن الإيقاف.
-  await loadState(page, { scene: 'dcCooling', chapter: 2, flags: { serverSteps: ['rack','power','network','register'] } });
+  await loadState(page, { scene: 'dcCooling', flags: { serverSteps: ['rack','power','network','register'] } });
   await click(page, '#dcMove');
   await page.getByText('مركز البيانات لا يعمل بفني خوادم واحد.').waitFor({ state: 'visible' });
 
   // التصنيف: الرفض والأجر يعكسان الاختيارات الفعلية.
   await loadState(page, {
     scene: 'annotationReview',
-    chapter: 4,
     flags: {
-      annotationIndex: 2,
-      annotationAnswered: 2,
-      annotationCorrect: 1,
       annotationResults: [
         { index: 0, choice: 'عنف', acceptedAsReasonable: false, pending: false },
         { index: 1, choice: 'عنف', acceptedAsReasonable: true, pending: false }
@@ -199,11 +223,7 @@ async function runBranchAndResumeChecks() {
   // جولة صحيحة بالكامل لا تنشئ رفضًا أو اعتراضًا.
   await loadState(page, {
     scene: 'annotationReview',
-    chapter: 4,
     flags: {
-      annotationIndex: 2,
-      annotationAnswered: 2,
-      annotationCorrect: 2,
       annotationResults: [
         { index: 0, choice: 'آمن', acceptedAsReasonable: true, pending: false },
         { index: 1, choice: 'عنف', acceptedAsReasonable: true, pending: false }
@@ -214,7 +234,7 @@ async function runBranchAndResumeChecks() {
   if (await page.locator('#appeal').count()) throw new Error('Perfect annotation review unexpectedly exposes appeal action.');
 
   // التدريب: 8 مجموعات + نقطة أحدث + الاستمرار بقدرة أقل.
-  await loadState(page, { scene: 'trainingSetup', chapter: 5 });
+  await loadState(page, { scene: 'trainingSetup' });
   await page.selectOption('#computeSel', '8');
   await page.selectOption('#checkpointSel', 'recent');
   await click(page, '#trainStart');
@@ -223,12 +243,12 @@ async function runBranchAndResumeChecks() {
   await page.getByText('استمرت الجولة بسعة أقل حتى النهاية', { exact: false }).waitFor({ state: 'visible' });
 
   // الإطلاق: المسار السريع يعمل ويؤثر في الموثوقية لا جودة النموذج.
-  await loadState(page, { scene: 'launchDecision', chapter: 6 });
+  await loadState(page, { scene: 'launchDecision' });
   await click(page, '#criticalOnly');
   await page.getByText('تم الإطلاق في الموعد بعد إكمال الاختبارات الحرجة.').waitFor({ state: 'visible' });
 
-  // التشغيل: إعادة التشغيل مسار بديل صالح للـ rollback.
-  await loadState(page, { scene: 'deployIncident', chapter: 7, flags: { deployTabs: ['network','compute','model'] } });
+  // التشغيل: إعادة التشغيل مسار بديل صالح للعودة إلى إصدار سابق.
+  await loadState(page, { scene: 'deployIncident', flags: { deployTabs: ['network','compute','model'] } });
   await click(page, '#restartInst');
   await page.getByText('بإعادة تشغيل الوحدات المتأثرة', { exact: false }).waitFor({ state: 'visible' });
 
@@ -242,9 +262,9 @@ async function runBranchAndResumeChecks() {
     reliability: 10,
     serviceQuality: 62
   };
-  await loadState(page, { scene: 'finalAnswer', chapter: 8, metrics: baseMetrics });
+  await loadState(page, { scene: 'finalAnswer', metrics: baseMetrics });
   const lowReliabilityAnswer = await page.locator('.message.ai').innerText();
-  await loadState(page, { scene: 'finalAnswer', chapter: 8, metrics: { ...baseMetrics, reliability: 95 } });
+  await loadState(page, { scene: 'finalAnswer', metrics: { ...baseMetrics, reliability: 95 } });
   const highReliabilityAnswer = await page.locator('.message.ai').innerText();
   if (lowReliabilityAnswer !== highReliabilityAnswer) {
     throw new Error('Infrastructure reliability changed model answer text despite identical modelQuality.');
@@ -252,7 +272,7 @@ async function runBranchAndResumeChecks() {
 
   if (pageErrors.length) throw new Error(`branch/resume page errors: ${pageErrors.join(' | ')}`);
   await browser.close();
-  console.log('Alternate branches, annotation accounting, causal metrics, and saved-state recovery passed.');
+  console.log('Alternate branches, annotation accounting, causal metrics, and current-state persistence passed.');
 }
 
 await runJourney({ width: 1280, height: 900 }, 'desktop');
