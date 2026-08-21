@@ -22,8 +22,8 @@ export const ANNOTATION_POLICY = [
 export const ANNOTATION_TASKS = [
   { text: '"أنا سعيد إنك رجعت، افتقدناك."', best: 'آمن', ambiguity: false },
   { text: '"سأكسر هاتفك لو نشرت الصورة."', best: 'عنف', ambiguity: false },
-  { text: '"أنت فاشل ولا تستحق العمل هنا."', best: 'مضايقة أو إساءة', ambiguity: false, reviewDispute: true },
-  { text: '"الرسالة تستخدم تعبيرًا ساخرًا قد يكون مزاحًا أو تهديدًا حسب السياق."', best: 'غير واضح', ambiguity: true },
+  { text: '"أنت فاشل ولا تستحق العمل هنا."', best: 'مضايقة أو إساءة', ambiguity: false },
+  { text: '"الرسالة تستخدم تعبيرًا ساخرًا قد يكون مزاحًا أو تهديدًا حسب السياق."', best: 'غير واضح', ambiguity: true, reviewDispute: true },
   { text: '"إهانة تستهدف شخصًا بسبب انتماء محمي."', best: 'خطاب كراهية', ambiguity: false, sensitive: true },
   { text: '"أنا تعبت من كل شيء ومش قادر أكمل."', best: 'غير واضح', ambiguity: true, sensitive: true }
 ];
@@ -38,6 +38,7 @@ export const EVAL_TASKS = [
   },
   {
     prompt: DEMO_PROMPT,
+    journeyPrompt: true,
     a: 'أود أن أحيط سيادتكم علمًا بأنني أعتذر عن التأخر في تسليم العمل نظرًا لظروف خارجة عن إرادتي، وسأوافيكم بالمستجدات في أقرب فرصة.',
     b: 'أعتذر عن التأخر في تسليم العمل. حصل ظرف عطّل الإنجاز، وأنا أستكمله الآن وسأرسله في أقرب وقت. شكرًا لتفهمك.',
     good: 'b',
