@@ -2,17 +2,9 @@ import { CHAPTERS } from '../data/chapters.js';
 import { DEMO_PROMPT } from '../data/story.js';
 import { storyCharacters } from '../data/characters.js';
 import { characterGrid } from '../components/character-card.js';
+import { EVAL_TASKS } from '../data/content-tasks.js';
 
 const PIPELINE_STEPS = CHAPTERS.slice(0, -1).map(chapter => chapter.pipelineLabel);
-const BASELINE = {
-  pressure: 50,
-  cost: 50,
-  burden: 42,
-  dataQuality: 62,
-  modelQuality: 62,
-  reliability: 62,
-  serviceQuality: 62
-};
 const REQUIRED_DC_REVEALS = 3;
 const SECONDARY_LABOR = [
   'عمال النقل والمعالجة',
@@ -25,38 +17,32 @@ const SECONDARY_LABOR = [
 ];
 const FIXED_ANSWER = 'أعتذر عن التأخر في تسليم العمل. واجهت ظرفًا أدى إلى تأخير الإنجاز، وأعمل حاليًا على استكماله في أقرب وقت. أشكرك على تفهمك.';
 
-function direction(value, baseline) {
-  const delta = value - baseline;
-  if (delta >= 4) return ['↑', 'زاد'];
-  if (delta <= -4) return ['↓', 'انخفض'];
-  return ['→', 'بقي قريبًا من نقطة البداية'];
-}
-
-function resultCard(title, key, value, interpretation) {
-  const [arrow, label] = direction(value, BASELINE[key]);
-  return `<article class="metric-card"><span>${title}</span><strong>${arrow} ${label}</strong><small>${interpretation}</small></article>`;
-}
-
-function resultInterpretation(name, value) {
-  const delta = value - BASELINE[name];
-  const up = delta >= 4;
-  const down = delta <= -4;
-  const copies = {
-    pressure: up ? 'قرارات أكثر حافظت على السرعة والموعد تحت ضغط.' : down ? 'قرارات أكثر منحت مساحة للتوقف والفحص.' : 'لم يتحرك ضغط السرعة كثيرًا عن نقطة البداية.',
-    cost: up ? 'تحملت الشركة وقتًا أو حوسبة أو مراجعة إضافية في قرارات أكثر.' : down ? 'اختيارات أكثر خفضت تكلفة الشركة أو وقتها المباشر.' : 'لم تتحرك تكلفة الشركة كثيرًا عن نقطة البداية.',
-    burden: up ? 'انتقل ضغط أو مخاطرة أكبر إلى العمال.' : down ? 'انخفض العبء النسبي على العمال في عدد أكبر من القرارات.' : 'ظل عبء العامل قريبًا من نقطة البداية.',
-    dataQuality: up ? 'قرارات التجهيز والتصنيف كانت أكثر حذرًا واتساقًا مع معيار السيناريو.' : down ? 'تراكمت اختيارات أضعفت حذر تجهيز البيانات.' : 'ظل مسار البيانات قريبًا من نقطة البداية.',
-    modelQuality: up ? 'إجاباتك في مهام الملاءمة طابقت معيار السيناريو بدرجة أكبر.' : down ? 'فاتتك معايير ملاءمة أكثر في مهام التقييم.' : 'ظل أداء مهام الملاءمة قريبًا من نقطة البداية.',
-    reliability: up ? 'قرارات البنية والتحقق والاستعادة دعمت موثوقية أكبر.' : down ? 'بقيت مخاطر تشغيل أو تحقق أكبر.' : 'بقيت الموثوقية قريبة من نقطة البداية.',
-    serviceQuality: up ? 'عولجت بلاغات المستخدمين بطريقة ربطتها بالحادث بصورة أفضل.' : down ? 'اختيارات الدعم فقدت بعض معلومات الحادث أو اعتمدت على استجابة عامة.' : 'بقيت جودة الدعم قريبة من نقطة البداية.'
-  };
-  return copies[name];
-}
-
 function discovery(state) {
   return {
     dataOrigins: state.flags.dataOrigins.length,
     extraWorkers: Math.max(0, state.flags.revealedWorkers.length - REQUIRED_DC_REVEALS)
+  };
+}
+
+function selectedDecisions(state, matcher) {
+  return state.decisions.filter(decision => matcher(decision.id));
+}
+
+function decisionRows(decisions, h) {
+  if (!decisions.length) return '<p class="muted">لا توجد قرارات مسجلة في هذا المحور.</p>';
+  return decisions.map(decision => `<div class="decision-row"><strong>${h(decision.label)}</strong><div class="small muted">${h(decision.effectText)}</div></div>`).join('');
+}
+
+function deliveryState(state) {
+  if (state.flags.deployRecovery === 'restart') {
+    return {
+      time: '2.4 ثانية',
+      status: 'احتاج الطلب إلى إعادة محاولة واحدة في سيناريو اللعب لأن إعادة التشغيل أعادت الخدمة بسرعة من دون إزالة المشتبه به نفسه.'
+    };
+  }
+  return {
+    time: '1.3 ثانية',
+    status: 'وصل الطلب بعد استعادة الخدمة إلى الإصدار السابق المشتبه بأنه أكثر استقرارًا في هذا السيناريو.'
   };
 }
 
@@ -81,12 +67,14 @@ export function createEndingRoutes(ctx) {
   }
 
   function finalAnswer() {
-    html(`<div class="chat-shell"><div class="chat-logo">ن</div><div class="message user">${h(DEMO_PROMPT)}</div><div class="message ai"><strong>الإجابة:</strong><br>${h(FIXED_ANSWER)}</div><div class="small muted">ظهرت الإجابة خلال 1.2 ثانية — زمن افتراضي داخل اللعبة</div><div class="reality-note"><strong>لماذا لم تتغير صياغة الإجابة حسب كل قراراتك؟</strong> لأن قرارات التعدين والتصنيع والتبريد والسلامة والدعم لا تربطها علاقة سببية مباشرة بصياغة رسالة الاعتذار هذه. تظهر آثارها في نتيجة الرحلة بدل صناعة سببية غير حقيقية.</div><div class="action-row"><button id="behindAnswer" class="primary-btn">افتح ما وراء هذه اللحظة</button></div></div>`);
+    const delivery=deliveryState(state);
+    html(`<div class="chat-shell"><div class="chat-logo">ن</div><div class="message user">${h(DEMO_PROMPT)}</div><div class="message ai"><strong>الإجابة:</strong><br>${h(FIXED_ANSWER)}</div><div class="delivery-state"><strong>${delivery.time} — زمن افتراضي</strong><span>${h(delivery.status)}</span></div><div class="reality-note"><strong>ما الذي تغير وما الذي لم يتغير؟</strong> صياغة رسالة الاعتذار ثابتة لأن قرارات التعدين والتصنيع والتبريد لا تجعل الجملة نفسها أفضل لغويًا. لكن قرار الاستعادة في التشغيل أصبح له أثر مرئي على كيفية وصول الطلب في سيناريو اللعب.</div><div class="action-row"><button id="behindAnswer" class="primary-btn">افتح ما وراء هذه اللحظة</button></div></div>`);
     $('#behindAnswer').addEventListener('click', () => go('timelineReveal'));
   }
 
   function timelineReveal() {
-    html(`<div><span class="eyebrow">لحظة إرسال الطلب</span><h1 class="display-title">1.2 ثانية ليست عمر السلسلة</h1><div class="dual-view"><div class="view-panel"><h3>ما بُني قبل طلبك</h3><div class="view-list"><span>الأجهزة</span><span>مراكز البيانات</span><span>البيانات</span><span>التدريب</span><span>التقييم</span><span>الإطلاق</span></div></div><div class="view-panel"><h3>ما يحدث عند الضغط على «إرسال»</h3><div class="view-list"><span>يصل الطلب إلى الخدمة</span><span>تستقبله الخوادم</span><span>يشغَّل النموذج</span><span>تعود النتيجة</span></div></div></div><div class="action-row"><button id="showPeople" class="primary-btn">أعد البشر إلى الصورة</button></div></div>`);
+    const delivery=deliveryState(state);
+    html(`<div><span class="eyebrow">لحظة إرسال الطلب</span><h1 class="display-title">${delivery.time} ليست عمر السلسلة</h1><div class="dual-view"><div class="view-panel"><h3>ما بُني قبل طلبك</h3><div class="view-list"><span>الأجهزة</span><span>مراكز البيانات</span><span>البيانات</span><span>التدريب</span><span>التقييم</span><span>الإطلاق</span></div></div><div class="view-panel"><h3>ما يحدث عند الضغط على «إرسال»</h3><div class="view-list"><span>يصل الطلب إلى الخدمة</span><span>تستقبله الخوادم</span><span>يشغَّل النموذج</span><span>تعود النتيجة أو يعاد الطلب إذا فشلت المحاولة</span></div></div></div><div class="action-row"><button id="showPeople" class="primary-btn">أعد البشر إلى الصورة</button></div></div>`);
     $('#showPeople').addEventListener('click', () => go('peopleReveal'));
   }
 
@@ -96,19 +84,17 @@ export function createEndingRoutes(ctx) {
   }
 
   function results() {
-    const metrics = state.metrics;
     const explored = discovery(state);
-    const decisions = state.decisions.length
-      ? state.decisions.map(decision => `<div class="decision-row"><strong>${h(decision.label)}</strong><div class="small muted">${h(decision.effectText)}</div></div>`).join('')
-      : '<p class="muted">لم تسجل قرارات بعد.</p>';
+    const labor = selectedDecisions(state, id => id.startsWith('mine-') || id.startsWith('annotation-'));
+    const materialAndData = selectedDecisions(state, id => id.startsWith('factory-') || id.startsWith('data-') || id.startsWith('dc-'));
+    const trainingAndLaunch = selectedDecisions(state, id => id.startsWith('training-') || id.startsWith('train-') || id.startsWith('launch-'));
+    const operations = selectedDecisions(state, id => id.startsWith('deploy-') || id.startsWith('support-'));
     const safety = state.flags.safetyChoice === 'details'
-      ? 'اكتشفت مشكلة السلامة في الاختبار.'
-      : 'فاتتك مشكلة السلامة في الاختبار.';
-    const verification = state.flags.launchChoice === 'delay'
-      ? 'اخترت إكمال نطاق التحقق قبل الإطلاق.'
-      : 'اخترت الإطلاق بعد الاختبارات الحرجة فقط.';
+      ? 'اكتشفت الخلل في اختبار السلامة.'
+      : 'لم تلتقط الخلل الأساسي في اختبار السلامة.';
+    const evaluation = `طابقت معيار السيناريو في ${state.flags.evalCorrectCount} من ${EVAL_TASKS.length} مهام تقييم. هذه نتيجة لأداء المقيّم، وليست درجة جودة للنموذج.`;
 
-    html(`<div><span class="eyebrow">نتيجة رحلتك</span><h1 class="display-title">النتيجة اتجاهات، لا درجة واحدة.</h1><p class="scene-subtitle">تعرض البطاقات كيف حركت قراراتك كل بُعد مقارنة بنقطة البداية الافتراضية. لا تمثل الأرقام الداخلية درجة أخلاقية أو مقياسًا حقيقيًا من 100.</p><div class="results-grid">${resultCard('ضغط الإنتاج','pressure',metrics.pressure,resultInterpretation('pressure',metrics.pressure))}${resultCard('تكلفة الشركة','cost',metrics.cost,resultInterpretation('cost',metrics.cost))}${resultCard('عبء العامل','burden',metrics.burden,resultInterpretation('burden',metrics.burden))}${resultCard('حوكمة وجودة البيانات','dataQuality',metrics.dataQuality,resultInterpretation('dataQuality',metrics.dataQuality))}${resultCard('ملاءمة المخرجات','modelQuality',metrics.modelQuality,resultInterpretation('modelQuality',metrics.modelQuality))}${resultCard('موثوقية البنية والخدمة','reliability',metrics.reliability,resultInterpretation('reliability',metrics.reliability))}${resultCard('جودة دعم المستخدم','serviceQuality',metrics.serviceQuality,resultInterpretation('serviceQuality',metrics.serviceQuality))}</div><div class="dual-view"><div class="view-panel"><h3>السلامة</h3><p>${h(safety)}</p></div><div class="view-panel"><h3>تغطية التحقق قبل الإطلاق</h3><p>${h(verification)}</p></div></div><div class="card flat discovery-summary"><h2>استكشاف إضافي</h2><p>فتحت ${explored.dataOrigins} من بطاقات مصادر البيانات، وكشفت ${explored.extraWorkers} أدوار إضافية في مركز البيانات بعد الحد الأدنى المطلوب. هذا عداد استكشاف، وليس درجة نجاح.</p></div><div class="card flat results-decisions"><h2>قراراتك</h2><div class="decision-list">${decisions}</div></div><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة رحلتك</span><h1 class="display-title">النتيجة أدلة من قراراتك، لا متوسط نقاط.</h1><p class="scene-subtitle">لا تجمع اللعبة الآن عبء موسى وأماني أو تكلفة المصنع والتدريب في رقم واحد. كل محور يعرض القرار نفسه والأثر الذي مثله داخل السيناريو.</p><div class="evidence-results"><section class="evidence-card"><h2>العمل والوقت</h2><div class="decision-list">${decisionRows(labor,h)}</div></section><section class="evidence-card"><h2>المواد والبيانات والبنية</h2><div class="decision-list">${decisionRows(materialAndData,h)}</div></section><section class="evidence-card"><h2>التدريب والتحقق</h2><div class="decision-list">${decisionRows(trainingAndLaunch,h)}</div></section><section class="evidence-card"><h2>التشغيل ودعم المستخدم</h2><div class="decision-list">${decisionRows(operations,h)}</div></section></div><div class="dual-view"><div class="view-panel"><h3>عملية التقييم البشري</h3><p>${h(evaluation)}</p></div><div class="view-panel"><h3>اختبار السلامة</h3><p>${h(safety)}</p></div></div><div class="card flat discovery-summary"><h2>استكشاف إضافي</h2><p>فتحت ${explored.dataOrigins} من بطاقات مصادر البيانات، وكشفت ${explored.extraWorkers} أدوار إضافية في مركز البيانات بعد الحد الأدنى المطلوب. هذا عداد استكشاف، وليس درجة نجاح.</p></div><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
     $('#resultsLedger').addEventListener('click', () => { renderLedger(); ledgerDialog.showModal(); });
     $('#toFinalMessage').addEventListener('click', () => go('finalMessage'));
   }
@@ -121,7 +107,7 @@ export function createEndingRoutes(ctx) {
   }
 
   function methodology() {
-    html(`<div><span class="eyebrow">عن اللعبة</span><h1 class="scene-title">المنهجية والدقة التقنية</h1><div class="card flat"><h2>ما الذي تمثله اللعبة؟</h2><p>تجربة تعليمية مبسطة حول السلسلة المادية والبشرية المرتبطة بأنظمة الذكاء الاصطناعي. الشخصيات والأرقام خيالية ومركبة.</p></div><div class="card flat methodology-card"><h2>كيف تُقرأ النتائج؟</h2><p>النتائج اتجاهات مقارنة بنقطة بداية افتراضية، وليست درجات جودة أو أحكامًا أخلاقية. كما تفصل اللعبة بين ملاءمة المخرجات والسلامة والجاهزية وموثوقية الخدمة.</p></div><div class="card flat methodology-card"><h2>لماذا تبدو الرحلة خطية؟</h2><p>هذا ترتيب تعليمي. في الواقع قد تتكرر أعمال البيانات والتصنيف والتدريب والتقييم، وقد تعود معلومات التشغيل إلى التطوير.</p></div><div class="card flat methodology-card"><h2>الفرق بين بناء النظام واستخدامه</h2><p>استخراج المواد وتصنيع الأجهزة وتجهيز البيانات والتدريب والتقييم تحدث قبل الاستخدام النهائي. عندما ترسل طلبًا، تستخدم الخدمة بنية ونموذجًا بُنيا سابقًا.</p></div><div class="card flat methodology-card"><h2>الخصوصية</h2><p>لا يوجد خادم خلفي ولا حساب مستخدم. تحفظ اللعبة تقدمك وإعداداتك داخل التخزين المحلي في متصفحك فقط.</p></div><div class="action-row"><button id="methodHome" class="primary-btn">العودة إلى النهاية</button></div></div>`);
+    html(`<div><span class="eyebrow">عن اللعبة</span><h1 class="scene-title">المنهجية والدقة التقنية</h1><div class="card flat"><h2>ما الذي تمثله اللعبة؟</h2><p>تجربة تعليمية مبسطة حول السلسلة المادية والبشرية المرتبطة بأنظمة الذكاء الاصطناعي. الشخصيات والأرقام خيالية ومركبة.</p></div><div class="card flat methodology-card"><h2>كيف تُقرأ النتائج؟</h2><p>النتائج تعرض أدلة من القرارات نفسها بدل جمع أعمال وتكاليف مختلفة في درجة واحدة. كما تفصل اللعبة بين أداء المقيّم واختبار السلامة وقرار الجاهزية وموثوقية التشغيل.</p></div><div class="card flat methodology-card"><h2>لماذا تبدو الرحلة خطية؟</h2><p>هذا ترتيب تعليمي. في الواقع قد تتكرر أعمال البيانات والتصنيف والتدريب والتقييم، وقد تعود معلومات التشغيل إلى التطوير.</p></div><div class="card flat methodology-card"><h2>الفرق بين بناء النظام واستخدامه</h2><p>استخراج المواد وتصنيع الأجهزة وتجهيز البيانات والتدريب والتقييم تحدث قبل الاستخدام النهائي. عندما ترسل طلبًا، تستخدم الخدمة بنية ونموذجًا بُنيا سابقًا.</p></div><div class="card flat methodology-card"><h2>الخصوصية</h2><p>لا يوجد خادم خلفي ولا حساب مستخدم. تحفظ اللعبة تقدمك وإعداداتك داخل التخزين المحلي في متصفحك فقط.</p></div><div class="action-row"><button id="methodHome" class="primary-btn">العودة إلى النهاية</button></div></div>`);
     $('#methodHome').addEventListener('click', () => go('finalMessage'));
   }
 
