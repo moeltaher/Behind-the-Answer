@@ -64,13 +64,21 @@ for (const [file, css] of cssSources) {
 const customPropertyDefinitions = new Set(
   [...allCss.matchAll(/(^|[;{]\s*)(--[A-Za-z0-9_-]+)\s*:/gm)].map(match => match[2])
 );
-const customPropertyUses = new Set(
+const cssPropertyUses = new Set(
   [...allCss.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)].map(match => match[1])
 );
+const runtimePropertyUses = new Set(
+  [...runtimeSource.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)].map(match => match[1])
+);
+const allPropertyUses = new Set([...cssPropertyUses, ...runtimePropertyUses]);
 
 for (const property of customPropertyDefinitions) {
-  if (!customPropertyUses.has(property)) {
-    failures.push(`Unused CSS custom property: ${property}`);
+  if (!allPropertyUses.has(property)) failures.push(`Unused CSS custom property: ${property}`);
+}
+
+for (const property of runtimePropertyUses) {
+  if (!customPropertyDefinitions.has(property)) {
+    failures.push(`Runtime references undefined CSS custom property: ${property}`);
   }
 }
 
@@ -87,4 +95,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`CSS integrity check passed across ${cssFiles.length} stylesheets.`);
+console.log(`CSS integrity check passed across ${cssFiles.length} stylesheets, including runtime CSS-variable references.`);
