@@ -9,7 +9,7 @@ import { CHAPTERS } from './data/chapters.js';
 import { DEMO_PROMPT } from './data/story.js';
 import { characterForScene } from './data/characters.js';
 import { backdropForScene, stageForScene } from './data/stage-backgrounds.js';
-import { monitorTile, metric } from './components/hud.js';
+import { monitorTile } from './components/hud.js';
 import { renderJourneyProgress, chapterIntro as drawChapterIntro } from './components/progress.js';
 import { abstraction as drawAbstraction } from './components/abstraction.js';
 import { bindDialogs } from './components/dialogs.js';
@@ -55,7 +55,7 @@ function renderLedger(){ drawLedger(state,CHAPTERS,ledgerContent); }
 function tone(frequency=440,duration=.06,type='sine'){ playTone(settings,frequency,duration,type); }
 function updateBackdrop(){ const backdrop=backdropForScene(state.scene); if(!backdrop){ stageBackdrop.style.removeProperty('--stage-image'); stageBackdrop.dataset.stage=''; return; } stageBackdrop.style.setProperty('--stage-image',`url("${backdrop.image}")`); stageBackdrop.dataset.stage=backdrop.group; }
 
-const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, mutateMetrics, addDecision, addLedger, renderLedger, tone, monitorTile, metric };
+const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, mutateMetrics, addDecision, addLedger, renderLedger, tone, monitorTile };
 const router=createRouter({state,settings,sceneEl,save:saveState,tone,renderLedger});
 const PRE_JOURNEY_SCENES=new Set(['intro','introLoading','introExplain','zoomOut']);
 function currentChapterIndex(){ if(PRE_JOURNEY_SCENES.has(state.scene))return-1; const stage=stageForScene(state.scene); return CHAPTERS.findIndex(chapter=>chapter.key===stage); }
