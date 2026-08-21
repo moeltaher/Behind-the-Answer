@@ -1,10 +1,17 @@
+import { DEMO_PROMPT } from '../data/story.js';
+
 export function bindDialogs(ctx) {
   ctx.$('#settingsBtn').addEventListener('click', () => {
     ctx.settingsDialog.showModal();
   });
 
+  const promptDialogText = ctx.$('#promptDialogText');
   ctx.promptBtn.addEventListener('click', () => {
+    if (promptDialogText) promptDialogText.textContent = DEMO_PROMPT;
     ctx.promptDialog.showModal();
+  });
+  ctx.promptDialog.addEventListener('close', () => {
+    if (promptDialogText) promptDialogText.textContent = '';
   });
 
   ctx.ledgerBtn.addEventListener('click', () => {

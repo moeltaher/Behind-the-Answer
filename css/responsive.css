@@ -1,7 +1,6 @@
 @media (max-width: 850px) {
   .topbar { grid-template-columns:1fr auto; min-height:64px; }
   .journey-progress { grid-column:1 / -1; grid-row:2; }
-  .btn-text { display:none; }
   .scene { min-height:calc(100dvh - 98px); padding-top:24px; }
   .rack-board, .sort-layout, .training-board { grid-template-columns:1fr; }
   .montage { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -11,12 +10,13 @@
 
 @media (max-width: 620px) {
   :root { --radius:18px; }
-  .topbar { padding:8px 12px; row-gap:3px; }
-  .brand strong { font-size:.86rem; }
+  .topbar { padding:8px 10px; row-gap:3px; column-gap:8px; }
+  .brand strong { font-size:.82rem; }
   .brand small { display:none; }
-  .brand-mark { width:32px; height:32px; font-size:20px; }
-  .top-actions { gap:5px; }
-  .icon-btn { min-height:36px; padding:6px 9px; }
+  .brand-mark { width:30px; height:30px; font-size:18px; }
+  .top-actions { gap:3px; }
+  .icon-btn { min-height:36px; padding:5px 7px; gap:4px; }
+  .btn-text { display:inline; font-size:.64rem; white-space:nowrap; }
   .journey-progress { margin-top:0; }
   .progress-copy { font-size:.72rem; margin-bottom:3px; }
   .progress-track { height:4px; }
@@ -43,6 +43,12 @@
 }
 
 @media (max-width: 390px) {
+  .brand-wrap { min-width:0; }
+  .brand { gap:5px; padding-inline:2px; }
+  .brand-mark { display:none; }
+  .brand strong { font-size:.76rem; white-space:nowrap; }
+  .icon-btn { padding:5px 6px; }
+  .btn-text { font-size:.6rem; }
   .monitor { grid-template-columns:1fr; }
   .montage { grid-template-columns:1fr; }
   .annotation-tags { grid-template-columns:1fr; }

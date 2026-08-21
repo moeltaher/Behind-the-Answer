@@ -35,7 +35,7 @@ function journeyMap(ctx, currentIndex) {
     const stateClass = index === currentIndex ? 'current' : index < currentIndex ? 'done' : '';
     return `<div class="journey-node ${stateClass}"><span class="journey-icon" aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></div>`;
   }).join('');
-  return `<div class="journey-map" aria-label="خريطة رحلة الإجابة">${nodes}</div>`;
+  return `<div class="journey-map" aria-label="خريطة رحلة الإجابة عبر ثماني مراحل">${nodes}</div>`;
 }
 
 function terminology(index) {
@@ -53,6 +53,6 @@ function terminology(index) {
 export function chapterIntro(ctx, index, next) {
   const chapter = ctx.chapters[index];
   const task = STAGE_TASKS[chapter.key];
-  ctx.html(`<div class="learning-intro compact-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="chapter-link-line">${ctx.h(chapter.link)}</p></div>${taskPanel(task,{status:'active',progress:'ابدأ المهمة بالزر أدناه',compact:true})}<details class="learning-more"><summary>المكان، العاملون، والتفاصيل التقنية</summary><p><strong>المكان:</strong> ${ctx.h(chapter.where)}</p><p><strong>من يعمل هنا؟</strong> ${ctx.h(chapter.workers)}</p>${terminology(index)}<p>${ctx.h(chapter.what)}</p><div class="stage-output"><strong>الناتج الذي سينتقل معنا</strong>${ctx.h(chapter.output)}</div><details class="journey-map-details"><summary>عرض خريطة المراحل التسع</summary>${journeyMap(ctx,index)}</details></details><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ المهمة</button></div></div>`);
+  ctx.html(`<div class="learning-intro compact-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="chapter-link-line">${ctx.h(chapter.link)}</p></div>${taskPanel(task,{status:'active',progress:'ابدأ المهمة بالزر أدناه',compact:false})}<details class="learning-more"><summary>المكان، العاملون، والتفاصيل التقنية</summary><p><strong>المكان:</strong> ${ctx.h(chapter.where)}</p><p><strong>من يعمل هنا؟</strong> ${ctx.h(chapter.workers)}</p>${terminology(index)}<p>${ctx.h(chapter.what)}</p><div class="stage-output"><strong>الناتج الذي سينتقل معنا</strong>${ctx.h(chapter.output)}</div><details class="journey-map-details"><summary>عرض خريطة المراحل الثماني</summary>${journeyMap(ctx,index)}</details></details><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ المهمة</button></div></div>`);
   ctx.$('#chapterNext')?.addEventListener('click', () => ctx.go(next));
 }
