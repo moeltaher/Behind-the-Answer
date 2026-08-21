@@ -1,6 +1,8 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, dirname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_STATE } from '../js/core/state.js';
+import { STORAGE_KEY, SETTINGS_KEY } from '../js/core/storage.js';
 import { SCENES_BY_STAGE } from '../js/data/stage-backgrounds.js';
 import { createIntroRoutes } from '../js/scenes/intro.js';
 import { createMiningRoutes } from '../js/scenes/mining.js';
@@ -101,6 +103,26 @@ for (const file of files.filter(file => relative(file).startsWith('css/') && ext
   const ref = `./${relative(file)}`;
   if (!index.includes(`href="${ref}"`)) {
     failures.push(`Unused stylesheet: ${relative(file)}`);
+  }
+}
+
+if (STORAGE_KEY.includes('_v') || SETTINGS_KEY.includes('_v')) {
+  failures.push('Storage keys must describe the current schema without version suffixes.');
+}
+
+if (Object.hasOwn(DEFAULT_STATE, 'chapter')) {
+  failures.push('DEFAULT_STATE contains derived chapter state.');
+}
+
+for (const field of [
+  'annotationIndex',
+  'annotationCorrect',
+  'annotationAnswered',
+  'annotationCounts',
+  'trainingConfigured'
+]) {
+  if (Object.hasOwn(DEFAULT_STATE.flags, field)) {
+    failures.push(`DEFAULT_STATE contains derived flag: ${field}`);
   }
 }
 
