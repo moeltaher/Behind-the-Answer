@@ -44,33 +44,66 @@ function migrateState(saved) {
   if (saved.metrics) {
     delete saved.metrics.visibility;
     delete saved.metrics.discovery;
+    // The old single quality score mixed unrelated causal dimensions.
+    // New split metrics intentionally start from their documented defaults.
+    delete saved.metrics.quality;
   }
-  if (saved.flags) delete saved.flags.finalEnding;
+
+  if (saved.flags) {
+    delete saved.flags.finalEnding;
+
+    // Saves made before per-task annotation results cannot be reconciled
+    // reliably with accepted/rejected pay. Restart only this stage's task data.
+    if (saved.flags.annotationAnswered > 0 && !Array.isArray(saved.flags.annotationResults)) {
+      saved.flags.annotationIndex = 0;
+      saved.flags.annotationCorrect = 0;
+      saved.flags.annotationAnswered = 0;
+      saved.flags.annotationResults = [];
+      saved.flags.annotationCounts = { accepted: 0, pending: 0, rejected: 0 };
+    }
+  }
 
   return saved;
+}
+
+function numericMetrics(defaults, savedMetrics) {
+  const result = { ...defaults };
+  if (!savedMetrics || typeof savedMetrics !== 'object') return result;
+
+  for (const key of Object.keys(defaults)) {
+    const value = savedMetrics[key];
+    if (Number.isFinite(value)) result[key] = Math.max(0, Math.min(100, value));
+  }
+  return result;
 }
 
 function mergeState(defaultState, savedState) {
   const defaults = clone(defaultState);
   const saved = migrateState(savedState);
+  const savedFlags = saved.flags && typeof saved.flags === 'object' ? saved.flags : {};
 
   return {
     ...defaults,
     ...saved,
-    metrics: {
-      ...defaults.metrics,
-      ...(saved.metrics || {})
-    },
+    scene: typeof saved.scene === 'string' ? saved.scene : defaults.scene,
+    chapter: Number.isInteger(saved.chapter) ? saved.chapter : defaults.chapter,
+    metrics: numericMetrics(defaults.metrics, saved.metrics),
     flags: {
       ...defaults.flags,
-      ...(saved.flags || {}),
+      ...savedFlags,
+      factoryPPE: Array.isArray(savedFlags.factoryPPE) ? savedFlags.factoryPPE : defaults.flags.factoryPPE,
+      serverSteps: Array.isArray(savedFlags.serverSteps) ? savedFlags.serverSteps : defaults.flags.serverSteps,
+      revealedWorkers: Array.isArray(savedFlags.revealedWorkers) ? savedFlags.revealedWorkers : defaults.flags.revealedWorkers,
+      dataOrigins: Array.isArray(savedFlags.dataOrigins) ? savedFlags.dataOrigins : defaults.flags.dataOrigins,
+      deployTabs: Array.isArray(savedFlags.deployTabs) ? savedFlags.deployTabs : defaults.flags.deployTabs,
+      annotationResults: Array.isArray(savedFlags.annotationResults) ? savedFlags.annotationResults : defaults.flags.annotationResults,
       dataSort: {
         ...defaults.flags.dataSort,
-        ...(saved.flags?.dataSort || {})
+        ...(savedFlags.dataSort && typeof savedFlags.dataSort === 'object' ? savedFlags.dataSort : {})
       },
       annotationCounts: {
         ...defaults.flags.annotationCounts,
-        ...(saved.flags?.annotationCounts || {})
+        ...(savedFlags.annotationCounts && typeof savedFlags.annotationCounts === 'object' ? savedFlags.annotationCounts : {})
       }
     },
     decisions: Array.isArray(saved.decisions) ? saved.decisions : defaults.decisions,
