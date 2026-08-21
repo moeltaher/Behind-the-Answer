@@ -68,7 +68,18 @@ const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFi
 const router=createRouter({state,settings,sceneEl,save:saveState,tone});
 const PRE_JOURNEY_SCENES=new Set(['intro','zoomOut']);
 function currentChapterIndex(){ if(PRE_JOURNEY_SCENES.has(state.scene))return-1; const stage=stageForScene(state.scene); return CHAPTERS.findIndex(chapter=>chapter.key===stage); }
-function sceneHtml(content){ const index=currentChapterIndex(); renderJourneyProgress(ctx,index); promptBtn.hidden=index<0; persistentFooter.hidden=true; updateBackdrop(); const character=characterForScene(state.scene); const guidance=sceneGuidance(state.scene,state); router.html(`${characterCard(character)}${guidance}${content}`); }
+function sceneHtml(content){
+  const index=currentChapterIndex();
+  renderJourneyProgress(ctx,index);
+  promptBtn.hidden=index<0;
+  persistentFooter.hidden=true;
+  updateBackdrop();
+  const character=characterForScene(state.scene);
+  const guidance=sceneGuidance(state.scene,state);
+  const notice=state.systemNotice?`<div class="alert" role="status"><strong>تحديث الحفظ المحلي</strong><span>${h(state.systemNotice)}</span></div>`:'';
+  router.html(`${notice}${characterCard(character)}${guidance}${content}`);
+  if(state.systemNotice){ state.systemNotice=''; saveState(); }
+}
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});
 ctx.chapterIntro=(index,next)=>drawChapterIntro(ctx,index,next);
 ctx.abstraction=(humans,word,line,next)=>drawAbstraction(ctx,humans,word,line,next);
