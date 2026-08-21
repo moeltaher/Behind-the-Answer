@@ -19,31 +19,19 @@
   <a class="skip-link" href="#game-main">تجاوز إلى اللعبة</a>
   <div id="app" class="app-shell">
     <header class="topbar" aria-label="شريط اللعبة">
-      <div class="brand-wrap">
-        <button id="brandHome" class="brand" type="button" aria-label="العودة إلى البداية">
-          <span class="brand-mark" aria-hidden="true">◌</span>
-          <span><strong>خلف الإجابة</strong><small>رحلة داخل سلسلة الذكاء الاصطناعي</small></span>
-        </button>
-      </div>
+      <div class="brand-wrap"><button id="brandHome" class="brand" type="button" aria-label="العودة إلى البداية"><span class="brand-mark" aria-hidden="true">◌</span><span><strong>خلف الإجابة</strong><small>رحلة داخل سلسلة الذكاء الاصطناعي</small></span></button></div>
       <div id="journeyProgress" class="journey-progress" aria-label="تقدم الرحلة" hidden>
         <div class="progress-copy"><span id="chapterLabel">المرحلة 1 من 9</span><span id="chapterTitle">المواد</span></div>
         <div class="progress-track" aria-hidden="true"><i id="progressFill"></i></div>
+        <div id="miniJourney" class="mini-journey" aria-label="خريطة الرحلة"></div>
       </div>
-      <nav class="top-actions" aria-label="أدوات اللعبة">
-        <button id="ledgerBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="دفتر السلسلة" hidden><span aria-hidden="true">▦</span><span class="btn-text">دفتر السلسلة</span></button>
-        <button id="settingsBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="إعدادات الوصول"><span aria-hidden="true">⚙</span><span class="btn-text">الإعدادات</span></button>
-      </nav>
+      <nav class="top-actions" aria-label="أدوات اللعبة"><button id="ledgerBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="دفتر السلسلة" hidden><span aria-hidden="true">▦</span><span class="btn-text">دفتر السلسلة</span></button><button id="settingsBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="إعدادات الوصول"><span aria-hidden="true">⚙</span><span class="btn-text">الإعدادات</span></button></nav>
     </header>
     <main id="game-main" class="game-main" tabindex="-1"><section id="scene" class="scene" aria-live="polite" aria-atomic="false"></section></main>
     <footer id="persistentFooter" class="persistent-footer" hidden><div class="waiting-prompt"><span>الإجابة التي تنتظرها</span><strong>«اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.»</strong></div></footer>
   </div>
   <dialog id="ledgerDialog" class="modal ledger-modal"><div class="modal-head"><div><span class="eyebrow">السجل الذي لا تراه واجهة الذكاء الاصطناعي</span><h2>دفتر السلسلة</h2></div><button class="close-btn" data-close-dialog="ledgerDialog" aria-label="إغلاق">×</button></div><div id="ledgerContent" class="ledger-content"></div></dialog>
-  <dialog id="settingsDialog" class="modal settings-modal"><div class="modal-head"><div><span class="eyebrow">قابلية الوصول</span><h2>إعدادات العرض والتفاعل</h2></div><button class="close-btn" data-close-dialog="settingsDialog" aria-label="إغلاق">×</button></div><div class="settings-grid">
-    <label class="setting-row"><span><strong>تقليل الحركة</strong><small>يوقف الانتقالات والحركات الزائدة.</small></span><input id="reduceMotion" type="checkbox" /></label>
-    <label class="setting-row"><span><strong>تباين مرتفع</strong><small>يزيد التباين وحدود العناصر.</small></span><input id="highContrast" type="checkbox" /></label>
-    <label class="setting-row"><span><strong>نص أكبر</strong><small>يكبر النصوص الأساسية داخل اللعبة.</small></span><input id="largeText" type="checkbox" /></label>
-    <label class="setting-row"><span><strong>أصوات واجهة خفيفة</strong><small>لا تستخدم ملفات صوت خارجية.</small></span><input id="soundOn" type="checkbox" /></label>
-  </div><div class="settings-danger"><button id="resetProgress" class="text-btn danger" type="button">مسح التقدم والبدء من جديد</button></div></dialog>
+  <dialog id="settingsDialog" class="modal settings-modal"><div class="modal-head"><div><span class="eyebrow">قابلية الوصول</span><h2>إعدادات العرض والتفاعل</h2></div><button class="close-btn" data-close-dialog="settingsDialog" aria-label="إغلاق">×</button></div><div class="settings-grid"><label class="setting-row"><span><strong>تقليل الحركة</strong><small>يوقف الانتقالات والحركات الزائدة.</small></span><input id="reduceMotion" type="checkbox" /></label><label class="setting-row"><span><strong>تباين مرتفع</strong><small>يزيد التباين وحدود العناصر.</small></span><input id="highContrast" type="checkbox" /></label><label class="setting-row"><span><strong>نص أكبر</strong><small>يكبر النصوص الأساسية داخل اللعبة.</small></span><input id="largeText" type="checkbox" /></label><label class="setting-row"><span><strong>أصوات واجهة خفيفة</strong><small>لا تستخدم ملفات صوت خارجية.</small></span><input id="soundOn" type="checkbox" /></label></div><div class="settings-danger"><button id="resetProgress" class="text-btn danger" type="button">مسح التقدم والبدء من جديد</button></div></dialog>
   <dialog id="confirmResetDialog" class="modal confirm-modal"><div class="modal-head"><div><span class="eyebrow">إعادة البداية</span><h2>مسح التقدم؟</h2></div><button class="close-btn" data-close-dialog="confirmResetDialog" aria-label="إغلاق">×</button></div><p>سيتم حذف تقدم اللعبة المحفوظ محليًا على هذا الجهاز فقط. لا توجد قاعدة بيانات أو حساب مستخدم.</p><div class="action-row"><button class="secondary-btn" data-close-dialog="confirmResetDialog" type="button">إلغاء</button><button id="confirmReset" class="primary-btn danger-bg" type="button">امسح التقدم</button></div></dialog>
   <noscript><div class="noscript">تحتاج اللعبة إلى JavaScript للعمل، لكنها لا تحتاج إلى خادم أو قاعدة بيانات.</div></noscript>
   <script type="module" src="./js/app.js"></script>
