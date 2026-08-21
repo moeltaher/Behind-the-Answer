@@ -137,7 +137,7 @@ async function runJourney(viewport, label) {
   await click(page, '#chapterNext');
   const trainingInput = await selectedOptionText(page, '.config-panel select');
   if (!trainingInput.includes('4 أمثلة بشرية مؤكدة')) throw new Error(`${label}: confirmed annotation inputs are not shown in the training configuration.`);
-  await page.getByText('2 حالة معلقة', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('حالتان معلقتان', { exact: false }).waitFor({ state: 'visible' });
   await page.getByText('ليس سلوكًا تلقائيًا', { exact: false }).waitFor({ state: 'visible' });
   await page.selectOption('#computeSel', '8');
   await page.selectOption('#checkpointSel', 'recent');
@@ -233,8 +233,8 @@ async function runPrecisionChecks() {
     { index:1, choice:'غير واضح', acceptedAsReasonable:true, pending:true }
   ] } });
   const precisionTrainingInput = await selectedOptionText(page, '.config-panel select');
-  if (!precisionTrainingInput.includes('1 أمثلة بشرية مؤكدة')) throw new Error('Training configuration did not keep the pending annotation outside the confirmed input.');
-  await page.getByText('1 حالة معلقة', { exact: false }).waitFor({ state: 'visible' });
+  if (!precisionTrainingInput.includes('مثال بشري مؤكد واحد')) throw new Error('Training configuration did not keep the pending annotation outside the confirmed input.');
+  await page.getByText('حالة معلقة واحدة', { exact: false }).waitFor({ state: 'visible' });
 
   await loadState(page, { scene: 'launchDecision', flags: { safetyChoice:'details', safetyRemediated:true, trainingCheckpoint:'recent', trainingCompute:'8', trainingIncidentChoice:'continue' } });
   if (await page.locator('.verification-bundles .card').count() !== 3) throw new Error('Named verification bundles should replace arbitrary test counts.');
