@@ -4,10 +4,9 @@ export function createIntroRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
   const settings = ctx.settings;
-  const { setChapter, html, go, tone, h } = ctx;
+  const { html, go, tone, h } = ctx;
 
   function intro() {
-    setChapter(-1);
     html(`
       <div class="chat-shell">
         <div class="chat-logo">ن</div>
@@ -28,7 +27,6 @@ export function createIntroRoutes(ctx) {
   }
 
   function introLoading() {
-    setChapter(-1);
     html(`
       <div class="chat-shell">
         <div class="chat-logo">ن</div>
