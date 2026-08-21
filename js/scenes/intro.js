@@ -1,11 +1,10 @@
-const DEMO_PROMPT = 'اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.';
+import { DEMO_PROMPT } from '../data/story.js';
 
 export function createIntroRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
   const settings = ctx.settings;
-  const h = ctx.h;
-  const { setChapter, html, go, tone } = ctx;
+  const { setChapter, html, go, tone, h } = ctx;
 
   function intro() {
     setChapter(-1);
@@ -24,6 +23,7 @@ export function createIntroRoutes(ctx) {
         <p class="small muted centered intro-privacy-note">اللعبة لا ترسل أي نص إلى خادم خارجي.</p>
       </div>
     `);
+
     $('#introSend').addEventListener('click', () => go('introLoading'));
   }
 
@@ -40,12 +40,13 @@ export function createIntroRoutes(ctx) {
         </div>
       </div>
     `);
+
     setTimeout(() => {
-      if (state.scene === 'introLoading') go('introError');
+      if (state.scene === 'introLoading') go('introExplain');
     }, settings.reduceMotion ? 250 : 1200);
   }
 
-  function introError() {
+  function introExplain() {
     html(`
       <div class="chat-shell">
         <div class="chat-logo">ن</div>
@@ -60,9 +61,10 @@ export function createIntroRoutes(ctx) {
         </div>
       </div>
     `);
-    $('#preview').addEventListener('click', () => {
-      $('#preview').disabled = true;
-      $('#preview').textContent = 'لأن هدف اللعبة هو أن ترى السلسلة قبل النتيجة';
+
+    $('#preview').addEventListener('click', event => {
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = 'لأن هدف اللعبة هو أن ترى السلسلة قبل النتيجة';
       tone(260, 0.08);
     });
     $('#why').addEventListener('click', () => go('zoomOut'));
@@ -83,15 +85,10 @@ export function createIntroRoutes(ctx) {
     `);
 
     const glyph = $('.glyph');
-    let step = 0;
     const icons = ['💬', '▥', '⚡', '🏭', '🚢', '🚚', '⛏'];
+    let step = 0;
     const timer = setInterval(() => {
-      if (state.scene !== 'zoomOut') {
-        clearInterval(timer);
-        return;
-      }
-      step += 1;
-      if (step >= icons.length) {
+      if (state.scene !== 'zoomOut' || ++step >= icons.length) {
         clearInterval(timer);
         return;
       }
@@ -102,5 +99,5 @@ export function createIntroRoutes(ctx) {
     $('#descend').addEventListener('click', () => go('ch1Intro'));
   }
 
-  return { intro, introLoading, introError, zoomOut };
+  return { intro, introLoading, introExplain, zoomOut };
 }
