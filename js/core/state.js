@@ -1,13 +1,5 @@
 export const DEFAULT_STATE = {
   scene: 'intro',
-  metrics: {
-    pressure: 50,
-    cost: 50,
-    burden: 42,
-    dataQuality: 62,
-    reliability: 62,
-    serviceQuality: 62
-  },
   decisions: [],
   ledger: [],
   flags: {
@@ -17,7 +9,6 @@ export const DEFAULT_STATE = {
     factoryChoice: null,
     serverSteps: [],
     dcCoolingChoice: null,
-    revealedWorkers: [],
     dataOrigins: [],
     dataIndex: 0,
     dataSort: {
@@ -35,6 +26,7 @@ export const DEFAULT_STATE = {
     evalCorrectCount: 0,
     evalFeedback: null,
     safetyChoice: null,
+    safetyRemediated: false,
     launchChoice: null,
     deployTabs: [],
     deployRecovery: null,
@@ -44,10 +36,6 @@ export const DEFAULT_STATE = {
 
 export function clone(value) {
   return JSON.parse(JSON.stringify(value));
-}
-
-export function clamp(value, min = 0, max = 100) {
-  return Math.max(min, Math.min(max, value));
 }
 
 export function escapeHtml(value = '') {

@@ -8,82 +8,53 @@ import { stageForScene } from '../data/stage-backgrounds.js';
 import { STAGE_TASKS } from '../data/stage-tasks.js';
 import { taskPanel } from './task-flow.js';
 
-const COMPLETE_SCENES = new Set([
-  'mineEnd', 'abstract1',
-  'factoryOutcome', 'abstract2',
-  'abstract3',
-  'dataCleanSummary', 'abstract4',
-  'annotationEnd', 'abstract5',
-  'trainingEval',
-  'launchOutcome', 'abstract7',
-  'deployEnd', 'abstract8',
-  'results', 'finalMessage'
+const NO_GUIDANCE_SCENES = new Set([
+  'mineOrientation','mineInspection','mineEnd','transportMontage','abstract1',
+  'factoryOrientation','factoryOutcome','hardwareMontage','abstract2',
+  'dcCoolingOutcome','dcWorkers','abstract3',
+  'dataCleanSummary','abstract4',
+  'annotationIntro','annotationReview','annotationEnd','abstract5',
+  'trainingEval','abstract6',
+  'safetyOutcome','launchOutcome','abstract7',
+  'onCall','deployEnd','abstract8',
+  'pipelineAssemble','aiAbstraction','finalAnswer','timelineReveal','peopleReveal','results','finalMessage','methodology'
 ]);
 
-const RESUMED_SCENES = new Set(['mineInspection', 'dcCoolingOutcome', 'onCall', 'safetyOutcome']);
-
-function annotationRejected(state) {
-  return state.flags.annotationResults.some(result => !result.acceptedAsReasonable);
-}
-
 function statusFor(scene, state) {
-  if (COMPLETE_SCENES.has(scene)) return 'complete';
   if (scene === 'mineTask' && state.flags.miningWarning) return 'decision';
   if (scene === 'factoryIncident' || scene === 'dcCooling' || scene === 'trainingRun' || scene === 'launchDecision') return 'decision';
-  if (scene === 'annotationReview' && annotationRejected(state)) return 'decision';
   if (scene === 'deployIncident' && state.flags.deployTabs.length === 3) return 'decision';
-  if (RESUMED_SCENES.has(scene)) return 'resumed';
   return 'active';
 }
 
 function progressFor(stage, state, scene) {
   switch (stage) {
-    case 'mining':
-      return `الحصة: ${state.flags.miningCount}/12 وحدة`;
-    case 'factory':
-      if (state.flags.factoryChoice) return 'قرار الجودة اتُخذ؛ الفحص النهائي جارٍ';
-      if (scene === 'factoryIncident') return 'تجاوز حد الجسيمات: قرار مطلوب';
-      return scene === 'factoryMonitor' ? 'الدفعة قيد المراقبة' : 'تعرف على موقع الدفعة في سلسلة التصنيع';
+    case 'mining': return `الحصة: ${state.flags.miningCount}/12 وحدة`;
+    case 'factory': return scene === 'factoryIncident' ? 'تجاوز حد الجسيمات: قرار مطلوب' : 'الدفعة قيد المراقبة';
     case 'datacenter':
-      if (scene === 'dcWorkers') return `الأدوار المطلوبة: ${Math.min(state.flags.revealedWorkers.length, 3)}/3`;
       if (scene === 'dcCooling') return 'اختبار المجموعة: قرار تبريد مطلوب';
-      if (scene === 'dcCoolingOutcome') return 'مسار التبريد عولج؛ تحقق من النتيجة';
       return `تركيب الخادم: ${state.flags.serverSteps.length}/4`;
     case 'data':
-      if (scene === 'dataOrigins') return `مصادر مطلوبة: ${Math.min(state.flags.dataOrigins.length, 3)}/3 — استكشفت ${state.flags.dataOrigins.length} إجمالًا`;
+      if (scene === 'dataOrigins') return `استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;
       return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length}`;
-    case 'annotation':
-      if (scene === 'annotationReview') return 'المراجعة تحسم المقبول والدخل المؤكد';
-      return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length}`;
-    case 'training':
-      if (state.flags.trainingIncidentChoice) return 'الجولة انتهت؛ تحقق من الأثر المتبقي';
-      return scene === 'trainingRun' ? `العطل عند 35% — السعة المختارة ${state.flags.trainingCompute} مجموعات` : 'إعداد السعة ونقطة الحفظ';
+    case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length}`;
+    case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات مخصصة` : 'إعداد السعة ونقطة الحفظ';
     case 'evaluation':
-      if (scene === 'safetyTest' || scene === 'safetyOutcome') return 'اختبار السلامة مستقل عن تقييم الملاءمة';
-      if (scene === 'launchDecision' || scene === 'launchOutcome') return 'قرار الجاهزية والتحقق قبل الإطلاق';
-      return `مهام التقييم: ${Math.min(state.flags.evalIndex, EVAL_TASKS.length)}/${EVAL_TASKS.length} — مطابقاتك: ${state.flags.evalCorrectCount}`;
+      if (scene === 'safetyTest') return 'اختبار سلامة يمر عبر بوابة إصلاح قبل الإطلاق';
+      if (scene === 'launchDecision') return 'قرار الجاهزية بعد إصلاح خلل السلامة';
+      return `مهام التقييم: ${Math.min(state.flags.evalIndex, EVAL_TASKS.length)}/${EVAL_TASKS.length}`;
     case 'deployment':
       if (scene === 'deployIncident') return `التشخيص: ${state.flags.deployTabs.length}/3 أقسام`;
       if (scene === 'supportTask') return `بلاغات الحادث: ${state.flags.supportIndex}/${SUPPORT_TASKS.length}`;
-      if (scene === 'onCall') return 'الخدمة عادت؛ تابع أثر الحادث على المستخدمين';
-      return 'توزيع الحمل وفق السعات 50% / 30% / 20%';
-    case 'ending':
-      return 'اربط الواجهة بالسلسلة والقرارات التي سبقتها';
-    default:
-      return '';
+      return 'وزّع 100% من الحمل مع احترام السعات وترك هامش تشغيل';
+    default: return '';
   }
 }
 
 export function sceneGuidance(scene, state) {
-  if (scene.startsWith('intro') || scene.startsWith('ch')) return '';
-
+  if (scene.startsWith('intro') || scene.startsWith('ch') || NO_GUIDANCE_SCENES.has(scene)) return '';
   const stage = stageForScene(scene);
   const task = STAGE_TASKS[stage];
   if (!task) return '';
-
-  return taskPanel(task, {
-    status: statusFor(scene, state),
-    progress: progressFor(stage, state, scene),
-    compact: true
-  });
+  return taskPanel(task, { status: statusFor(scene, state), progress: progressFor(stage, state, scene), compact: true });
 }
