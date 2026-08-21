@@ -182,7 +182,9 @@ async function runJourney(viewport, label) {
     const footerDisplay = await page.locator('#persistentFooter').evaluate(element => getComputedStyle(element).display);
     if (footerDisplay !== 'none') throw new Error(`${label}: persistent mobile prompt footer should be hidden.`);
     await click(page, '#promptBtn');
-    await page.getByText('اكتب لي رسالة قصيرة أعتذر فيها لمديري', { exact: false }).waitFor({ state: 'visible' });
+    await page.locator('#promptDialogText').waitFor({ state: 'visible' });
+    const promptText = await page.locator('#promptDialogText').innerText();
+    if (!promptText.includes('اكتب لي رسالة قصيرة أعتذر فيها لمديري')) throw new Error(`${label}: prompt dialog did not show the original prompt.`);
   }
 
   if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
