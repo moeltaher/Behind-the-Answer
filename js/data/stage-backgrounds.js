@@ -80,7 +80,7 @@ export const SCENES_BY_STAGE = {
   ]
 };
 
-export const STAGE_BACKDROPS = {
+const STAGE_BACKDROPS = {
   mining: './assets/images/scenes/01-mining.svg',
   factory: './assets/images/scenes/02-factory.svg',
   datacenter: './assets/images/scenes/03-datacenter.svg',
