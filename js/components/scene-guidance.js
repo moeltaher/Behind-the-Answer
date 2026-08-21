@@ -12,12 +12,12 @@ const NO_GUIDANCE_SCENES = new Set([
   'mineOrientation','mineInspection','mineEnd','transportMontage','abstract1',
   'factoryOrientation','factoryOutcome','hardwareMontage','abstract2',
   'dcCoolingOutcome','dcWorkers','abstract3',
-  'dataCleanSummary','abstract4',
+  'dataFollowup','dataCleanSummary','abstract4',
   'annotationIntro','annotationReview','annotationEnd','abstract5',
   'trainingEval','abstract6',
   'safetyOutcome','launchOutcome','abstract7',
   'onCall','deployEnd','abstract8',
-  'pipelineAssemble','aiAbstraction','finalAnswer','timelineReveal','peopleReveal','results','finalMessage','methodology'
+  'pipelineAssemble','finalAnswer','results','finalMessage'
 ]);
 
 function statusFor(scene, state) {
@@ -29,16 +29,16 @@ function statusFor(scene, state) {
 
 function progressFor(stage, state, scene) {
   switch (stage) {
-    case 'mining': return `الحصة: ${state.flags.miningCount}/12 وحدة`;
+    case 'mining': return `الحصة: ${state.flags.miningCount}/12 — الوقت: ${state.flags.miningMinutes}/72 دقيقة`;
     case 'factory': return scene === 'factoryIncident' ? 'تجاوز حد الجسيمات: قرار مطلوب' : 'الدفعة قيد المراقبة';
     case 'datacenter':
       if (scene === 'dcCooling') return 'اختبار المجموعة: قرار تبريد مطلوب';
       return `تركيب الخادم: ${state.flags.serverSteps.length}/4`;
     case 'data':
       if (scene === 'dataOrigins') return `استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;
-      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length}`;
-    case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length}`;
-    case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات مخصصة` : 'إعداد السعة ونقطة الحفظ';
+      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — وقت مراجعة إضافي: ${state.flags.dataReviewMinutes} دقيقة`;
+    case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length} — وقت غير مدفوع: ${state.flags.annotationUnpaidMinutes} دقيقة`;
+    case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات حوسبة مخصصة` : 'إعداد مجموعات الحوسبة ونقطة الحفظ';
     case 'evaluation':
       if (scene === 'safetyTest') return 'اختبار سلامة يمر عبر بوابة إصلاح قبل الإطلاق';
       if (scene === 'launchDecision') return 'قرار الجاهزية بعد إصلاح خلل السلامة';
