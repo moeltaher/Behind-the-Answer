@@ -1,6 +1,5 @@
 export const DEFAULT_STATE = {
   scene: 'intro',
-  chapter: 0,
   metrics: {
     pressure: 50,
     cost: 50,
@@ -27,17 +26,8 @@ export const DEFAULT_STATE = {
       remove: 0,
       review: 0
     },
-    annotationIndex: 0,
-    annotationCorrect: 0,
-    annotationAnswered: 0,
     annotationResults: [],
-    annotationCounts: {
-      accepted: 0,
-      pending: 0,
-      rejected: 0
-    },
     tookBreak: false,
-    trainingConfigured: false,
     trainingCompute: '12',
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
