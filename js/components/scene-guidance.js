@@ -160,7 +160,7 @@ function actorsFor(scene) {
     .filter(Boolean);
 }
 
-function progressFor(stage, state) {
+function progressFor(stage, state, scene) {
   switch (stage) {
     case 'mining':
       return `التقدم: ${state.flags.miningCount}/12 وحدة`;
@@ -173,10 +173,10 @@ function progressFor(stage, state) {
     case 'data':
       return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} عناصر`;
     case 'annotation':
-      return `المهام المكتملة: ${state.flags.annotationAnswered}/${ANNOTATION_TASKS.length}`;
+      return `المهام المكتملة: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length}`;
     case 'training':
       if (state.flags.trainingIncidentChoice) return 'جولة التدريب: مكتملة';
-      return state.flags.trainingConfigured
+      return scene === 'trainingRun'
         ? 'جولة التدريب: 35%'
         : 'الإعداد: لم يبدأ بعد';
     case 'evaluation':
@@ -221,8 +221,10 @@ function renderIncident(scene, state) {
     ].join('');
   }
 
-  if (scene === 'annotationReview' && state.flags.annotationCounts.rejected) {
-    const rejected = state.flags.annotationCounts.rejected;
+  if (scene === 'annotationReview') {
+    const rejected = state.flags.annotationResults.filter(result => !result.acceptedAsReasonable).length;
+    if (!rejected) return '';
+
     const rejectedLabel = rejected === 1 ? 'مهمة واحدة' : `${rejected} مهام`;
     return [
       actorMessage(
@@ -424,7 +426,7 @@ export function sceneGuidance(scene, state) {
   return [
     taskPanel(task, {
       status: statusFor(scene, state),
-      progress: progressFor(stage, state)
+      progress: progressFor(stage, state, scene)
     }),
     actors.length ? actorStrip(actors) : '',
     contextualMessages(scene),
