@@ -35,7 +35,10 @@ jobs:
       - name: Validate static architecture and references
         run: node tests/static-integrity.mjs
 
-      - name: Detect unused CSS selectors
+      - name: Validate current storage schema
+        run: node tests/storage-schema.mjs
+
+      - name: Detect unused CSS selectors and definitions
         run: node tests/css-integrity.mjs
 
       - name: Install browser smoke-test dependency
