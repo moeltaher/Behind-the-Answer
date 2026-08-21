@@ -6,7 +6,8 @@ export const DEFAULT_STATE = {
     cost: 50,
     burden: 42,
     quality: 62,
-    visibility: 20
+    visibility: 20,
+    discovery: 0
   },
   decisions: [],
   ledger: [],
@@ -26,6 +27,8 @@ export const DEFAULT_STATE = {
       review: 0
     },
     annotationIndex: 0,
+    annotationCorrect: 0,
+    annotationAnswered: 0,
     annotationCounts: {
       accepted: 0,
       pending: 0,
@@ -33,8 +36,14 @@ export const DEFAULT_STATE = {
     },
     tookBreak: false,
     trainingConfigured: false,
+    trainingCompute: '12',
+    trainingCheckpoint: 'latest',
+    trainingIncidentChoice: null,
     evalIndex: 0,
+    evalFeedback: null,
+    launchChoice: null,
     deployTabs: [],
+    deployRecovery: null,
     supportIndex: 0,
     finalEnding: null
   }
