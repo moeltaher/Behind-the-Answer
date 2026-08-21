@@ -1,6 +1,6 @@
 import { DEFAULT_STATE, clone, escapeHtml as h, replaceObjectContents } from './core/state.js';
 import { loadState, saveState as persistState, loadSettings, saveSettings } from './core/storage.js';
-import { addDecision as recordDecision } from './core/metrics.js';
+import { addDecision as recordDecision } from './core/decisions.js';
 import { tone as playTone } from './core/audio.js';
 import { applySettings } from './core/accessibility.js';
 import { addLedger as recordLedger, renderLedger as drawLedger } from './core/ledger.js';
