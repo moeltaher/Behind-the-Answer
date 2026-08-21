@@ -23,6 +23,7 @@ export const DEFAULT_STATE = {
     dataSort: {
       keep: 0,
       remove: 0,
+      redact: 0,
       review: 0
     },
     annotationResults: [],
