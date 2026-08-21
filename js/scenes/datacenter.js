@@ -3,7 +3,7 @@ import { DATACENTER_WORKERS, supportingActor } from '../data/supporting-actors.j
 export function createDatacenterRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
-  const { setChapter, chapterIntro, html, go, bind, tone, saveState, addDecision, addLedger } = ctx;
+  const { chapterIntro, html, go, bind, tone, saveState, addDecision, addLedger } = ctx;
   const abstraction = (humans, word, line, next) =>
     ctx.abstraction(humans, word, line, next);
   const monitorTile = ctx.monitorTile;
@@ -13,7 +13,6 @@ export function createDatacenterRoutes(ctx) {
   }
 
   function dcInstall() {
-    setChapter(2);
     const steps = [
       ['rack', 'أدخل الخادم في الخزانة'],
       ['power', 'وصّل الطاقة'],
