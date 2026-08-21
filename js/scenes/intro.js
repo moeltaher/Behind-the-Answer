@@ -28,14 +28,14 @@ export function createIntroRoutes(ctx) {
       <div class="centered zoom-out-scene">
         <span class="eyebrow">من الواجهة إلى البنية التي تسبقها</span>
         <h1 class="scene-title">الإجابة هي آخر نقطة مرئية في سلسلة أطول.</h1>
-        <div class="transition-map" aria-label="انتقال بصري من واجهة المحادثة إلى بداية السلسلة"><div class="map-layer"><span class="glyph">💬</span></div><div class="map-caption"><span>واجهة المحادثة</span><span>↓ مواد وأجهزة وعمل بشري</span></div></div>
+        <div class="transition-map" aria-label="انتقال بصري من واجهة المحادثة إلى بداية السلسلة"><div class="map-layer"><span class="glyph">◌</span></div><div class="map-caption"><span>واجهة المحادثة</span><span>↓ مواد وأجهزة وعمل بشري</span></div></div>
         <p class="small muted">رحلة اللعب مرتبة خطيًا للتعلم، لكنك سترى في النهاية أن النظام الحقيقي يتضمن دورات واعتمادًا متبادلًا.</p>
         <div class="action-row center"><button id="descend" class="primary-btn" type="button">ابدأ بالمادة التي تدخل الأجهزة</button></div>
       </div>
     `);
 
     const glyph = $('.glyph');
-    const icons = ['💬', '▥', '🏭', '🚚', '⛏'];
+    const icons = ['◌', '▥', '▤', '→', '◇'];
     let step = 0;
     const timer = setInterval(() => {
       if (state.scene !== 'zoomOut' || ++step >= icons.length) {
