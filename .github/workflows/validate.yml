@@ -35,6 +35,9 @@ jobs:
       - name: Validate static architecture and references
         run: node tests/static-integrity.mjs
 
+      - name: Validate task, decision, and actor guidance
+        run: node tests/guidance.mjs
+
       - name: Validate current storage schema
         run: node tests/storage-schema.mjs
 
