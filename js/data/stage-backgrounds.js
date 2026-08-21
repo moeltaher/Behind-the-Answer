@@ -14,8 +14,8 @@ export const SCENES_BY_STAGE = {
     'factoryMonitor',
     'factoryIncident',
     'factoryOutcome',
-    'abstract2',
-    'hardwareMontage'
+    'hardwareMontage',
+    'abstract2'
   ],
   datacenter: [
     'ch3Intro',
@@ -44,7 +44,8 @@ export const SCENES_BY_STAGE = {
     'ch6Intro',
     'trainingSetup',
     'trainingRun',
-    'trainingEval'
+    'trainingEval',
+    'abstract6'
   ],
   evaluation: [
     'ch7Intro',
