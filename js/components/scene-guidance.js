@@ -17,7 +17,7 @@ const NO_GUIDANCE_SCENES = new Set([
   'trainingEval','abstract6',
   'safetyOutcome','safetyRetest','launchOutcome','abstract7',
   'onCall','deployEnd','abstract8',
-  'pipelineAssemble','finalAnswer','results','finalMessage'
+  'pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage'
 ]);
 
 function statusFor(scene, state) {
@@ -35,16 +35,16 @@ function progressFor(stage, state, scene) {
       if (scene === 'dcCooling') return 'اختبار المجموعة: قرار تبريد مطلوب';
       return `تركيب الخادم: ${state.flags.serverSteps.length}/4`;
     case 'data': {
-      const ready=state.flags.dataStatuses.filter(status=>status==='ready').length;
+      const passed=state.flags.dataStatuses.filter(status=>status==='ready').length;
       const pending=state.flags.dataStatuses.filter(status=>status==='pending').length;
       if (scene === 'dataOrigins') return `استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;
-      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — جاهز ${ready} / معلق ${pending}`;
+      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — مرّت ${passed} / معلقة ${pending}`;
     }
     case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length} — وقت غير مدفوع: ${state.flags.annotationUnpaidMinutes} دقيقة`;
     case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات حوسبة مخصصة` : 'إعداد تكلفة الحوسبة ونقطة الحفظ';
     case 'evaluation':
       if (scene === 'safetyTest') return 'اختبار سلامة → إصلاح → إعادة اختبار إلزامية';
-      if (scene === 'launchDecision') return 'قرار الجاهزية بعد اجتياز إعادة اختبار السلامة';
+      if (scene === 'launchDecision') return 'بوابات إصدار أساسية + أعمال إضافية سببية إن وجدت';
       return `مهام التقييم: ${Math.min(state.flags.evalIndex, EVAL_TASKS.length)}/${EVAL_TASKS.length}`;
     case 'deployment':
       if (scene === 'deployIncident') return `التشخيص: ${state.flags.deployTabs.length}/3 أقسام`;
