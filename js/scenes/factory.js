@@ -1,7 +1,7 @@
 export function createFactoryRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
-  const { setChapter, chapterIntro, html, go, bind, tone, saveState, addDecision, addLedger } = ctx;
+  const { chapterIntro, html, go, bind, tone, saveState, addDecision, addLedger } = ctx;
   const abstraction = (humans, word, line, next) =>
     ctx.abstraction(humans, word, line, next);
   const monitorTile = ctx.monitorTile;
@@ -11,7 +11,6 @@ export function createFactoryRoutes(ctx) {
   }
 
   function factoryOrientation() {
-    setChapter(1);
     html(`<div><span class="eyebrow">مصنع مكونات إلكترونية افتراضي</span><h1 class="scene-title">أنت الآن ليلى، فنية تشغيل.</h1><div class="role-card card flat"><div class="avatar">⚙</div><div><h3>ليلى</h3><p>تراقب خط إنتاج حساسًا للتلوث والضغط والحرارة.</p></div></div><div class="reality-note"><strong>ما الذي يحدث هنا؟</strong> المواد التي وصلت من المرحلة السابقة تمر بعمليات صناعية كثيرة حتى تصبح مكونات تدخل في الرقائق والخوادم. هذه اللعبة تمثل جزءًا مبسطًا من هذا العمل.</div><p class="scene-subtitle">قبل دخول منطقة الإنتاج يجب إكمال تجهيزات الحماية والنظافة بالترتيب.</p><div id="ppeList" class="checklist"></div><div id="ppeHelp" class="small muted">ابدأ بغطاء الشعر ثم أكمل بقية الخطوات بالترتيب.</div></div>`);
     renderPPE();
   }
