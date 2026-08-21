@@ -52,7 +52,7 @@ async function setLoad(page, values) {
 }
 
 async function selectedOptionText(page, selector) {
-  return page.locator(selector).evaluate(select => select.options[select.selectedIndex]?.textContent || '');
+  return page.locator(selector).first().evaluate(select => select.options[select.selectedIndex]?.textContent || '');
 }
 
 async function runJourney(viewport, label) {
