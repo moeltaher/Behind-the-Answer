@@ -2,6 +2,7 @@ export function createTrainingRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
   const { chapterIntro, html, go, saveState, addDecision, addLedger } = ctx;
+  const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line, next);
 
   function ch6Intro() { chapterIntro(5, 'trainingSetup'); }
 
@@ -41,8 +42,13 @@ export function createTrainingRoutes(ctx) {
     const paused=state.flags.trainingIncidentChoice==='pause';
     const total=Number(state.flags.trainingCompute);
     const checkpoint=state.flags.trainingCheckpoint;
-    html(`<div><span class="eyebrow">نتيجة جولة التطوير</span><h1 class="scene-title">انتهت الجولة، لكن النسخة ما زالت تحتاج إلى تقييم وتحقق.</h1><div class="stage-output"><strong>أثر قرار السعة والعطل</strong>${paused?`توقفت الجولة، عُزلت الوحدة المعطلة، ثم استؤنف العمل بعد الإصلاح مع ${total} مجموعة متاحة.`:`اكتملت الجولة بعد خروج وحدة من الخدمة؛ كان هامش الأعطال ${total===8?'أضيق':'أوسع'}.`}</div><div class="stage-output"><strong>ما بقي قبل الإطلاق</strong>${checkpoint==='recent'?'لأنك بدأت من نقطة حفظ أحدث، يتطلب السيناريو تحققًا إضافيًا من التغييرات قبل قرار الإطلاق.':'نقطة البداية كانت أكثر اختبارًا، لذلك نطاق التحقق الإضافي أقل في هذا السيناريو.'}</div><div class="action-row"><button id="sendHuman" class="primary-btn">أرسل النسخة للمراجعة البشرية</button></div></div>`);
-    $('#sendHuman').addEventListener('click',()=>go('ch7Intro'));
+    html(`<div><span class="eyebrow">نتيجة جولة التطوير</span><h1 class="scene-title">انتهت الجولة، لكن النسخة ما زالت تحتاج إلى تقييم وتحقق.</h1><div class="stage-output"><strong>أثر قرار السعة والعطل</strong>${paused?`توقفت الجولة، عُزلت الوحدة المعطلة، ثم استؤنف العمل بعد الإصلاح مع ${total} مجموعة متاحة.`:`اكتملت الجولة بعد خروج وحدة من الخدمة؛ كان هامش الأعطال ${total===8?'أضيق':'أوسع'}.`}</div><div class="stage-output"><strong>ما بقي قبل الإطلاق</strong>${checkpoint==='recent'?'لأنك بدأت من نقطة حفظ أحدث، يتطلب السيناريو تحققًا إضافيًا من التغييرات قبل قرار الإطلاق.':'نقطة البداية كانت أكثر اختبارًا، لذلك نطاق التحقق الإضافي أقل في هذا السيناريو.'}</div><div class="action-row"><button id="sendHuman" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
+    $('#sendHuman').addEventListener('click',()=>go('abstract6'));
   }
-  return { ch6Intro,trainingSetup,trainingRun,trainingEval };
+
+  function abstract6() {
+    abstraction([['ديفيد','مهندس تعلم آلي','⌁'],['فرق البنية والتشغيل','','▥']],'نسخة مطورة من النموذج','إعدادات الجولة، الحوسبة، مراقبة الأعطال والعمل الهندسي أصبحت في المرحلة التالية نسخة من النموذج تحتاج إلى تقييم.','ch7Intro');
+  }
+
+  return { ch6Intro,trainingSetup,trainingRun,trainingEval,abstract6 };
 }
