@@ -138,7 +138,7 @@ async function runJourney(viewport, label) {
   const trainingInput = await selectedOptionText(page, '.config-panel select');
   if (!trainingInput.includes('4 أمثلة بشرية مؤكدة')) throw new Error(`${label}: confirmed annotation inputs are not shown in the training configuration.`);
   await page.getByText('حالتان معلقتان', { exact: false }).waitFor({ state: 'visible' });
-  await page.getByText('ليس سلوكًا تلقائيًا', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('هذه ليست عملية تدريب نموذج من الصفر', { exact: false }).waitFor({ state: 'visible' });
   await page.selectOption('#computeSel', '8');
   await page.selectOption('#checkpointSel', 'recent');
   await click(page, '#trainStart');
