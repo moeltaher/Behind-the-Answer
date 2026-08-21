@@ -15,6 +15,9 @@ export const DEFAULT_STATE = {
     dataIndex: 0,
     dataReviewMinutes: 0,
     dataFollowup: null,
+    dataStatuses: [],
+    dataFeedbackLabel: '',
+    dataFeedbackDetail: '',
     dataSort: {
       keep: 0,
       remove: 0,
@@ -24,6 +27,7 @@ export const DEFAULT_STATE = {
     annotationResults: [],
     annotationUnpaidMinutes: 0,
     tookBreak: false,
+    breakDecisionMade: false,
     trainingCompute: '12',
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
@@ -32,10 +36,13 @@ export const DEFAULT_STATE = {
     evalFeedback: null,
     safetyChoice: null,
     safetyRemediated: false,
+    safetyRetested: false,
     launchChoice: null,
     deployTabs: [],
     deployRecovery: null,
-    supportIndex: 0
+    supportIndex: 0,
+    supportFeedbackLabel: '',
+    supportFeedbackDetail: ''
   }
 };
 
