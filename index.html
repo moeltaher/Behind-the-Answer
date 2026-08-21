@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./css/scenes.css" />
   <link rel="stylesheet" href="./css/education.css" />
   <link rel="stylesheet" href="./css/characters.css" />
+  <link rel="stylesheet" href="./css/stage-backgrounds.css" />
   <link rel="stylesheet" href="./css/accessibility.css" />
   <link rel="stylesheet" href="./css/responsive.css" />
 </head>
@@ -28,7 +29,7 @@
       </div>
       <nav class="top-actions" aria-label="أدوات اللعبة"><button id="ledgerBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="دفتر السلسلة" hidden><span aria-hidden="true">▦</span><span class="btn-text">دفتر السلسلة</span></button><button id="settingsBtn" class="icon-btn" type="button" aria-haspopup="dialog" title="إعدادات الوصول"><span aria-hidden="true">⚙</span><span class="btn-text">الإعدادات</span></button></nav>
     </header>
-    <main id="game-main" class="game-main" tabindex="-1"><section id="scene" class="scene" aria-live="polite" aria-atomic="false"></section></main>
+    <main id="game-main" class="game-main" tabindex="-1"><div id="stageBackdrop" class="stage-backdrop" aria-hidden="true"></div><section id="scene" class="scene" aria-live="polite" aria-atomic="false"></section></main>
     <footer id="persistentFooter" class="persistent-footer" hidden><div class="waiting-prompt"><span>الإجابة التي تنتظرها</span><strong>«اكتب لي رسالة قصيرة أعتذر فيها لمديري عن التأخر في تسليم العمل.»</strong></div></footer>
   </div>
   <dialog id="ledgerDialog" class="modal ledger-modal"><div class="modal-head"><div><span class="eyebrow">السجل الذي لا تراه واجهة الذكاء الاصطناعي</span><h2>دفتر السلسلة</h2></div><button class="close-btn" data-close-dialog="ledgerDialog" aria-label="إغلاق">×</button></div><div id="ledgerContent" class="ledger-content"></div></dialog>
