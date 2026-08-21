@@ -107,7 +107,9 @@ export const SCENE_CHARACTER = {
 
   evalTask: 'reem',
   safetyTest: 'reem',
+  safetyOutcome: 'reem',
   launchDecision: 'reem',
+  launchOutcome: 'reem',
 
   deployLoad: 'hana',
   deployIncident: 'hana',
