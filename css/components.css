@@ -33,5 +33,4 @@
 .view-list { display:flex; flex-wrap:wrap; gap:8px; }
 .view-list span { border:1px solid var(--line); border-radius:999px; padding:7px 10px; font-size:.78rem; }
 
-.sources-note { max-width:760px; color:var(--muted); font-size:.82rem; margin-top:20px; }
 .noscript { position:fixed; inset:auto 10px 10px; background:#541a21; color:white; padding:12px; border-radius:12px; z-index:999; }

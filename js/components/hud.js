@@ -10,7 +10,7 @@ export function monitorTile(label, value, width) {
   return `
     <div class="monitor-tile">
       <span>${h(label)}</span>
-      <strong dir="auto">${h(value)}</strong>
+      <strong><bdi dir="auto">${h(value)}</bdi></strong>
       <div class="bar" aria-hidden="true">
         <i style="width:${safeWidth}%"></i>
       </div>
