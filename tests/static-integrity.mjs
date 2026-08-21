@@ -14,18 +14,8 @@ import { createDeploymentRoutes } from '../js/scenes/deployment.js';
 import { createEndingRoutes } from '../js/scenes/ending.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const TEXT_EXTENSIONS = new Set(['.js', '.mjs', '.html', '.css', '.md', '.yml', '.yaml']);
 const SOURCE_EXTENSIONS = new Set(['.js', '.mjs']);
-const REMOVED_STATE_PATHS = [
-  'metrics.visibility',
-  'metrics.discovery',
-  'metrics.quality',
-  'flags.finalEnding'
-];
-const LEGACY_SCAN_EXCLUSIONS = new Set([
-  'js/core/storage.js',
-  'tests/static-integrity.mjs'
-]);
+const TEXT_EXTENSIONS = new Set(['.js', '.mjs', '.html', '.css', '.md', '.yml', '.yaml']);
 
 async function walk(directory) {
   const entries = await readdir(directory);
@@ -52,10 +42,13 @@ function localPath(fromFile, specifier) {
 }
 
 const files = await walk(ROOT);
+const fileSet = new Set(files.map(file => normalize(file)));
 const textFiles = files.filter(file => TEXT_EXTENSIONS.has(extname(file)));
 const sourceFiles = files.filter(file => SOURCE_EXTENSIONS.has(extname(file)));
-const fileSet = new Set(files.map(file => normalize(file)));
+const runtimeSources = sourceFiles.filter(file => relative(file).startsWith('js/'));
 const failures = [];
+const importedRuntimeFiles = new Set();
+const referencedAssets = new Set();
 
 for (const file of sourceFiles) {
   const source = await readFile(file, 'utf8');
@@ -63,16 +56,23 @@ for (const file of sourceFiles) {
 
   for (const match of source.matchAll(importPattern)) {
     const target = localPath(file, match[1]);
-    if (target && !fileSet.has(target)) {
+    if (!target) continue;
+
+    if (!fileSet.has(target)) {
       failures.push(`${relative(file)} imports missing file ${match[1]}`);
+      continue;
+    }
+
+    if (relative(file).startsWith('js/') && relative(target).startsWith('js/')) {
+      importedRuntimeFiles.add(target);
     }
   }
+}
 
-  for (const match of source.matchAll(/['"](\.\/assets\/[^'"?#]+)['"]/g)) {
-    const target = normalize(resolve(ROOT, match[1]));
-    if (!fileSet.has(target)) {
-      failures.push(`${relative(file)} references missing runtime asset ${match[1]}`);
-    }
+for (const file of textFiles) {
+  const source = await readFile(file, 'utf8');
+  for (const match of source.matchAll(/assets\/images\/[^'"\s)]+/g)) {
+    referencedAssets.add(normalize(resolve(ROOT, match[0])));
   }
 }
 
@@ -80,22 +80,27 @@ const indexPath = join(ROOT, 'index.html');
 const index = await readFile(indexPath, 'utf8');
 for (const match of index.matchAll(/(?:href|src)="(\.\/[^"?#]+)"/g)) {
   const target = normalize(resolve(ROOT, match[1]));
-  if (!fileSet.has(target)) failures.push(`index.html references missing asset ${match[1]}`);
+  if (!fileSet.has(target)) failures.push(`index.html references missing file ${match[1]}`);
 }
 
-for (const file of sourceFiles) {
-  const rel = relative(file);
-  if (LEGACY_SCAN_EXCLUSIONS.has(rel)) continue;
-  const source = await readFile(file, 'utf8');
-
-  for (const statePath of REMOVED_STATE_PATHS) {
-    if (source.includes(statePath)) {
-      failures.push(`${rel} still references removed state path "${statePath}"`);
-    }
+for (const file of runtimeSources) {
+  if (relative(file) === 'js/app.js') continue;
+  if (!importedRuntimeFiles.has(normalize(file))) {
+    failures.push(`Unused runtime JavaScript file: ${relative(file)}`);
   }
+}
 
-  if (source.includes('game-data.js')) {
-    failures.push(`${rel} still imports legacy game-data.js`);
+for (const file of files) {
+  if (!relative(file).startsWith('assets/images/')) continue;
+  if (!referencedAssets.has(normalize(file))) {
+    failures.push(`Unused image asset: ${relative(file)}`);
+  }
+}
+
+for (const file of files.filter(file => relative(file).startsWith('css/') && extname(file) === '.css')) {
+  const ref = `./${relative(file)}`;
+  if (!index.includes(`href="${ref}"`)) {
+    failures.push(`Unused stylesheet: ${relative(file)}`);
   }
 }
 
