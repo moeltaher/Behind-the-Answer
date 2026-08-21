@@ -20,7 +20,6 @@ export const DEFAULT_STATE = {
     },
     annotationResults: [],
     tookBreak: false,
-    annotationShiftMinutes: 24,
     trainingCompute: '12',
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
