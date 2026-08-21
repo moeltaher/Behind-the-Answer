@@ -14,7 +14,7 @@ const LEGACY_LABELS = {
   'RAW MATERIALS': 'مواد جاهزة للتصنيع',
   HARDWARE: 'مكونات إلكترونية جاهزة',
   COMPUTE: 'خوادم متاحة للتشغيل',
-  DATASET: 'مجموعة بيانات جاهزة للتدريب',
+  DATASET: 'بيانات مجهزة للتطوير',
   LABELS: 'أمثلة صنفها البشر',
   MODEL: 'نسخة مدرَّبة من النموذج',
   'HUMAN FEEDBACK': 'تقييمات بشرية لإجابات النموذج',
@@ -30,6 +30,13 @@ function migrateState(saved) {
       ...entry,
       system: LEGACY_LABELS[entry.system] || entry.system
     }));
+  }
+
+  if (saved.flags?.trainingCheckpoint === 'older') {
+    saved.flags.trainingCheckpoint = 'validated';
+  }
+  if (saved.flags?.trainingCheckpoint === 'latest') {
+    saved.flags.trainingCheckpoint = 'recent';
   }
 
   return saved;
