@@ -5,6 +5,7 @@ export const DEFAULT_STATE = {
   flags: {
     miningCount: 0,
     miningMinutes: 0,
+    miningBUses: 0,
     miningWarning: false,
     miningIncidentChoice: null,
     factoryChoice: null,
