@@ -21,6 +21,7 @@ export const SCENES_BY_STAGE = {
     'ch3Intro',
     'dcInstall',
     'dcCooling',
+    'dcCoolingOutcome',
     'dcWorkers',
     'abstract3'
   ],
@@ -65,8 +66,6 @@ export const SCENES_BY_STAGE = {
   ],
   ending: [
     'intro',
-    'introLoading',
-    'introExplain',
     'zoomOut',
     'ch9Intro',
     'pipelineAssemble',
