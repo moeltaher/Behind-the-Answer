@@ -24,10 +24,10 @@ import { createRouter } from './core/router.js';
 import { CHAPTERS } from './data/chapters.js';
 import { DEMO_PROMPT } from './data/story.js';
 import { characterForScene } from './data/characters.js';
-import { backdropForScene } from './data/stage-backgrounds.js';
+import { backdropForScene, stageForScene } from './data/stage-backgrounds.js';
 import { monitorTile, metric } from './components/hud.js';
 import {
-  setChapter as updateChapter,
+  renderJourneyProgress,
   chapterIntro as drawChapterIntro
 } from './components/progress.js';
 import { abstraction as drawAbstraction } from './components/abstraction.js';
@@ -142,7 +142,16 @@ const router = createRouter({
   renderLedger
 });
 
+const PRE_JOURNEY_SCENES = new Set(['intro', 'introLoading', 'introExplain', 'zoomOut']);
+
+function currentChapterIndex() {
+  if (PRE_JOURNEY_SCENES.has(state.scene)) return -1;
+  const stage = stageForScene(state.scene);
+  return CHAPTERS.findIndex(chapter => chapter.key === stage);
+}
+
 function sceneHtml(content) {
+  renderJourneyProgress(ctx, currentChapterIndex());
   updateBackdrop();
   const character = characterForScene(state.scene);
   const guidance = sceneGuidance(state.scene, state);
@@ -152,11 +161,9 @@ function sceneHtml(content) {
 Object.assign(ctx, {
   html: sceneHtml,
   bind: router.bind,
-  go: router.go,
-  render: router.render
+  go: router.go
 });
 
-ctx.setChapter = index => updateChapter(ctx, index);
 ctx.chapterIntro = (index, next) => drawChapterIntro(ctx, index, next);
 ctx.abstraction = (humans, word, line, next) =>
   drawAbstraction(ctx, humans, word, line, next);
