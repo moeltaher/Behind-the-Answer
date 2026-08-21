@@ -71,12 +71,6 @@
   font-size: 0.68rem;
 }
 
-.scene-character--floating {
-  position: sticky;
-  top: 94px;
-  z-index: 4;
-}
-
 .people-wall .person-card {
   display: flex;
   flex-direction: column;
