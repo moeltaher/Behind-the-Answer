@@ -15,6 +15,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned development dependencies
+        run: npm install --ignore-scripts
+
       - name: Validate JavaScript syntax
         shell: bash
         run: |
@@ -28,27 +36,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes eslint@10.8.1 js tests \
+          npx eslint js tests \
             --no-config-lookup \
             --rule 'no-unused-vars: ["error", {"args":"after-used","caughtErrors":"none"}]'
 
       - name: Validate static architecture and references
         run: node tests/static-integrity.mjs
 
-      - name: Validate current storage schema
+      - name: Validate versioned storage schema and migrations
         run: node tests/storage-schema.mjs
 
       - name: Detect unused CSS selectors and definitions
         run: node tests/css-integrity.mjs
 
-      - name: Install browser smoke-test dependency
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run complete journey on desktop and mobile
+      - name: Run complete journey, precision, accessibility, and cross-browser checks
         shell: bash
         run: |
           set -euo pipefail
