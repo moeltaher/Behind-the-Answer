@@ -26,6 +26,7 @@ const DATA_STATUSES = new Set(['ready','pending','excluded']);
 const CHECK_VALUES = new Set(['clear','unresolved','na']);
 const ANNOTATION_CHOICES = new Set(['آمن','عنف','مضايقة أو إساءة','خطاب كراهية','إيذاء النفس','غير واضح']);
 const DEPLOY_TABS = new Set(['network','compute','model']);
+const DEPLOY_LIMITS = [60,45,35];
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -61,6 +62,40 @@ function validNullableChoice(value, allowed) {
   return value === null || allowed.includes(value);
 }
 
+function validServerSequence(steps) {
+  if (!uniqueAllowedStrings(steps,SERVER_STEPS)) return false;
+  if (!steps.length) return true;
+  if (steps[0] !== 'rack') return false;
+  const registerIndex=steps.indexOf('register');
+  if (registerIndex !== -1) {
+    if (registerIndex !== steps.length - 1) return false;
+    if (!steps.includes('power') || !steps.includes('network')) return false;
+  }
+  if (steps.includes('power') && steps.indexOf('power') === 0) return false;
+  if (steps.includes('network') && steps.indexOf('network') === 0) return false;
+  return true;
+}
+
+function validStateInvariants(state) {
+  const f=state.flags;
+  if (!validServerSequence(f.serverSteps)) return false;
+  if (f.dataStatuses.length !== f.dataIndex || f.dataChecks.length !== f.dataIndex) return false;
+  if (f.dataFollowup && f.dataFollowup.index !== f.dataIndex) return false;
+  if (f.dataSort.keep + f.dataSort.remove + f.dataSort.redact + f.dataSort.review < f.dataIndex) return false;
+  const annotationIndices=f.annotationResults.map(result=>result.index);
+  if (new Set(annotationIndices).size !== annotationIndices.length) return false;
+  if (!annotationIndices.every((value,index)=>value===index)) return false;
+  if (f.evalCorrectCount > f.evalIndex + (f.evalFeedback?.correct ? 1 : 0)) return false;
+  if (f.safetyRetested && (!f.safetyRemediated || f.safetyChoice === null)) return false;
+  if (f.launchChoice !== null && !f.safetyRetested) return false;
+  if (f.dcCoolingChoice === 'stop' && !f.dcCoolingRestored) return false;
+  if (f.miningForcedInspection && !f.miningWarning) return false;
+  if (f.deployLoad && f.deployLoad.some((value,index)=>value>DEPLOY_LIMITS[index])) return false;
+  if (f.deployRecovery !== null && (!f.deployLoad || f.deployTabs.length !== 3)) return false;
+  if (f.supportIndex > 0 && f.deployRecovery === null) return false;
+  return true;
+}
+
 function validState(state) {
   if (!exactKeys(state,['schemaVersion','systemNotice','scene','decisions','ledger','flags']) || state.schemaVersion !== STATE_SCHEMA_VERSION || typeof state.systemNotice !== 'string') return false;
   if (!SCENES.has(state.scene) || !Array.isArray(state.decisions) || !state.decisions.every(validDecision) || !Array.isArray(state.ledger) || !state.ledger.every(validLedger)) return false;
@@ -76,7 +111,7 @@ function validState(state) {
   if (f.miningCount < 0 || f.miningCount > 12 || f.miningMinutes < 0 || f.miningBUses < 0 || f.miningRiskLevel < 0 || f.miningInspectionCount < 0 || f.miningInspectionCount > 2) return false;
   if (![f.miningWarning,f.miningForcedInspection,f.dcCoolingRestored,f.tookBreak,f.breakDecisionMade,f.safetyRemediated,f.safetyRetested].every(value => typeof value === 'boolean')) return false;
   if (!validNullableChoice(f.miningIncidentChoice,['stop','continue']) || !validNullableChoice(f.factoryChoice,['stop','continue']) || !validNullableChoice(f.dcCoolingChoice,['move','stop'])) return false;
-  if (!uniqueAllowedStrings(f.serverSteps,SERVER_STEPS)) return false;
+  if (!validServerSequence(f.serverSteps)) return false;
   if (!Array.isArray(f.dataOrigins) || !f.dataOrigins.every(item => typeof item === 'string') || new Set(f.dataOrigins).size !== f.dataOrigins.length) return false;
   if (f.dataIndex < 0 || f.dataIndex > 5 || f.dataReviewMinutes < 0) return false;
   if (f.dataFollowup !== null && !(exactKeys(f.dataFollowup,['index','reason']) && Number.isInteger(f.dataFollowup.index) && f.dataFollowup.index >= 0 && f.dataFollowup.index < 5 && typeof f.dataFollowup.reason === 'string')) return false;
@@ -94,7 +129,7 @@ function validState(state) {
   if (!uniqueAllowedStrings(f.deployTabs,DEPLOY_TABS) || !validNullableChoice(f.deployRecovery,['restart','rollback'])) return false;
   if (f.supportIndex < 0 || f.supportIndex > 2 || typeof f.supportFeedbackLabel !== 'string' || typeof f.supportFeedbackDetail !== 'string') return false;
   if (!validNullableChoice(f.transferChoice,['history-each-time','build-use','interface-only'])) return false;
-  return true;
+  return validStateInvariants(state);
 }
 
 function legacyCheckForStatus(status) {
@@ -116,6 +151,7 @@ function migrateLegacyState(defaultState, saved) {
     const oldStatuses=Array.isArray(saved.flags.dataStatuses) ? saved.flags.dataStatuses.filter(status=>DATA_STATUSES.has(status)).slice(0,5) : [];
     migrated.flags.dataStatuses=oldStatuses;
     migrated.flags.dataChecks=oldStatuses.map(legacyCheckForStatus);
+    migrated.flags.dataIndex=oldStatuses.length;
     migrated.flags.dcCoolingRestored=saved.flags.dcCoolingChoice==='stop';
     migrated.systemNotice='تم تحديث الحفظ السابق إلى بنية اللعبة الجديدة. الحالات القديمة للبيانات نُقلت باعتبار تفاصيل الحقوق والخصوصية غير محسومة لأن النسخة السابقة لم تكن تحفظها منفصلة.';
     return validState(migrated) ? migrated : null;
@@ -139,7 +175,12 @@ export function loadState(defaultState) {
 }
 
 export function saveState(state) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function systemDefaultSettings() {
@@ -162,5 +203,10 @@ export function loadSettings() {
 }
 
 export function saveSettings(settings) {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    return true;
+  } catch {
+    return false;
+  }
 }
