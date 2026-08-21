@@ -102,7 +102,7 @@ async function runJourney(viewport,label){
   const trainingInput=await selectedOptionText(page,'.config-panel select');
   if(!trainingInput.includes('2 مواد من الدفعة 18')||!trainingInput.includes('2 محسومة / 0 غير محسومة')||!trainingInput.includes('4 أمثلة بشرية مؤكدة')) throw new Error(`${label}: training input summary lost resolved/unresolved distinction.`);
   await page.selectOption('#computeSel','8'); await page.selectOption('#checkpointSel','recent'); await click(page,'#trainStart');
-  await page.getByText('الحد الأدنى المفترض').waitFor({state:'visible'});
+  await page.getByText('الحد الأدنى المفترض',{exact:true}).waitFor({state:'visible'});
   await page.getByText('0 مجموعة',{exact:true}).waitFor({state:'visible'});
   await click(page,'#trainContinue'); await click(page,'#sendHuman'); await click(page,'#abstractNext');
 
