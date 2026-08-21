@@ -1,10 +1,10 @@
-import { CHAPTERS } from '../data/chapters.js';
 import {
   DATA_ITEMS,
   ANNOTATION_TASKS,
   EVAL_TASKS,
   SUPPORT_TASKS
 } from '../data/content-tasks.js';
+import { stageForScene } from '../data/stage-backgrounds.js';
 import { STAGE_TASKS } from '../data/stage-tasks.js';
 import { supportingActor } from '../data/supporting-actors.js';
 import {
@@ -37,7 +37,11 @@ const DECISION_SCENES = new Set([
   'launchDecision'
 ]);
 
-const RESUMED_SCENES = new Set(['mineInspection', 'onCall', 'safetyOutcome']);
+const RESUMED_SCENES = new Set([
+  'mineInspection',
+  'onCall',
+  'safetyOutcome'
+]);
 
 const ACTOR_IDS_BY_SCENE = {
   mineOrientation: ['supervisor'],
@@ -55,7 +59,14 @@ const ACTOR_IDS_BY_SCENE = {
 
   dcInstall: ['electricalEngineer', 'networkOperator'],
   dcCooling: ['coolingTech', 'electricalEngineer'],
-  dcWorkers: ['cleaner', 'electricalEngineer', 'securityWorker', 'coolingTech', 'cableTech', 'networkOperator'],
+  dcWorkers: [
+    'cleaner',
+    'electricalEngineer',
+    'securityWorker',
+    'coolingTech',
+    'cableTech',
+    'networkOperator'
+  ],
   abstract3: ['coolingTech', 'electricalEngineer', 'networkOperator'],
 
   dataOrigins: ['contentCreators'],
@@ -88,7 +99,13 @@ const ACTOR_IDS_BY_SCENE = {
   abstract8: ['operationsTeam', 'affectedUser'],
 
   pipelineAssemble: ['transportTeam', 'infraTeam', 'languageReviewer'],
-  peopleReveal: ['transportTeam', 'maintenance', 'contentCreators', 'safetyTester', 'operationsTeam']
+  peopleReveal: [
+    'transportTeam',
+    'maintenance',
+    'contentCreators',
+    'safetyTester',
+    'operationsTeam'
+  ]
 };
 
 const TASK_CHOICE_PROMPTS = {
@@ -98,6 +115,50 @@ const TASK_CHOICE_PROMPTS = {
   safetyTest: 'اختر المشكلة الأساسية لإكمال اختبار السلامة.',
   supportTask: 'اختر طريقة التعامل مع بلاغ المستخدم.'
 };
+
+const INCIDENTS = {
+  factoryIncident: {
+    title: 'ارتفع عدد الجسيمات أثناء مراقبة الدفعة',
+    trigger: 'بعد بدء المراقبة ارتفع المؤشر من 18 إلى 49.',
+    meaning: 'استمرار الخط قد يرفع نسبة الوحدات المعيبة. هذا الحدث ظهر أثناء تنفيذ المهمة ولم ينتج عن ضغطة عشوائية.',
+    question: 'كيف ستتعامل مع تنبيه الجودة؟'
+  },
+  dcCooling: {
+    title: 'تعطلت وحدة تبريد أثناء اختبار المجموعة',
+    trigger: 'بعد تشغيل اختبار الخادم لم تعد وحدة التبريد رقم 3 تستجيب.',
+    meaning: 'العطل حدث أثناء الاختبار؛ يجب اختيار طريقة للتعامل معه قبل اعتبار المجموعة جاهزة.',
+    question: 'كيف ستتعامل مع عطل التبريد؟',
+    message: {
+      actor: 'coolingTech',
+      text: 'وحدة التبريد رقم 3 لا تستجيب أثناء اختبار المجموعة.',
+      label: 'يبلغ عن العطل'
+    }
+  },
+  trainingRun: {
+    title: 'أصبحت وحدة حوسبة غير متاحة أثناء الجولة',
+    trigger: 'بدأ التدريب ثم فُقدت إحدى وحدات الحوسبة عند تقدم 35%.',
+    meaning: 'اختيار سعة الحوسبة لم يسبب العطل؛ لكنه يحدد مقدار السعة المتبقية بعد حدوثه.',
+    question: 'هل توقف الجولة للفحص أم تستمر بقدرة أقل؟'
+  },
+  launchDecision: {
+    title: 'ظهر تعارض بين الاختبارات وموعد الإصدار',
+    trigger: 'بعد المراجعة بقي 14 اختبارًا بينما الموعد المخطط للإطلاق غدًا.',
+    meaning: 'الخيارات ظهرت لأن الوقت المتاح لا يكفي لإنهاء كل الاختبارات مع الحفاظ على الموعد نفسه.',
+    causal: 'after',
+    question: 'كيف ستتعامل مع تعارض الموعد والاختبارات؟',
+    message: {
+      actor: 'releaseManager',
+      text: 'الموعد المخطط للإطلاق غدًا، ونحتاج قرارًا بشأن ما تبقى من الاختبارات.',
+      label: 'تحدد القيد الزمني'
+    }
+  }
+};
+
+function actorsFor(scene) {
+  return (ACTOR_IDS_BY_SCENE[scene] || [])
+    .map(supportingActor)
+    .filter(Boolean);
+}
 
 function progressFor(stage, state) {
   switch (stage) {
@@ -115,7 +176,9 @@ function progressFor(stage, state) {
       return `المهام المكتملة: ${state.flags.annotationAnswered}/${ANNOTATION_TASKS.length}`;
     case 'training':
       if (state.flags.trainingIncidentChoice) return 'جولة التدريب: مكتملة';
-      return state.flags.trainingConfigured ? 'جولة التدريب: 35%' : 'الإعداد: لم يبدأ بعد';
+      return state.flags.trainingConfigured
+        ? 'جولة التدريب: 35%'
+        : 'الإعداد: لم يبدأ بعد';
     case 'evaluation':
       return `مقارنات الإجابات: ${Math.min(state.flags.evalIndex, EVAL_TASKS.length)}/${EVAL_TASKS.length}`;
     case 'deployment':
@@ -133,110 +196,91 @@ function statusFor(scene, state) {
   if (COMPLETE_SCENES.has(scene)) return 'complete';
   if (scene === 'mineTask' && state.flags.miningWarning) return 'decision';
   if (DECISION_SCENES.has(scene)) return 'decision';
-  if (scene === 'deployIncident' && state.flags.deployTabs.length === 3) return 'decision';
+  if (scene === 'deployIncident' && state.flags.deployTabs.length === 3) {
+    return 'decision';
+  }
   if (RESUMED_SCENES.has(scene)) return 'resumed';
   return 'active';
 }
 
-function actorsFor(scene) {
-  return (ACTOR_IDS_BY_SCENE[scene] || [])
-    .map(supportingActor)
-    .filter(Boolean);
-}
-
-function incidentGuidance(scene, state) {
+function renderIncident(scene, state) {
   if (scene === 'mineTask' && state.flags.miningWarning) {
-    return actorMessage(
-      supportingActor('coworker'),
-      'لاحظت حركة غير معتادة في الجدار عند القطاع ب.',
-      'ينبّهك أثناء العمل'
-    ) + eventPanel({
-      title: 'ظهر خطر في القطاع ب',
-      trigger: 'بعد استخراج 6 وحدات أشار زميل موسى إلى حركة غير معتادة في الجدار.',
-      meaning: 'لا يمكن مواصلة المهمة بصورة عادية قبل اتخاذ قرار بشأن الخطر.',
-      actors: actorsFor(scene)
-    }) + decisionPrompt('كيف ستتعامل مع خطر الجدار؟');
-  }
-
-  if (scene === 'factoryIncident') {
-    return eventPanel({
-      title: 'ارتفع عدد الجسيمات أثناء مراقبة الدفعة',
-      trigger: 'بعد بدء المراقبة ارتفع المؤشر من 18 إلى 49.',
-      meaning: 'استمرار الخط قد يرفع نسبة الوحدات المعيبة. هذا الحدث ظهر أثناء تنفيذ المهمة ولم ينتج عن ضغطة عشوائية.',
-      actors: actorsFor(scene)
-    }) + decisionPrompt('كيف ستتعامل مع تنبيه الجودة؟');
-  }
-
-  if (scene === 'dcCooling') {
-    return actorMessage(
-      supportingActor('coolingTech'),
-      'وحدة التبريد رقم 3 لا تستجيب أثناء اختبار المجموعة.',
-      'يبلغ عن العطل'
-    ) + eventPanel({
-      title: 'تعطلت وحدة تبريد أثناء اختبار المجموعة',
-      trigger: 'بعد تشغيل اختبار الخادم لم تعد وحدة التبريد رقم 3 تستجيب.',
-      meaning: 'العطل حدث أثناء الاختبار؛ يجب اختيار طريقة للتعامل معه قبل اعتبار المجموعة جاهزة.',
-      actors: actorsFor(scene)
-    }) + decisionPrompt('كيف ستتعامل مع عطل التبريد؟');
+    return [
+      actorMessage(
+        supportingActor('coworker'),
+        'لاحظت حركة غير معتادة في الجدار عند القطاع ب.',
+        'ينبّهك أثناء العمل'
+      ),
+      eventPanel({
+        title: 'ظهر خطر في القطاع ب',
+        trigger: 'بعد استخراج 6 وحدات أشار زميل موسى إلى حركة غير معتادة في الجدار.',
+        meaning: 'لا يمكن مواصلة المهمة بصورة عادية قبل اتخاذ قرار بشأن الخطر.',
+        actors: actorsFor(scene)
+      }),
+      decisionPrompt('كيف ستتعامل مع خطر الجدار؟')
+    ].join('');
   }
 
   if (scene === 'annotationReview' && state.flags.annotationCounts.rejected) {
-    return actorMessage(
-      supportingActor('dataReviewer'),
-      'رفضت مهمة واحدة وفق معيار المراجعة في المنصة.',
-      'يصدر قرار المراجعة'
-    ) + eventPanel({
-      title: 'المراجع رفض إحدى المهام بعد انتهاء الوردية',
-      trigger: 'بعد إرسال التصنيفات راجع طرف آخر العمل ورفض مهمة واحدة.',
-      meaning: 'ظهر خيار الاعتراض لأن شخصًا آخر اتخذ قرارًا يؤثر في أجر أماني.',
-      causal: 'after',
-      actors: actorsFor(scene)
-    }) + decisionPrompt('هل ستعترض على قرار المراجع؟');
-  }
-
-  if (scene === 'trainingRun') {
-    return eventPanel({
-      title: 'أصبحت وحدة حوسبة غير متاحة أثناء الجولة',
-      trigger: 'بدأ التدريب ثم فُقدت إحدى وحدات الحوسبة عند تقدم 35%.',
-      meaning: 'اختيار سعة الحوسبة لم يسبب العطل؛ لكنه يحدد مقدار السعة المتبقية بعد حدوثه.',
-      actors: actorsFor(scene)
-    }) + decisionPrompt('هل توقف الجولة للفحص أم تستمر بقدرة أقل؟');
-  }
-
-  if (scene === 'launchDecision') {
-    return eventPanel({
-      title: 'ظهر تعارض بين الاختبارات وموعد الإصدار',
-      trigger: 'بعد المراجعة بقي 14 اختبارًا بينما الموعد المخطط للإطلاق غدًا.',
-      meaning: 'الخيارات ظهرت لأن الوقت المتاح لا يكفي لإنهاء كل الاختبارات مع الحفاظ على الموعد نفسه.',
-      causal: 'after',
-      actors: actorsFor(scene)
-    }) + actorMessage(
-      supportingActor('releaseManager'),
-      'الموعد المخطط للإطلاق غدًا، ونحتاج قرارًا بشأن ما تبقى من الاختبارات.',
-      'تحدد القيد الزمني'
-    ) + decisionPrompt('كيف ستتعامل مع تعارض الموعد والاختبارات؟');
+    return [
+      actorMessage(
+        supportingActor('dataReviewer'),
+        'رفضت مهمة واحدة وفق معيار المراجعة في المنصة.',
+        'يصدر قرار المراجعة'
+      ),
+      eventPanel({
+        title: 'المراجع رفض إحدى المهام بعد انتهاء الوردية',
+        trigger: 'بعد إرسال التصنيفات راجع طرف آخر العمل ورفض مهمة واحدة.',
+        meaning: 'ظهر خيار الاعتراض لأن شخصًا آخر اتخذ قرارًا يؤثر في أجر أماني.',
+        causal: 'after',
+        actors: actorsFor(scene)
+      }),
+      decisionPrompt('هل ستعترض على قرار المراجع؟')
+    ].join('');
   }
 
   if (scene === 'deployIncident') {
-    const event = eventPanel({
-      title: 'ارتفعت نسبة الأخطاء أثناء اختبار الخدمة',
-      trigger: 'بعد توزيع الحمل وتشغيل الخدمة ظهرت أخطاء لدى مستخدمين، ويجب فحص الشبكة والخوادم وخدمة النموذج.',
-      meaning: 'افتح الأقسام الثلاثة أولًا. بعد معرفة المؤشرات ستظهر خيارات الاستعادة. لا تفترض اللعبة أن توزيعك للحمل هو سبب عطل الذاكرة.',
-      actors: actorsFor(scene)
-    });
-    return event + (
+    return [
+      eventPanel({
+        title: 'ارتفعت نسبة الأخطاء أثناء اختبار الخدمة',
+        trigger: 'بعد توزيع الحمل وتشغيل الخدمة ظهرت أخطاء لدى مستخدمين، ويجب فحص الشبكة والخوادم وخدمة النموذج.',
+        meaning: 'افتح الأقسام الثلاثة أولًا. بعد معرفة المؤشرات ستظهر خيارات الاستعادة. لا تفترض اللعبة أن توزيعك للحمل هو سبب عطل الذاكرة.',
+        actors: actorsFor(scene)
+      }),
       state.flags.deployTabs.length === 3
         ? decisionPrompt('بعد فحص الأقسام، كيف ستعيد الخدمة؟')
         : ''
-    );
+    ].join('');
   }
 
-  return '';
+  const incident = INCIDENTS[scene];
+  if (!incident) return '';
+
+  const message = incident.message
+    ? actorMessage(
+      supportingActor(incident.message.actor),
+      incident.message.text,
+      incident.message.label
+    )
+    : '';
+
+  return [
+    message,
+    eventPanel({
+      title: incident.title,
+      trigger: incident.trigger,
+      meaning: incident.meaning,
+      causal: incident.causal,
+      actors: actorsFor(scene)
+    }),
+    decisionPrompt(incident.question)
+  ].join('');
 }
 
 function taskChoiceGuidance(scene) {
   const prompt = TASK_CHOICE_PROMPTS[scene];
   if (!prompt) return '';
+
   return decisionPrompt(
     prompt,
     'هذه الخيارات هي جزء من المهمة نفسها، وليست حادثًا طارئًا. يجب اختيار أحدها لإكمال الخطوة الحالية.'
@@ -244,43 +288,43 @@ function taskChoiceGuidance(scene) {
 }
 
 function contextualMessages(scene) {
-  let content = '';
+  const parts = [];
 
   if (scene === 'mineOrientation') {
-    content += actorMessage(
+    parts.push(actorMessage(
       supportingActor('supervisor'),
       'نحتاج 12 وحدة قبل مغادرة الشاحنة. إذا ظهر خطر سجّله، لكن وقت التوقف يحسب على الوردية.',
       'يحدد قواعد الوردية'
-    );
+    ));
   }
 
   if (scene === 'supportTask') {
-    content += actorMessage(
+    parts.push(actorMessage(
       supportingActor('affectedUser'),
       'أنا واحد من المستخدمين الذين وصل إليهم أثر الحادث، وهذا البلاغ يشرح ما حدث لي.',
       'يرسل بلاغًا'
-    );
+    ));
   }
 
   if (['annotationIntro', 'annotationTask', 'annotationReview', 'annotationEnd'].includes(scene)) {
-    content += institutionCard({
+    parts.push(institutionCard({
       name: 'منصة «مهمة»',
       type: 'منصة عمل رقمية',
       role: 'توزع المهام، تعرض معيار المشروع، وتسجل القبول والرفض والدفع.',
       symbol: '▦'
-    });
+    }));
   }
 
   if (scene === 'launchDecision') {
-    content += institutionCard({
+    parts.push(institutionCard({
       name: 'خطة الإصدار',
       type: 'قيد تنظيمي',
       role: 'تحدد موعد الإطلاق المخطط وتخلق تعارضًا مع الوقت المتبقي للاختبارات.',
       symbol: '◷'
-    });
+    }));
   }
 
-  return content;
+  return parts.join('');
 }
 
 function outcomeGuidance(scene, state) {
@@ -368,11 +412,11 @@ function outcomeGuidance(scene, state) {
 }
 
 export function sceneGuidance(scene, state) {
-  const chapter = CHAPTERS[Math.max(0, Math.min(CHAPTERS.length - 1, state.chapter))];
-  const stage = chapter?.key;
-  const task = STAGE_TASKS[stage];
+  if (scene.startsWith('intro') || scene.startsWith('ch')) return '';
 
-  if (!task || scene.startsWith('intro') || scene.startsWith('ch')) return '';
+  const stage = stageForScene(scene);
+  const task = STAGE_TASKS[stage];
+  if (!task) return '';
 
   const actors = actorsFor(scene);
   return [
@@ -382,7 +426,7 @@ export function sceneGuidance(scene, state) {
     }),
     actors.length ? actorStrip(actors) : '',
     contextualMessages(scene),
-    incidentGuidance(scene, state),
+    renderIncident(scene, state),
     taskChoiceGuidance(scene),
     outcomeGuidance(scene, state)
   ].join('');
