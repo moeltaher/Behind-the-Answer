@@ -64,8 +64,7 @@ async function runJourney(viewport, label) {
   if (await page.locator('.chapter-brief').count()) throw new Error(`${label}: legacy three-column chapter brief still renders.`);
   await click(page, '#chapterNext');
   const firstCharacter = await page.locator('.scene-character').boundingBox();
-  const firstTask = await page.locator('[data-task-panel]').boundingBox();
-  if (firstTask) throw new Error(`${label}: orientation should not repeat task panel.`);
+  if (await page.locator('[data-task-panel]').count()) throw new Error(`${label}: orientation should not repeat task panel.`);
   if (!firstCharacter) throw new Error(`${label}: character card missing on role entry.`);
   await click(page, '#startMine');
   await click(page, '[data-sector="b"]'); await click(page, '[data-sector="b"]'); await click(page, '[data-sector="b"]');
@@ -82,9 +81,9 @@ async function runJourney(viewport, label) {
   await click(page, '#enterFab');
   await page.getByText('+12 Pa').waitFor({ state: 'visible' });
   await click(page, '#observeFab'); await click(page, '#fabStop');
-  await click(page, '#chipsDone');
+  await click(page, '#chipsDone'); await click(page, '#toCh3');
   if (await page.locator('[data-task-panel]').count()) throw new Error(`${label}: abstraction should not render task panel.`);
-  await click(page, '#abstractNext'); await click(page, '#toCh3');
+  await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
   await click(page, '[data-server-step="rack"]');
@@ -94,7 +93,8 @@ async function runJourney(viewport, label) {
   await click(page, '#bootServer'); await click(page, '#dcStop');
   await page.getByText('عادت الحرارة إلى 24° م', { exact: false }).waitFor({ state: 'visible' });
   await click(page, '#dcAfterCooling');
-  for (const worker of ['clean', 'electric', 'security']) await click(page, `[data-worker="${worker}"]`);
+  if (await page.locator('[data-worker]').count()) throw new Error(`${label}: datacenter roles still require reveal clicks.`);
+  await page.getByText('«الخادم الجاهز» يخفي فريقًا كاملًا.').waitFor({ state: 'visible' });
   await click(page, '#dcReady'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
@@ -122,6 +122,8 @@ async function runJourney(viewport, label) {
   await page.getByText('7/8').waitFor({ state: 'visible' });
   if (await page.getByText('97%', { exact: false }).count()) throw new Error(`${label}: fabricated 97% load still appears.`);
   await click(page, '#trainContinue'); await click(page, '#sendHuman');
+  await page.getByText('نسخة مطورة من النموذج').waitFor({ state: 'visible' });
+  await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
   for (const choice of ['a', 'b', 'bad']) {
@@ -157,8 +159,6 @@ async function runJourney(viewport, label) {
     await loadState(page, { scene: 'ch1Intro' });
     const chapterDetailsDisplay = await page.locator('.learning-more').evaluate(element => getComputedStyle(element).display);
     if (chapterDetailsDisplay === 'none') throw new Error(`${label}: optional chapter details unavailable on mobile.`);
-    const taskDetails = await page.locator('.task-panel__details').count();
-    if (taskDetails !== 1) throw new Error(`${label}: compact intro task structure missing.`);
     await click(page, '#chapterNext');
     if (await page.locator('[data-task-panel]').count()) throw new Error(`${label}: orientation repeats task panel on mobile.`);
     await click(page, '#promptBtn');
@@ -186,6 +186,9 @@ async function runPrecisionChecks() {
   if (await page.locator('[data-server-step="power"]:not([disabled])').count() !== 1) throw new Error('Power should be available after rack.');
   if (await page.locator('[data-server-step="network"]:not([disabled])').count() !== 1) throw new Error('Network should be independently available after rack.');
 
+  await loadState(page, { scene: 'dataOrigins' });
+  if (await page.locator('#toClean:not([disabled])').count() !== 1) throw new Error('Data source exploration should be optional.');
+
   await loadState(page, { scene: 'dataClean', flags: { dataIndex: 2 } });
   await page.getByText('حق إعادة الاستخدام لم يُحسم', { exact: false }).waitFor({ state: 'visible' });
   await chooseData(page, 'review');
@@ -199,7 +202,8 @@ async function runPrecisionChecks() {
   ] } });
   await click(page, '#takeBreak');
   state = await savedState(page);
-  if (!state.flags.tookBreak || state.flags.annotationShiftMinutes !== 29) throw new Error('Unpaid break did not add visible work time.');
+  if (!state.flags.tookBreak) throw new Error('Unpaid break was not persisted.');
+  await page.getByText('17 دقيقة').waitFor({ state: 'visible' });
 
   await loadState(page, { scene: 'safetyOutcome', flags: { safetyChoice: 'details' } });
   await click(page, '#remediateSafety');
@@ -218,6 +222,7 @@ async function runPrecisionChecks() {
   if (state.flags.evalCorrectCount !== 1) throw new Error('Legal evaluation should accept both answers as bad.');
 
   if (Object.hasOwn(state, 'metrics')) throw new Error('Hidden metrics still exist in state.');
+  if (Object.hasOwn(state.flags, 'revealedWorkers')) throw new Error('Legacy click-through worker reveal state still exists.');
   await browser.close();
   console.log('Precision and causality checks passed.');
 }
