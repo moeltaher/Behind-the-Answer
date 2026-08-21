@@ -1,0 +1,19 @@
+{
+  "name": "behind-the-answer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "eslint": "10.8.1",
+    "playwright": "1.62.1"
+  },
+  "scripts": {
+    "check:syntax": "find js tests -type f \\( -name '*.js' -o -name '*.mjs' \\) -print0 | xargs -0 -n1 node --check",
+    "check:static": "node tests/static-integrity.mjs",
+    "check:storage": "node tests/storage-schema.mjs",
+    "check:css": "node tests/css-integrity.mjs",
+    "audit:ci": "npm audit --audit-level=high",
+    "test:browser": "node tests/smoke.mjs"
+  }
+}

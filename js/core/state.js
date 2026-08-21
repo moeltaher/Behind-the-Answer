@@ -1,4 +1,8 @@
+export const STATE_SCHEMA_VERSION = 2;
+
 export const DEFAULT_STATE = {
+  schemaVersion: STATE_SCHEMA_VERSION,
+  systemNotice: '',
   scene: 'intro',
   decisions: [],
   ledger: [],
@@ -8,14 +12,19 @@ export const DEFAULT_STATE = {
     miningBUses: 0,
     miningWarning: false,
     miningIncidentChoice: null,
+    miningRiskLevel: 0,
+    miningForcedInspection: false,
+    miningInspectionCount: 0,
     factoryChoice: null,
     serverSteps: [],
     dcCoolingChoice: null,
+    dcCoolingRestored: false,
     dataOrigins: [],
     dataIndex: 0,
     dataReviewMinutes: 0,
     dataFollowup: null,
     dataStatuses: [],
+    dataChecks: [],
     dataFeedbackLabel: '',
     dataFeedbackDetail: '',
     dataSort: {
@@ -38,11 +47,13 @@ export const DEFAULT_STATE = {
     safetyRemediated: false,
     safetyRetested: false,
     launchChoice: null,
+    deployLoad: null,
     deployTabs: [],
     deployRecovery: null,
     supportIndex: 0,
     supportFeedbackLabel: '',
-    supportFeedbackDetail: ''
+    supportFeedbackDetail: '',
+    transferChoice: null
   }
 };
 

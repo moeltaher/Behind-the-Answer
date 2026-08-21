@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_STATE, clone } from '../js/core/state.js';
+import { DEFAULT_STATE, STATE_SCHEMA_VERSION, clone } from '../js/core/state.js';
 import {
   STORAGE_KEY,
   SETTINGS_KEY,
@@ -17,84 +17,98 @@ class MemoryStorage {
 
 globalThis.localStorage = new MemoryStorage();
 function saveRaw(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
-function expectDefaultState(value) { saveRaw(STORAGE_KEY, value); assert.deepEqual(loadState(DEFAULT_STATE), DEFAULT_STATE); }
+function expectReset(value) {
+  saveRaw(STORAGE_KEY,value);
+  const loaded=loadState(DEFAULT_STATE);
+  assert.equal(loaded.schemaVersion,STATE_SCHEMA_VERSION);
+  assert.equal(loaded.scene,'intro');
+  assert.match(loaded.systemNotice,/جلسة جديدة/);
+}
 
-const validState = clone(DEFAULT_STATE);
-validState.scene = 'safetyRetest';
-validState.flags.miningMinutes = 35;
-validState.flags.miningBUses = 2;
-validState.flags.miningIncidentChoice = 'stop';
-validState.flags.factoryChoice = 'stop';
-validState.flags.dcCoolingChoice = 'move';
-validState.flags.dataReviewMinutes = 8;
-validState.flags.dataFollowup = { index: 2, reason: 'rights-cleared' };
-validState.flags.dataStatuses = ['excluded','ready','ready','pending','pending'];
-validState.flags.dataFeedbackLabel = 'أوقفت مادة للمراجعة';
-validState.flags.dataFeedbackDetail = 'بقيت خارج الجزء الجاهز.';
-validState.flags.annotationUnpaidMinutes = 9;
-validState.flags.tookBreak = true;
-validState.flags.breakDecisionMade = true;
-validState.flags.trainingIncidentChoice = 'pause';
-validState.flags.evalCorrectCount = 2;
-validState.flags.evalFeedback = { choice: 'a', correct: true };
-validState.flags.safetyChoice = 'details';
-validState.flags.safetyRemediated = true;
-validState.flags.safetyRetested = true;
-validState.flags.launchChoice = 'delay';
-validState.flags.deployRecovery = 'rollback';
-validState.flags.supportFeedbackLabel = 'احتفظ الفريق بسياق تشخيصي أفضل';
-validState.flags.supportFeedbackDetail = 'بقي البلاغ مرتبطًا بالحادث.';
-validState.flags.dataSort.redact = 1;
-saveRaw(STORAGE_KEY, validState);
-assert.deepEqual(loadState(DEFAULT_STATE), validState);
+const validState=clone(DEFAULT_STATE);
+validState.scene='safetyRetest';
+validState.flags.miningMinutes=35;
+validState.flags.miningBUses=2;
+validState.flags.miningIncidentChoice='continue';
+validState.flags.miningRiskLevel=1;
+validState.flags.factoryChoice='stop';
+validState.flags.serverSteps=['rack','network','power','register'];
+validState.flags.dcCoolingChoice='move';
+validState.flags.dcCoolingRestored=true;
+validState.flags.dataReviewMinutes=8;
+validState.flags.dataStatuses=['excluded','ready','ready','pending','pending'];
+validState.flags.dataChecks=[
+  { rights:'na',privacy:'na',fitness:'na' },
+  { rights:'clear',privacy:'clear',fitness:'clear' },
+  { rights:'clear',privacy:'clear',fitness:'clear' },
+  { rights:'unresolved',privacy:'clear',fitness:'clear' },
+  { rights:'unresolved',privacy:'unresolved',fitness:'clear' }
+];
+validState.flags.annotationUnpaidMinutes=9;
+validState.flags.tookBreak=true;
+validState.flags.breakDecisionMade=true;
+validState.flags.trainingIncidentChoice='pause';
+validState.flags.evalCorrectCount=2;
+validState.flags.evalFeedback={ choice:'a',correct:true };
+validState.flags.safetyChoice='details';
+validState.flags.safetyRemediated=true;
+validState.flags.safetyRetested=true;
+validState.flags.launchChoice='delay';
+validState.flags.deployLoad=[45,30,25];
+validState.flags.deployTabs=['network','compute'];
+validState.flags.deployRecovery='rollback';
+validState.flags.supportFeedbackLabel='احتفظ الفريق بسياق تشخيصي أفضل';
+validState.flags.supportFeedbackDetail='بقي البلاغ مرتبطًا بالحادث.';
+validState.flags.transferChoice='build-use';
+saveRaw(STORAGE_KEY,validState);
+assert.deepEqual(loadState(DEFAULT_STATE),validState);
 
-const malformedNullable = clone(DEFAULT_STATE);
-malformedNullable.flags.evalFeedback = 'old-format';
-expectDefaultState(malformedNullable);
+const badServerStep=clone(validState);
+badServerStep.flags.serverSteps=['rack','magic'];
+expectReset(badServerStep);
 
-const malformedObject = clone(DEFAULT_STATE);
-malformedObject.flags.evalFeedback = { choice: 'a', correct: true, legacy: true };
-expectDefaultState(malformedObject);
+const badChecks=clone(validState);
+badChecks.flags.dataChecks.pop();
+expectReset(badChecks);
 
-const malformedFollowup = clone(DEFAULT_STATE);
-malformedFollowup.flags.dataFollowup = { index: '2', reason: 'rights-cleared' };
-expectDefaultState(malformedFollowup);
+const badCheckEnum=clone(validState);
+badCheckEnum.flags.dataChecks[1].rights='probably';
+expectReset(badCheckEnum);
 
-const malformedChoice = clone(DEFAULT_STATE);
-malformedChoice.flags.dcCoolingChoice = { value: 'stop' };
-expectDefaultState(malformedChoice);
+const badLoad=clone(validState);
+badLoad.flags.deployLoad=[50,30,30];
+expectReset(badLoad);
 
-const legacyMiningStopped = clone(DEFAULT_STATE);
-legacyMiningStopped.flags.miningStopped = true;
-expectDefaultState(legacyMiningStopped);
+const badCompute=clone(validState);
+badCompute.flags.trainingCompute='10';
+expectReset(badCompute);
 
-const legacyFactoryPpe = clone(DEFAULT_STATE);
-legacyFactoryPpe.flags.factoryPPE = ['hair'];
-expectDefaultState(legacyFactoryPpe);
+const extraStateField=clone(validState);
+extraStateField.legacyCompatibility=true;
+expectReset(extraStateField);
 
-const legacyMetrics = clone(DEFAULT_STATE);
-legacyMetrics.metrics = { pressure: 50, cost: 50, burden: 42 };
-expectDefaultState(legacyMetrics);
+const legacy=clone(validState);
+delete legacy.schemaVersion;
+delete legacy.systemNotice;
+for (const key of ['miningRiskLevel','miningForcedInspection','miningInspectionCount','dcCoolingRestored','dataChecks','deployLoad','transferChoice']) delete legacy.flags[key];
+legacy.scene='trainingSetup';
+legacy.flags.dataStatuses=['excluded','ready','ready','pending','pending'];
+saveRaw(STORAGE_KEY,legacy);
+const migrated=loadState(DEFAULT_STATE);
+assert.equal(migrated.schemaVersion,STATE_SCHEMA_VERSION);
+assert.equal(migrated.scene,'trainingSetup');
+assert.equal(migrated.flags.dataChecks.length,5);
+assert.equal(migrated.flags.dataChecks[1].rights,'unresolved');
+assert.match(migrated.systemNotice,/تم تحديث الحفظ السابق/);
 
-const legacyWorkerReveal = clone(DEFAULT_STATE);
-legacyWorkerReveal.flags.revealedWorkers = ['clean'];
-expectDefaultState(legacyWorkerReveal);
+saveRaw(SETTINGS_KEY,DEFAULT_SETTINGS);
+assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);
+saveRaw(SETTINGS_KEY,{ ...DEFAULT_SETTINGS,oldSetting:true });
+assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);
 
-const oldDataShape = clone(DEFAULT_STATE);
-delete oldDataShape.flags.dataStatuses;
-expectDefaultState(oldDataShape);
+localStorage.clear();
+globalThis.matchMedia=query=>({ matches:query.includes('prefers-reduced-motion') });
+assert.equal(loadSettings().reduceMotion,true);
 
-const oldSafetyShape = clone(DEFAULT_STATE);
-delete oldSafetyShape.flags.safetyRetested;
-expectDefaultState(oldSafetyShape);
-
-const extraStateField = clone(DEFAULT_STATE);
-extraStateField.flags.legacyCompatibility = true;
-expectDefaultState(extraStateField);
-
-saveRaw(SETTINGS_KEY, DEFAULT_SETTINGS);
-assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
-saveRaw(SETTINGS_KEY, { ...DEFAULT_SETTINGS, oldSetting: true });
-assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
-
-console.log('Storage schema accepts only the current explicit-causality state and settings shapes.');
+delete globalThis.matchMedia;
+console.log('Storage schema validates semantic values, migrates the legacy state, and respects system reduced-motion defaults.');
