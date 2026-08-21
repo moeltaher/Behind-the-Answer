@@ -9,13 +9,13 @@ import { STAGE_TASKS } from '../data/stage-tasks.js';
 import { taskPanel } from './task-flow.js';
 
 const NO_GUIDANCE_SCENES = new Set([
-  'mineOrientation','mineInspection','mineEnd','transportMontage','abstract1',
-  'factoryOrientation','factoryOutcome','hardwareMontage','abstract2',
+  'mineOrientation','mineInspection','mineEnd','abstract1',
+  'factoryOrientation','factoryOutcome','abstract2',
   'dcCoolingOutcome','dcWorkers','abstract3',
   'dataFollowup','dataCleanSummary','abstract4',
   'annotationIntro','annotationReview','annotationEnd','abstract5',
   'trainingEval','abstract6',
-  'safetyOutcome','launchOutcome','abstract7',
+  'safetyOutcome','safetyRetest','launchOutcome','abstract7',
   'onCall','deployEnd','abstract8',
   'pipelineAssemble','finalAnswer','results','finalMessage'
 ]);
@@ -34,14 +34,17 @@ function progressFor(stage, state, scene) {
     case 'datacenter':
       if (scene === 'dcCooling') return 'اختبار المجموعة: قرار تبريد مطلوب';
       return `تركيب الخادم: ${state.flags.serverSteps.length}/4`;
-    case 'data':
+    case 'data': {
+      const ready=state.flags.dataStatuses.filter(status=>status==='ready').length;
+      const pending=state.flags.dataStatuses.filter(status=>status==='pending').length;
       if (scene === 'dataOrigins') return `استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;
-      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — وقت مراجعة إضافي: ${state.flags.dataReviewMinutes} دقيقة`;
+      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — جاهز ${ready} / معلق ${pending}`;
+    }
     case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length} — وقت غير مدفوع: ${state.flags.annotationUnpaidMinutes} دقيقة`;
-    case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات حوسبة مخصصة` : 'إعداد مجموعات الحوسبة ونقطة الحفظ';
+    case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات حوسبة مخصصة` : 'إعداد تكلفة الحوسبة ونقطة الحفظ';
     case 'evaluation':
-      if (scene === 'safetyTest') return 'اختبار سلامة يمر عبر بوابة إصلاح قبل الإطلاق';
-      if (scene === 'launchDecision') return 'قرار الجاهزية بعد إصلاح خلل السلامة';
+      if (scene === 'safetyTest') return 'اختبار سلامة → إصلاح → إعادة اختبار إلزامية';
+      if (scene === 'launchDecision') return 'قرار الجاهزية بعد اجتياز إعادة اختبار السلامة';
       return `مهام التقييم: ${Math.min(state.flags.evalIndex, EVAL_TASKS.length)}/${EVAL_TASKS.length}`;
     case 'deployment':
       if (scene === 'deployIncident') return `التشخيص: ${state.flags.deployTabs.length}/3 أقسام`;
