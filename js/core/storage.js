@@ -1,7 +1,7 @@
 import { clone } from './state.js';
 
-export const STORAGE_KEY = 'behindTheAnswerGame_v1';
-export const SETTINGS_KEY = 'behindTheAnswerSettings_v1';
+export const STORAGE_KEY = 'behindTheAnswerGame';
+export const SETTINGS_KEY = 'behindTheAnswerSettings';
 
 export const DEFAULT_SETTINGS = {
   reduceMotion: false,
@@ -10,32 +10,31 @@ export const DEFAULT_SETTINGS = {
   soundOn: false
 };
 
-function restoreCurrentShape(template, saved) {
-  if (Array.isArray(template)) {
-    return Array.isArray(saved) ? saved : clone(template);
-  }
+function hasExactShape(template, value) {
+  if (Array.isArray(template)) return Array.isArray(value);
 
   if (template && typeof template === 'object') {
-    const source = saved && typeof saved === 'object' && !Array.isArray(saved)
-      ? saved
-      : {};
-    const restored = {};
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
 
-    for (const [key, value] of Object.entries(template)) {
-      restored[key] = restoreCurrentShape(value, source[key]);
-    }
+    const templateKeys = Object.keys(template);
+    const valueKeys = Object.keys(value);
+    if (templateKeys.length !== valueKeys.length) return false;
 
-    return restored;
+    return templateKeys.every(key =>
+      Object.hasOwn(value, key) && hasExactShape(template[key], value[key])
+    );
   }
 
-  return typeof saved === typeof template ? saved : template;
+  return typeof value === typeof template;
 }
 
 export function loadState(defaultState) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return clone(defaultState);
-    return restoreCurrentShape(defaultState, JSON.parse(raw));
+
+    const saved = JSON.parse(raw);
+    return hasExactShape(defaultState, saved) ? saved : clone(defaultState);
   } catch {
     return clone(defaultState);
   }
@@ -53,7 +52,11 @@ export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
-    return restoreCurrentShape(DEFAULT_SETTINGS, JSON.parse(raw));
+
+    const saved = JSON.parse(raw);
+    return hasExactShape(DEFAULT_SETTINGS, saved)
+      ? saved
+      : { ...DEFAULT_SETTINGS };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
