@@ -1,7 +1,11 @@
-import { clamp, escapeHtml as h } from '../core/state.js';
+import { escapeHtml as h } from '../core/state.js';
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Number(value) || 0));
+}
 
 export function monitorTile(label, value, width) {
-  const safeWidth = clamp(Number(width) || 0);
+  const safeWidth = clampPercent(width);
 
   return `
     <div class="monitor-tile">
