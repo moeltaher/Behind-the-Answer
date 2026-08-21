@@ -3,7 +3,7 @@ import { DEFAULT_STATE, clone } from '../js/core/state.js';
 import { STORAGE_KEY, SETTINGS_KEY, DEFAULT_SETTINGS } from '../js/core/storage.js';
 
 const BASE_URL = 'http://127.0.0.1:4173';
-const SETTINGS = { ...DEFAULT_SETTINGS, reduceMotion: true };
+const DEFAULT_TEST_SETTINGS = { ...DEFAULT_SETTINGS, reduceMotion: true };
 
 async function click(page, selector) {
   const target = page.locator(selector);
@@ -15,21 +15,23 @@ function currentState(patch = {}) {
   const state = clone(DEFAULT_STATE);
   function merge(target, source) {
     for (const [key, value] of Object.entries(source)) {
-      if (value && typeof value === 'object' && !Array.isArray(value)) merge(target[key], value);
-      else target[key] = value;
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) target[key] = {};
+        merge(target[key], value);
+      } else target[key] = value;
     }
   }
   merge(state, patch);
   return state;
 }
 
-async function loadState(page, patch = null) {
+async function loadState(page, patch = null, settings = DEFAULT_TEST_SETTINGS) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await page.evaluate(({ settingsKey, storageKey, settings, state }) => {
+  await page.evaluate(({ settingsKey, storageKey, settingsValue, state }) => {
     localStorage.clear();
-    localStorage.setItem(settingsKey, JSON.stringify(settings));
+    localStorage.setItem(settingsKey, JSON.stringify(settingsValue));
     if (state) localStorage.setItem(storageKey, JSON.stringify(state));
-  }, { settingsKey: SETTINGS_KEY, storageKey: STORAGE_KEY, settings: SETTINGS, state: patch ? currentState(patch) : null });
+  }, { settingsKey: SETTINGS_KEY, storageKey: STORAGE_KEY, settingsValue: settings, state: patch ? currentState(patch) : null });
   await page.reload({ waitUntil: 'networkidle' });
 }
 
@@ -58,49 +60,62 @@ async function runJourney(viewport, label) {
 
   await click(page, '#introSend');
   await page.getByRole('heading', { name: 'الإجابة هي آخر نقطة مرئية في سلسلة أطول.', exact: true }).waitFor({ state: 'visible' });
+  await page.waitForFunction(() => document.activeElement?.tagName === 'H1');
+  if ((await page.locator('.glyph').textContent()) !== '◇') throw new Error(`${label}: reduced-motion intro did not render the final static glyph.`);
   await click(page, '#descend');
 
   await page.getByRole('heading', { name: 'استخراج مواد الأجهزة', exact: true }).waitFor({ state: 'visible' });
-  if (await page.locator('.chapter-brief').count()) throw new Error(`${label}: legacy three-column chapter brief still renders.`);
+  await page.getByText('المرحلة 1 من 8', { exact: true }).waitFor({ state: 'visible' });
   await click(page, '#chapterNext');
-  const firstCharacter = await page.locator('.scene-character').boundingBox();
-  if (await page.locator('[data-task-panel]').count()) throw new Error(`${label}: orientation should not repeat task panel.`);
-  if (!firstCharacter) throw new Error(`${label}: character card missing on role entry.`);
+  if (!await page.locator('.scene-character').boundingBox()) throw new Error(`${label}: mining character missing.`);
   await click(page, '#startMine');
-  await click(page, '[data-sector="b"]'); await click(page, '[data-sector="b"]'); await click(page, '[data-sector="b"]');
+  await click(page, '[data-sector="b"]');
+  await click(page, '[data-sector="b"]');
   await page.getByText('اهتزاز غير معتاد في القطاع ب').waitFor({ state: 'visible' });
   await click(page, '#mineStop');
   await page.getByText('لم تنتج مواد أثناء التوقف', { exact: false }).waitFor({ state: 'visible' });
   await click(page, '#finishMine');
-  await click(page, '[data-sector="b"]'); await click(page, '[data-sector="b"]'); await click(page, '[data-sector="b"]');
+  for (let i = 0; i < 4; i += 1) await click(page, '[data-sector="b"]');
   await page.getByText('92 وحدة لعب').waitFor({ state: 'visible' });
+  await page.getByText('54 دقيقة').waitFor({ state: 'visible' });
   await click(page, '#mineTransport'); await click(page, '#mineAbstract'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
-  await page.getByText('معالجة الرقاقة').waitFor({ state: 'visible' });
   await click(page, '#enterFab');
-  await page.getByText('+12 Pa').waitFor({ state: 'visible' });
+  await page.getByText('فرق الضغط إلى المنطقة المجاورة').waitFor({ state: 'visible' });
   await click(page, '#observeFab'); await click(page, '#fabStop');
-  await click(page, '#chipsDone'); await click(page, '#toCh3');
-  if (await page.locator('[data-task-panel]').count()) throw new Error(`${label}: abstraction should not render task panel.`);
-  await click(page, '#abstractNext');
+  await page.getByText('رفض محدود').waitFor({ state: 'visible' });
+  if (await page.getByText('96%', { exact: true }).count()) throw new Error(`${label}: factory faux-precision remains.`);
+  await click(page, '#chipsDone'); await click(page, '#toCh3'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
   await click(page, '[data-server-step="rack"]');
   await click(page, '[data-server-step="network"]');
   await click(page, '[data-server-step="power"]');
   await click(page, '[data-server-step="register"]');
-  await click(page, '#bootServer'); await click(page, '#dcStop');
-  await page.getByText('عادت الحرارة إلى 24° م', { exact: false }).waitFor({ state: 'visible' });
+  await click(page, '#bootServer'); await click(page, '#dcMove');
+  await page.getByText('انتقلت مهام الاختبار إلى سعة بديلة', { exact: false }).waitFor({ state: 'visible' });
   await click(page, '#dcAfterCooling');
-  if (await page.locator('[data-worker]').count()) throw new Error(`${label}: datacenter roles still require reveal clicks.`);
-  await page.getByRole('heading', { name: '«الخادم الجاهز» يخفي فريقًا كاملًا.', exact: true }).waitFor({ state: 'visible' });
+  if (await page.locator('.worker-person__avatar').count() < 6) throw new Error(`${label}: supporting datacenter workers are not represented visually.`);
+  const workerCursor = await page.locator('.worker-person').first().evaluate(element => getComputedStyle(element).cursor);
+  if (workerCursor !== 'default') throw new Error(`${label}: non-interactive worker card still looks clickable.`);
   await click(page, '#dcReady'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
+  const ctaTop = (await page.locator('#toClean').boundingBox())?.y ?? Infinity;
+  const optionalTop = (await page.locator('.optional-source-details').boundingBox())?.y ?? -Infinity;
+  if (ctaTop >= optionalTop) throw new Error(`${label}: optional data sources still precede the primary CTA visually.`);
+  await page.locator('.optional-source-details summary').click();
   for (const origin of ['forum', 'code', 'photo']) await click(page, `[data-origin="${origin}"]`);
   await click(page, '#toClean');
-  for (const choice of ['remove', 'keep', 'review', 'review', 'review']) await chooseData(page, choice);
+  await chooseData(page, 'remove');
+  await chooseData(page, 'keep');
+  await chooseData(page, 'review');
+  await page.getByRole('heading', { name: 'حُسم حق الاستخدام، لكن مشكلة الخصوصية ما زالت قائمة.', exact: true }).waitFor({ state: 'visible' });
+  await click(page, '#followupRedact');
+  await chooseData(page, 'review');
+  await chooseData(page, 'review');
+  await page.getByText('12 دقيقة').waitFor({ state: 'visible' });
   await click(page, '#dataAbstract'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext'); await click(page, '#startAnnot');
@@ -111,19 +126,18 @@ async function runJourney(viewport, label) {
   }
   await page.getByText('29 دقيقة').waitFor({ state: 'visible' });
   await click(page, '#closeShift');
-  await page.getByText('عائد مكافئ للساعة').waitFor({ state: 'visible' });
+  await page.getByText('4 أمثلة مؤكدة، و2 قيد المراجعة', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('وقت غير مدفوع').waitFor({ state: 'visible' });
   await click(page, '#annotAbstract'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
-  await page.getByText('ليست عملية تدريب نموذج من الصفر', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('4 أمثلة بشرية مؤكدة', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('2 حالة معلقة', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('ليس سلوكًا تلقائيًا', { exact: false }).waitFor({ state: 'visible' });
   await page.selectOption('#computeSel', '8');
   await page.selectOption('#checkpointSel', 'recent');
   await click(page, '#trainStart');
-  await page.getByText('7/8').waitFor({ state: 'visible' });
-  if (await page.getByText('97%', { exact: false }).count()) throw new Error(`${label}: fabricated 97% load still appears.`);
-  await click(page, '#trainContinue'); await click(page, '#sendHuman');
-  await page.locator('#systemOutput').getByText('نسخة مطورة من النموذج', { exact: true }).waitFor({ state: 'visible' });
-  await click(page, '#abstractNext');
+  await click(page, '#trainContinue'); await click(page, '#sendHuman'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
   for (const choice of ['a', 'b', 'bad']) {
@@ -131,9 +145,12 @@ async function runJourney(viewport, label) {
     await click(page, '#nextEval');
   }
   await click(page, '[data-safety="details"]');
-  await page.getByText('يمنع المرور مباشرة إلى الإطلاق', { exact: false }).waitFor({ state: 'visible' });
   await click(page, '#remediateSafety');
-  await page.getByText('بقي 18 اختبارًا', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('بقيت 3 حزم تحقق', { exact: false }).waitFor({ state: 'visible' });
+  for (const title of ['تحقق من تغييرات نقطة الحفظ','فحص استقرار بعد عطل الحوسبة','إعادة اختبار السلامة']) {
+    await page.getByText(title, { exact: true }).waitFor({ state: 'visible' });
+  }
+  if (await page.getByText(/بقي \d+ اختبار/).count()) throw new Error(`${label}: arbitrary verification test count remains.`);
   await click(page, '#delayLaunch'); await click(page, '#finishEval'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
@@ -143,27 +160,23 @@ async function runJourney(viewport, label) {
   await click(page, '#testLoad');
   for (const tab of ['network', 'compute', 'model']) await click(page, `[data-tab="${tab}"]`);
   await click(page, '#rollback'); await click(page, '#toSupport');
-  await click(page, '#supportInvestigate'); await click(page, '#supportInvestigate');
+  await page.getByText('تحقق من الطلب الأول', { exact: true }).waitFor({ state: 'visible' });
+  await click(page, '#supportInvestigate');
+  await page.getByText('اربط البلاغ بالإصدار', { exact: true }).waitFor({ state: 'visible' });
+  await click(page, '#supportInvestigate');
   await click(page, '#uptimeAbstract'); await click(page, '#abstractNext');
 
-  await click(page, '#chapterNext'); await click(page, '#compressAI'); await click(page, '#backPrompt');
-  const finalAnswer = await page.locator('.message.ai').innerText();
-  if (!finalAnswer.includes('أعتذر عن التأخر في تسليم العمل')) throw new Error(`${label}: fixed answer missing.`);
-  await click(page, '#behindAnswer'); await click(page, '#showPeople'); await click(page, '#showResults');
-  await page.getByRole('heading', { name: 'النتيجة أدلة من قراراتك، لا متوسط نقاط.', exact: true }).waitFor({ state: 'visible' });
-  await page.getByText('احتفظت بمادة مناسبة ومصرح باستخدامها', { exact: false }).waitFor({ state: 'visible' });
-  await page.getByText('أوقفت خلل السلامة قبل الإطلاق', { exact: false }).waitFor({ state: 'visible' });
-  if (await page.locator('.metric-card').count()) throw new Error(`${label}: numeric metric cards rendered.`);
-
-  if (viewport.width <= 390) {
-    await loadState(page, { scene: 'ch1Intro' });
-    const chapterDetailsDisplay = await page.locator('.learning-more').evaluate(element => getComputedStyle(element).display);
-    if (chapterDetailsDisplay === 'none') throw new Error(`${label}: optional chapter details unavailable on mobile.`);
-    await click(page, '#chapterNext');
-    if (await page.locator('[data-task-panel]').count()) throw new Error(`${label}: orientation repeats task panel on mobile.`);
-    await click(page, '#promptBtn');
-    await page.locator('#promptDialogText').waitFor({ state: 'visible' });
-  }
+  await page.getByText('اكتملت مراحل اللعب الثماني', { exact: true }).waitFor({ state: 'visible' });
+  if (!(await page.locator('#journeyProgress').isHidden())) throw new Error(`${label}: epilogue still renders as a numbered gameplay stage.`);
+  await click(page, '#backPrompt');
+  await page.getByText('وصل بعد استعادة الإصدار السابق', { exact: true }).waitFor({ state: 'visible' });
+  if (await page.getByText(/\d+\.\d+ ثانية/).count()) throw new Error(`${label}: fake request timing remains in ending.`);
+  await click(page, '#showResults');
+  await page.getByRole('heading', { name: 'أعد البشر والقرارات إلى الصورة.', exact: true }).waitFor({ state: 'visible' });
+  await page.getByText('نقحت البيانات بعد حسم الحقوق', { exact: false }).waitFor({ state: 'visible' });
+  await click(page, '#toFinalMessage');
+  await page.getByRole('heading', { name: 'الواجهة هي نهاية السلسلة، وليست بدايتها.', exact: true }).waitFor({ state: 'visible' });
+  if (await page.locator('.methodology-details').count() !== 1) throw new Error(`${label}: methodology is not an optional epilogue detail.`);
 
   if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
   await browser.close();
@@ -174,64 +187,75 @@ async function runPrecisionChecks() {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
-  await loadState(page, { scene: 'mineTask', flags: { miningCount: 5 } });
-  await click(page, '[data-sector="a"]');
+  await loadState(page, { scene: 'mineTask' });
+  for (let i = 0; i < 12; i += 1) await click(page, '[data-sector="a"]');
   let state = await savedState(page);
-  if (state.flags.miningWarning) throw new Error('Mining warning triggered outside sector B.');
+  if (state.flags.miningMinutes !== 84 || state.scene !== 'mineEnd') throw new Error('Slow-only mining path should miss the 72-minute window at 84 minutes.');
+  await page.getByText('90 وحدة لعب').waitFor({ state: 'visible' });
+
+  await loadState(page, { scene: 'mineTask', flags: { miningCount: 10, miningMinutes: 35, miningBUses: 1 } });
   await click(page, '[data-sector="b"]');
   state = await savedState(page);
-  if (!state.flags.miningWarning) throw new Error('Mining warning did not follow sector B use.');
-
-  await loadState(page, { scene: 'dcInstall', flags: { serverSteps: ['rack'] } });
-  if (await page.locator('[data-server-step="power"]:not([disabled])').count() !== 1) throw new Error('Power should be available after rack.');
-  if (await page.locator('[data-server-step="network"]:not([disabled])').count() !== 1) throw new Error('Network should be independently available after rack.');
-
-  await loadState(page, { scene: 'dataOrigins' });
-  if (await page.locator('#toClean:not([disabled])').count() !== 1) throw new Error('Data source exploration should be optional.');
+  if (!state.flags.miningWarning || state.flags.miningCount !== 12 || state.scene !== 'mineTask') throw new Error('Final quota click must not bypass the mining warning.');
+  await click(page, '#mineContinue');
+  state = await savedState(page);
+  if (state.scene !== 'mineEnd') throw new Error('Resolving a final-click mining warning should finish the shift without a fake extra extraction click.');
 
   await loadState(page, { scene: 'dataClean', flags: { dataIndex: 2 } });
-  await page.getByText('حق إعادة الاستخدام لم يُحسم', { exact: false }).waitFor({ state: 'visible' });
   await chooseData(page, 'review');
   state = await savedState(page);
-  if (!state.decisions.some(decision => decision.id === 'data-pii-review')) throw new Error('PII+rights review decision not recorded.');
+  if (state.scene !== 'dataFollowup' || state.flags.dataReviewMinutes !== 4) throw new Error('PII rights review should cost time and lead to a second decision.');
+  await click(page, '#followupRedact');
+  state = await savedState(page);
+  if (!state.decisions.some(decision => decision.id === 'data-pii-redact-after-review')) throw new Error('Review -> redact follow-up was not recorded.');
 
-  await loadState(page, { scene: 'annotationTask', flags: { annotationResults: [
-    { index: 0, choice: 'آمن', acceptedAsReasonable: true, pending: false },
-    { index: 1, choice: 'عنف', acceptedAsReasonable: true, pending: false },
-    { index: 2, choice: 'مضايقة أو إساءة', acceptedAsReasonable: true, pending: false }
+  const appealResults = [
+    { index:0, choice:'عنف', acceptedAsReasonable:false, pending:false },
+    { index:1, choice:'عنف', acceptedAsReasonable:true, pending:false },
+    { index:2, choice:'مضايقة أو إساءة', acceptedAsReasonable:true, pending:false },
+    { index:3, choice:'غير واضح', acceptedAsReasonable:true, pending:true },
+    { index:4, choice:'خطاب كراهية', acceptedAsReasonable:true, pending:false },
+    { index:5, choice:'غير واضح', acceptedAsReasonable:true, pending:true }
+  ];
+  await loadState(page, { scene: 'annotationReview', flags: { annotationResults: appealResults } });
+  await click(page, '#appeal');
+  state = await savedState(page);
+  if (state.flags.annotationUnpaidMinutes !== 4) throw new Error('Appeal must add four unpaid minutes to the economic outcome.');
+  await page.getByText('4 دقيقة').waitFor({ state: 'visible' });
+
+  await loadState(page, { scene: 'trainingSetup', flags: { annotationResults: [
+    { index:0, choice:'آمن', acceptedAsReasonable:true, pending:false },
+    { index:1, choice:'غير واضح', acceptedAsReasonable:true, pending:true }
   ] } });
-  await click(page, '#takeBreak');
-  state = await savedState(page);
-  if (!state.flags.tookBreak) throw new Error('Unpaid break was not persisted.');
-  await page.getByText('17 دقيقة').waitFor({ state: 'visible' });
+  await page.getByText('1 أمثلة بشرية مؤكدة', { exact: false }).waitFor({ state: 'visible' });
+  await page.getByText('1 حالة معلقة', { exact: false }).waitFor({ state: 'visible' });
 
-  await loadState(page, { scene: 'safetyOutcome', flags: { safetyChoice: 'details' } });
-  await click(page, '#remediateSafety');
-  state = await savedState(page);
-  if (!state.flags.safetyRemediated || state.scene !== 'launchDecision') throw new Error('Safety remediation did not gate launch.');
-
-  await loadState(page, { scene: 'deployLoad' });
-  await setLoad(page, [45, 30, 25]);
-  await click(page, '#testLoad');
-  state = await savedState(page);
-  if (state.scene !== 'deployIncident') throw new Error('Valid multi-solution load distribution was rejected.');
-
-  await loadState(page, { scene: 'evalTask', flags: { evalIndex: 2 } });
-  await click(page, '[data-eval="bad"]');
-  state = await savedState(page);
-  if (state.flags.evalCorrectCount !== 1) throw new Error('Legal evaluation should accept both answers as bad.');
+  await loadState(page, { scene: 'launchDecision', flags: { safetyChoice:'details', safetyRemediated:true, trainingCheckpoint:'recent', trainingCompute:'8', trainingIncidentChoice:'continue' } });
+  if (await page.locator('.verification-bundles .card').count() !== 3) throw new Error('Named verification bundles should replace arbitrary test counts.');
 
   await loadState(page, { scene: 'factoryMonitor' });
-  const numericDirection = await page.getByText('+12 Pa').evaluate(element => element.closest('strong')?.getAttribute('dir'));
-  if (numericDirection !== 'auto') throw new Error('Monitor values should use dir=auto for mixed RTL/LTR content.');
+  const numericDirection = await page.getByText('+12 Pa').evaluate(element => getComputedStyle(element).direction);
+  const arabicDirection = await page.getByText('ضمن النطاق').evaluate(element => getComputedStyle(element).direction);
+  if (numericDirection !== 'ltr') throw new Error(`Numeric monitor value should resolve LTR, got ${numericDirection}.`);
+  if (arabicDirection !== 'rtl') throw new Error(`Arabic monitor value should resolve RTL, got ${arabicDirection}.`);
 
-  if (Object.hasOwn(state, 'metrics')) throw new Error('Hidden metrics still exist in state.');
-  if (Object.hasOwn(state.flags, 'revealedWorkers')) throw new Error('Legacy click-through worker reveal state still exists.');
+  await loadState(page, { scene: 'dcWorkers' });
+  if (await page.locator('.worker-person__avatar').count() !== 6) throw new Error('All datacenter supporting roles need a visual human representation.');
+
+  await loadState(page, { scene: 'zoomOut' }, { ...DEFAULT_SETTINGS, reduceMotion: true });
+  const staticGlyph = await page.locator('.glyph').textContent();
+  await page.waitForTimeout(450);
+  if (staticGlyph !== '◇' || (await page.locator('.glyph').textContent()) !== '◇') throw new Error('Reduced motion should skip the JavaScript glyph animation entirely.');
+
+  await loadState(page, { scene: 'ch1Intro' }, { ...DEFAULT_SETTINGS, highContrast: true, largeText: true, reduceMotion: true });
+  if (!await page.locator('body').evaluate(body => body.classList.contains('high-contrast') && body.classList.contains('large-text'))) throw new Error('Accessibility display settings did not apply together.');
+
+  if (Object.hasOwn(state, 'metrics')) throw new Error('Hidden metrics returned to state.');
   await browser.close();
-  console.log('Precision and causality checks passed.');
+  console.log('Tradeoff, causality, RTL, and accessibility checks passed.');
 }
 
 await runJourney({ width: 1280, height: 900 }, 'desktop');
-await runJourney({ width: 390, height: 844 }, 'mobile');
+await runJourney({ width: 390, height: 844 }, 'mobile-390');
 await runPrecisionChecks();
 console.log('All smoke tests passed.');
