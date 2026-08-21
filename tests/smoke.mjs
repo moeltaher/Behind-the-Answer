@@ -168,7 +168,7 @@ async function runJourney(viewport, label) {
   await click(page, '#behindAnswer'); await click(page, '#showPeople'); await click(page, '#showResults');
   await page.getByText('النتيجة اتجاهات، لا درجة واحدة.').waitFor({ state: 'visible' });
   await page.getByText('حوكمة وجودة البيانات').waitFor({ state: 'visible' });
-  await page.getByText('ملاءمة المخرجات').waitFor({ state: 'visible' });
+  await page.getByText('ملاءمة المخرجات', { exact: true }).waitFor({ state: 'visible' });
   await page.getByText('السلامة').first().waitFor({ state: 'visible' });
   await page.getByText('استكشاف إضافي').waitFor({ state: 'visible' });
   await click(page, '#toFinalMessage');
@@ -199,19 +199,16 @@ async function runBranchAndCausalityChecks() {
   await loadState(page, { scene: 'removedScene' });
   await page.locator('#introSend').waitFor({ state: 'visible' });
 
-  // إيقاف التعدين لا يزيد الحصة.
   await loadState(page, { scene: 'mineTask', flags: { miningCount: 6, miningWarning: true } });
   await click(page, '#mineStop');
   await page.getByText('6/12').first().waitFor({ state: 'visible' });
   const miningState = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), STORAGE_KEY);
   if (miningState.flags.miningCount !== 6) throw new Error('Mining stop generated materials during inspection.');
 
-  // حالة مركز البيانات لا تعلن الاكتمال قبل كشف ثلاثة أدوار.
   await loadState(page, { scene: 'dcWorkers', flags: { revealedWorkers: ['clean'] } });
   await expectTask(page, 'active');
   await page.getByText('الأدوار المطلوبة: 1/3').waitFor({ state: 'visible' });
 
-  // مراجعة التصنيف لا تعرض قرار اعتراض إذا لا يوجد رفض.
   await loadState(page, {
     scene: 'annotationReview',
     flags: { annotationResults: [
@@ -223,7 +220,6 @@ async function runBranchAndCausalityChecks() {
   if (await page.locator('#appeal').count()) throw new Error('Appeal exposed without a rejected annotation.');
   await page.getByText('قيد المراجعة ولم يُحسم دفعها: 1').waitFor({ state: 'visible' });
 
-  // حالة رفض حقيقية تعرض الاعتراض لكن لا تعد بنتيجة فورية.
   await loadState(page, {
     scene: 'annotationReview',
     flags: { annotationResults: [
@@ -234,7 +230,6 @@ async function runBranchAndCausalityChecks() {
   await expectTask(page, 'decision');
   await page.getByText('نتيجة الاعتراض تقع خارج الزمن', { exact: false }).waitFor({ state: 'visible' });
 
-  // checkpoint أحدث لا يغير modelQuality.
   await loadState(page, { scene: 'trainingSetup' });
   const beforeTraining = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).metrics.modelQuality, STORAGE_KEY);
   await page.selectOption('#checkpointSel', 'recent');
@@ -242,14 +237,12 @@ async function runBranchAndCausalityChecks() {
   const afterTraining = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).metrics.modelQuality, STORAGE_KEY);
   if (beforeTraining !== afterTraining) throw new Error('Training checkpoint changed output-fit metric.');
 
-  // اختبار السلامة لا يغير modelQuality.
   await loadState(page, { scene: 'safetyTest' });
   const beforeSafety = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).metrics.modelQuality, STORAGE_KEY);
   await click(page, '[data-safety="details"]');
   const afterSafety = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).metrics.modelQuality, STORAGE_KEY);
   if (beforeSafety !== afterSafety) throw new Error('Safety evaluation changed output-fit metric.');
 
-  // تشخيص التشغيل يحافظ على النتائج السابقة بعد إعادة الرسم.
   await loadState(page, { scene: 'deployIncident' });
   await click(page, '[data-tab="network"]');
   await click(page, '[data-tab="compute"]');
@@ -258,7 +251,6 @@ async function runBranchAndCausalityChecks() {
   await page.getByText('الشبكة مستقرة', { exact: false }).waitFor({ state: 'visible' });
   await page.getByText('السعة متاحة', { exact: false }).waitFor({ state: 'visible' });
 
-  // موثوقية البنية وجودة الملاءمة لا تغيران النص النهائي: الإجابة نفسها ثابتة.
   const low = { pressure:50,cost:50,burden:42,dataQuality:20,modelQuality:10,reliability:10,serviceQuality:10 };
   const high = { pressure:50,cost:50,burden:42,dataQuality:95,modelQuality:95,reliability:95,serviceQuality:95 };
   await loadState(page, { scene: 'finalAnswer', metrics: low });
