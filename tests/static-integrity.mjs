@@ -60,9 +60,11 @@ const failures = [];
 const importedRuntimeFiles = new Set();
 const importedRuntimeNames = new Map();
 const referencedAssets = new Set();
+const runtimeText = new Map();
 
 for (const file of sourceFiles) {
   const source = await readFile(file, 'utf8');
+  if (relative(file).startsWith('js/')) runtimeText.set(normalize(file), source);
   const importPattern = /(?:from\s+|import\s*)['"]([^'"]+)['"]/g;
 
   for (const match of source.matchAll(importPattern)) {
@@ -109,7 +111,7 @@ for (const file of runtimeSources) {
     failures.push(`Unused runtime JavaScript file: ${relative(file)}`);
   }
 
-  const source = await readFile(file, 'utf8');
+  const source = runtimeText.get(normalize(file));
   const names = importedRuntimeNames.get(normalize(file)) || new Set();
   const exportPattern = /export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g;
   for (const match of source.matchAll(exportPattern)) {
@@ -153,8 +155,22 @@ for (const field of [
   }
 }
 
+const stateSourcePath = normalize(join(ROOT, 'js/core/state.js'));
+const runtimeOutsideState = [...runtimeText.entries()]
+  .filter(([file]) => file !== stateSourcePath)
+  .map(([, source]) => source)
+  .join('\n');
+
+for (const field of Object.keys(DEFAULT_STATE.flags)) {
+  const dotRef = new RegExp(`\\.flags\\.${field}\\b`);
+  const bracketRef = new RegExp(`\\.flags\\[['\"]${field}['\"]\\]`);
+  if (!dotRef.test(runtimeOutsideState) && !bracketRef.test(runtimeOutsideState)) {
+    failures.push(`Unused state flag: DEFAULT_STATE.flags.${field}`);
+  }
+}
+
 for (const file of runtimeSources) {
-  const source = await readFile(file, 'utf8');
+  const source = runtimeText.get(normalize(file));
   if (source.includes('setChapter')) {
     failures.push(`Manual chapter progress API found in ${relative(file)}.`);
   }
