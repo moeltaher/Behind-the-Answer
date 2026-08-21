@@ -1,6 +1,6 @@
 import { SUPPORT_TASKS } from '../data/content-tasks.js';
 
-const STARTING_LOAD = [60, 25, 15];
+const STARTING_LOAD = [70, 20, 10];
 const BALANCED_LOAD = [34, 33, 33];
 const INCIDENT_TABS = [
   ['network', 'الشبكة', 'الشبكة مستقرة، ولا توجد زيادة واضحة في فقد البيانات.'],
