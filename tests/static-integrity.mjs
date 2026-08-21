@@ -205,6 +205,20 @@ for (const scene of registeredScenes) {
   if (!mappedSet.has(scene)) failures.push(`Registered route has no stage mapping: ${scene}`);
 }
 
+const stageMapPath = normalize(join(ROOT, 'js/data/stage-backgrounds.js'));
+const transitionText = [...runtimeText.entries()]
+  .filter(([file]) => file !== stageMapPath)
+  .map(([, source]) => source)
+  .join('\n');
+
+for (const scene of registeredScenes) {
+  if (scene === 'intro') continue;
+  const quotedScene = new RegExp(`['\"]${scene}['\"]`);
+  if (!quotedScene.test(transitionText)) {
+    failures.push(`Registered scene has no inbound runtime reference: ${scene}`);
+  }
+}
+
 if (failures.length) {
   console.error('Static integrity check failed:\n- ' + failures.join('\n- '));
   process.exit(1);
