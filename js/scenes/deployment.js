@@ -11,7 +11,7 @@ const INCIDENT_TABS = [
 export function createDeploymentRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
-  const { chapterIntro, html, go, bind, tone, saveState, mutateMetrics, addDecision, addLedger } = ctx;
+  const { chapterIntro, html, go, bind, tone, saveState, addDecision, addLedger } = ctx;
   const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line, next);
 
   function ch8Intro() { chapterIntro(7, 'deployLoad'); }
