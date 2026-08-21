@@ -1,4 +1,4 @@
-export const SUPPORTING_ACTORS = {
+const SUPPORTING_ACTORS = {
   supervisor: { name: 'مشرف الوردية', role: 'يشرف على الحصة والوقت', image: './assets/images/characters/supervisor.svg' },
   coworker: { name: 'زميل موسى', role: 'عامل في نفس موقع الاستخراج', image: './assets/images/characters/support-worker.svg' },
   maintenance: { name: 'فني صيانة', role: 'يفحص الأعطال والمعدات', image: './assets/images/characters/support-worker.svg' },
