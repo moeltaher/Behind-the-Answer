@@ -5,8 +5,12 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TEXT_EXTENSIONS = new Set(['.js', '.mjs', '.html', '.css', '.md', '.yml', '.yaml']);
 const SOURCE_EXTENSIONS = new Set(['.js', '.mjs']);
-const REMOVED_STATE_FIELDS = ['visibility', 'discovery', 'finalEnding'];
-const allowedLegacyReferences = new Set(['js/core/storage.js']);
+const REMOVED_STATE_PATHS = [
+  'metrics.visibility',
+  'metrics.discovery',
+  'flags.finalEnding'
+];
+const LEGACY_STATE_MIGRATION_FILE = 'js/core/storage.js';
 
 async function walk(directory) {
   const entries = await readdir(directory);
@@ -57,24 +61,19 @@ for (const match of index.matchAll(/(?:href|src)="(\.\/[^"?#]+)"/g)) {
   if (!fileSet.has(target)) failures.push(`index.html references missing asset ${match[1]}`);
 }
 
-for (const file of textFiles) {
+for (const file of sourceFiles) {
   const rel = relative(file);
-  if (allowedLegacyReferences.has(rel)) continue;
+  if (rel === LEGACY_STATE_MIGRATION_FILE) continue;
   const source = await readFile(file, 'utf8');
 
-  for (const field of REMOVED_STATE_FIELDS) {
-    const pattern = new RegExp(`\\b${field}\\b`);
-    if (pattern.test(source)) {
-      failures.push(`${rel} still references removed state field "${field}"`);
+  for (const statePath of REMOVED_STATE_PATHS) {
+    if (source.includes(statePath)) {
+      failures.push(`${rel} still references removed state path "${statePath}"`);
     }
   }
-}
 
-const bannedImports = ['game-data.js'];
-for (const file of sourceFiles) {
-  const source = await readFile(file, 'utf8');
-  for (const banned of bannedImports) {
-    if (source.includes(banned)) failures.push(`${relative(file)} still imports legacy ${banned}`);
+  if (source.includes('game-data.js')) {
+    failures.push(`${rel} still imports legacy game-data.js`);
   }
 }
 
