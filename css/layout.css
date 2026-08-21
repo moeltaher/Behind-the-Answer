@@ -30,7 +30,7 @@
   border-radius: 50%; border: 1px solid var(--line); color: var(--accent); font-size: 26px;
 }
 .brand strong { display:block; font-size: .95rem; }
-.brand small { display:block; color: var(--muted); font-size: .67rem; direction:ltr; text-align:right; }
+.brand small { display:block; color: var(--muted); font-size: .67rem; direction:rtl; text-align:right; }
 
 .journey-progress { width: 100%; }
 .progress-copy { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:.78rem; margin-bottom:6px; }
