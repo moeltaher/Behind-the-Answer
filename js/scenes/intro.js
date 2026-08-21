@@ -15,6 +15,7 @@ export function createIntroRoutes(ctx) {
           <label class="kicker" for="introPrompt">الطلب التجريبي الثابت</label>
           <textarea id="introPrompt" class="prompt-input" readonly>${h(DEMO_PROMPT)}</textarea>
           <p class="small muted">لن نعرض الإجابة فورًا. ستعود أولًا عبر الأجهزة والبيانات والعمل البشري الذي جعل الخدمة ممكنة، ثم ترجع إلى الطلب نفسه في النهاية.</p>
+          <div class="reality-note"><strong>بنهاية الرحلة ستختبر قدرتك على</strong><div class="view-list"><span>فصل ما بُني قبل الطلب عما يحدث لحظة الاستخدام.</span><span>تحديد العمل البشري والمادي الذي تختصره الواجهة في كلمات تقنية.</span><span>تمييز مرور قرار داخل workflow عن حسم مخاطره أو حقوقه فعليًا.</span><span>نقل هذا النموذج التحليلي إلى منتج ذكاء اصطناعي مختلف.</span></div></div>
           <div class="chat-send"><button id="introSend" class="primary-btn" type="button">افتح ما وراء الإجابة ←</button></div>
         </div>
         <p class="small muted centered intro-privacy-note">جميع الشخصيات والأرقام التشغيلية في اللعبة خيالية ومركبة لأغراض تعليمية. اللعبة تعمل داخل متصفحك ولا ترسل الطلب إلى خادم خارجي.</p>
@@ -29,7 +30,7 @@ export function createIntroRoutes(ctx) {
         <span class="eyebrow">من الواجهة إلى البنية التي تسبقها</span>
         <h1 class="scene-title">الإجابة هي آخر نقطة مرئية في سلسلة أطول.</h1>
         <div class="transition-map" aria-label="انتقال بصري من واجهة المحادثة إلى بداية السلسلة"><div class="map-layer"><span class="glyph">${settings.reduceMotion?'◇':'◌'}</span></div><div class="map-caption"><span>واجهة المحادثة</span><span>↓ مواد وأجهزة وعمل بشري</span></div></div>
-        <p class="small muted">رحلة اللعب مرتبة خطيًا للتعلم، لكن النظام الحقيقي يتضمن دورات واعتمادًا متبادلًا.</p>
+        <div class="reality-note"><strong>ترتيب اللعب ليس مخططًا هندسيًا</strong> ستتحرك عبر ثماني مراحل بالترتيب حتى يسهل التعلم. في الواقع توجد مسارات مادية طويلة الأجل، ودورات تطوير متكررة، وتشغيل مستمر تتداخل فيما بينها. ستعيد اللعبة رسم هذه العلاقات في النهاية.</div>
         <div class="action-row center"><button id="descend" class="primary-btn" type="button">ابدأ بالمادة التي تدخل الأجهزة</button></div>
       </div>
     `);
