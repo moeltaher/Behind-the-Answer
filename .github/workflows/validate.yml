@@ -35,6 +35,9 @@ jobs:
       - name: Validate static architecture and references
         run: node tests/static-integrity.mjs
 
+      - name: Detect unused CSS selectors
+        run: node tests/css-integrity.mjs
+
       - name: Install browser smoke-test dependency
         shell: bash
         run: |
