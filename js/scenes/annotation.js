@@ -13,7 +13,7 @@ export function createAnnotationRoutes(ctx) {
   function ch5Intro() { chapterIntro(4, 'annotationIntro'); }
 
   function annotationIntro() {
-    html(`<div class="annotation-shell"><div class="annotation-head"><strong>منصة «مهمة»</strong><span>مشروع تصنيف بيانات</span></div><div class="annotation-body"><span class="eyebrow annotation-eyebrow">عاملة تصنيف بيانات</span><h1 class="annotation-title">مرحبًا أماني.</h1><div class="reality-note annotation-reality"><strong>ما وظيفة هذا العمل؟</strong> ستقرئين ستة أمثلة قصيرة وتضعين لكل منها تصنيفًا. في الواقع قد يحدث هذا النوع من العمل قبل التدريب أو أثناء الضبط أو في التقييم.</div><p>الدفع هنا افتراضي: ${PAY_PER_ACCEPTED_TASK.toFixed(2)} وحدة لعب لكل مهمة يقبلها المراجع. لا تدفع المنصة وقت الاستراحة في هذا السيناريو؛ لذلك لا ينخفض عدد المهام فقط، بل قد ينخفض العائد بالنسبة للوقت الذي تقضينه متصلة بالعمل.</p><div class="annotation-stats"><span>الدفع: ${PAY_PER_ACCEPTED_TASK.toFixed(2)} لكل مهمة مقبولة</span><span>المهمة: ${TASK_MINUTES} دقائق افتراضية</span><span>الاستراحة: ${BREAK_MINUTES} دقائق غير مدفوعة</span></div><div class="action-row"><button id="startAnnot" class="primary-btn">ابدأ الوردية</button></div></div></div>`);
+    html(`<div class="annotation-shell"><div class="annotation-head"><strong>منصة «مهمة»</strong><span>مشروع تصنيف بيانات</span></div><div class="annotation-body"><span class="eyebrow annotation-eyebrow">عاملة تصنيف بيانات</span><h1 class="annotation-title">مرحبًا أماني.</h1><div class="reality-note annotation-reality"><strong>ما وظيفة هذا العمل؟</strong> ستقرئين ستة أمثلة قصيرة وتضعين لكل منها تصنيفًا. في الواقع قد يحدث هذا النوع من العمل قبل التدريب أو أثناء الضبط أو في التقييم.</div><p>الدفع هنا افتراضي: ${PAY_PER_ACCEPTED_TASK.toFixed(2)} وحدة لعب لكل مهمة يقبلها المراجع. لا تدفع المنصة وقت الاستراحة في هذا السيناريو؛ لذلك قد ينخفض العائد بالنسبة للوقت الذي تقضينه متصلة بالعمل.</p><div class="annotation-stats"><span>الدفع: ${PAY_PER_ACCEPTED_TASK.toFixed(2)} لكل مهمة مقبولة</span><span>المهمة: ${TASK_MINUTES} دقائق افتراضية</span><span>الاستراحة: ${BREAK_MINUTES} دقائق غير مدفوعة</span></div><div class="action-row"><button id="startAnnot" class="primary-btn">ابدأ الوردية</button></div></div></div>`);
     $('#startAnnot').addEventListener('click',()=>go('annotationTask'));
   }
 
@@ -49,7 +49,6 @@ export function createAnnotationRoutes(ctx) {
     });
     $('#takeBreak')?.addEventListener('click',()=>{
       state.flags.tookBreak=true;
-      state.flags.annotationShiftMinutes+=BREAK_MINUTES;
       addDecision('annotation-break','أخذت استراحة غير مدفوعة','أضافت الاستراحة خمس دقائق إلى الوقت المتصل بالعمل من دون أن تضيف مهمة أو أجرًا، فخفضت العائد مقابل الوقت في هذا السيناريو.');
       saveState(); annotationTask();
     });
