@@ -5,9 +5,7 @@ export const DEFAULT_STATE = {
     pressure: 50,
     cost: 50,
     burden: 42,
-    quality: 62,
-    visibility: 50,
-    discovery: 0
+    quality: 62
   },
   decisions: [],
   ledger: [],
@@ -45,8 +43,7 @@ export const DEFAULT_STATE = {
     launchChoice: null,
     deployTabs: [],
     deployRecovery: null,
-    supportIndex: 0,
-    finalEnding: null
+    supportIndex: 0
   }
 };
 
