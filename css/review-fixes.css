@@ -1,4 +1,4 @@
-/* Final product-review corrections: stage identity, false affordances, RTL helpers, and epilogue density. */
+/* Final product layer: stage identity and compact epilogue presentation. */
 body[data-stage] .eyebrow,
 body[data-stage] .chapter-theme,
 body[data-stage] .task-panel__kicker,
@@ -9,20 +9,10 @@ body[data-stage] .mini-node.current,
 body[data-stage] .journey-node.current { border-color: rgba(var(--stage-accent), .78); }
 body[data-stage] .scene-character { border-inline-start: 3px solid rgba(var(--stage-accent), .58); }
 
-.worker-person { cursor: default; }
-.worker-person__avatar {
-  width: 58px;
-  height: 58px;
-  display: block;
-  margin-bottom: 10px;
-  border-radius: 16px;
-  object-fit: cover;
-  border: 1px solid rgba(var(--stage-accent), .38);
-}
-
 .optional-source-details,
 .secondary-labor-details,
-.methodology-details {
+.methodology-details,
+.full-evidence-details {
   margin-top: 18px;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -31,22 +21,34 @@ body[data-stage] .scene-character { border-inline-start: 3px solid rgba(var(--st
 }
 .optional-source-details > summary,
 .secondary-labor-details > summary,
-.methodology-details > summary { cursor: pointer; font-weight: 850; color: var(--text); }
+.methodology-details > summary,
+.full-evidence-details > summary { cursor: pointer; font-weight: 850; color: var(--text); }
 
-.results-subtitle { margin: 28px 0 8px; font-size: clamp(1.25rem, 3vw, 1.8rem); }
 .epilogue-screen .abstraction-summary { justify-content: center; margin-top: 20px; }
 .epilogue-chat .dual-view { margin-top: 18px; }
 .verification-bundles { display: grid; gap: 10px; margin: 16px 0; }
 
-/* Neutralize the legacy LTR rule on the wrapper; each value isolates itself with bdi dir=auto. */
-.monitor-tile strong { direction: inherit; }
-.monitor-tile strong > bdi[dir="auto"] { unicode-bidi: isolate; }
-.monitor-tile strong.numeric-value { direction: ltr; }
-
-.journey-map { grid-template-columns: repeat(8, minmax(72px,1fr)); }
+.journey-highlights {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  margin: 18px 0 22px;
+}
+.journey-highlight {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid rgba(var(--stage-accent),.28);
+  border-radius: 16px;
+  background: rgba(10,18,32,.78);
+}
+.journey-highlight > span { color: var(--muted); font-size: .72rem; font-weight: 800; }
+.journey-highlight strong { color: rgb(var(--stage-accent)); line-height: 1.45; }
+.journey-highlight small { color: var(--muted); line-height: 1.55; }
+.result-core { margin-top: 18px; }
+.full-evidence-details .evidence-results { margin-bottom: 0; }
 
 @media (max-width:700px) {
-  .journey-map { grid-template-columns: repeat(8,110px); }
-  .worker-person__avatar { width: 52px; height: 52px; }
   .optional-source-details { padding: 10px 12px; }
+  .journey-highlights { grid-template-columns: 1fr; }
 }
