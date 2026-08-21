@@ -13,10 +13,26 @@ export function createTrainingRoutes(ctx) {
     return { confirmed, pending };
   }
 
+  function confirmedExamplesLabel(count) {
+    if(count===0) return 'لا أمثلة بشرية مؤكدة';
+    if(count===1) return 'مثال بشري مؤكد واحد';
+    if(count===2) return 'مثالان بشريان مؤكدان';
+    return `${count} أمثلة بشرية مؤكدة`;
+  }
+
+  function pendingCasesLabel(count) {
+    if(count===0) return 'لا حالات معلقة';
+    if(count===1) return 'حالة معلقة واحدة';
+    if(count===2) return 'حالتان معلقتان';
+    return `${count} حالات معلقة`;
+  }
+
   function trainingSetup() {
     const checkpoint=state.flags.trainingCheckpoint;
     const inputs=annotationInputs();
-    html(`<div><span class="eyebrow">مختبر تطوير نموذج افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما الذي نحاكيه تحديدًا؟</strong> هذه ليست عملية تدريب نموذج من الصفر. السيناريو يمثل جولة post-training مبسطة تبدأ من نقطة حفظ سابقة. فقط الأمثلة البشرية المؤكدة تدخل هذا المدخل؛ ${inputs.pending} حالة معلقة تبقى خارج الجولة حتى تُحسم.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد التطوير</label><select disabled><option>الدفعة 18 + ${inputs.confirmed} أمثلة بشرية مؤكدة</option></select></div><div class="form-row"><label for="computeSel">مجموعات الحوسبة المخصصة</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute==='12'?'selected':''}>12 مجموعة — تكلفة أعلى وهامش أعطال أكبر</option><option value="8" ${state.flags.trainingCompute==='8'?'selected':''}>8 مجموعات — تكلفة أقل وهامش أعطال أضيق</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ</label><select id="checkpointSel"><option value="validated" ${checkpoint==='validated'?'selected':''}>اختُبرت على نطاق أوسع — تحقق أقل مطلوبًا الآن</option><option value="recent" ${checkpoint==='recent'?'selected':''}>أحدث — تحتاج تحققًا إضافيًا من تغييراتها</option></select></div><button id="trainStart" class="primary-btn training-start">ابدأ الجولة</button></div><div class="chart-panel"><span class="kicker">ما الذي سيتغير فعلًا؟</span><div class="training-log training-config-summary">12 مجموعة: فقد وحدة يترك 11 مجموعة متاحة، أي هامش أعطال أكبر.<br>8 مجموعات: فقد وحدة يترك 7 مجموعات متاحة، أي هامش أضيق.<br>نقطة أكثر اختبارًا: نطاق تحقق إضافي أقل.<br>نقطة أحدث: نطاق تحقق إضافي أكبر قبل الإطلاق.</div></div></div><div class="reality-note"><strong>افتراض تقني معلن</strong> تفترض اللعبة أن بنية هذه الجولة مصممة لتحمل فقد مجموعة حوسبة واحدة والاستمرار بالسعة المتبقية. هذا ليس سلوكًا تلقائيًا في كل أنظمة التدريب الموزع؛ بعض الأنظمة تتوقف أو تعود إلى checkpoint عند فقد عقدة.</div></div>`);
+    const confirmedLabel=confirmedExamplesLabel(inputs.confirmed);
+    const pendingLabel=pendingCasesLabel(inputs.pending);
+    html(`<div><span class="eyebrow">مختبر تطوير نموذج افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما الذي نحاكيه تحديدًا؟</strong> هذه ليست عملية تدريب نموذج من الصفر. السيناريو يمثل جولة post-training مبسطة تبدأ من نقطة حفظ سابقة. المدخل المؤكد من عمل التصنيف: ${confirmedLabel}. خارج الجولة حتى الحسم: ${pendingLabel}.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد التطوير</label><select disabled><option>الدفعة 18 + ${confirmedLabel}</option></select></div><div class="form-row"><label for="computeSel">مجموعات الحوسبة المخصصة</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute==='12'?'selected':''}>12 مجموعة — تكلفة أعلى وهامش أعطال أكبر</option><option value="8" ${state.flags.trainingCompute==='8'?'selected':''}>8 مجموعات — تكلفة أقل وهامش أعطال أضيق</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ</label><select id="checkpointSel"><option value="validated" ${checkpoint==='validated'?'selected':''}>اختُبرت على نطاق أوسع — تحقق أقل مطلوبًا الآن</option><option value="recent" ${checkpoint==='recent'?'selected':''}>أحدث — تحتاج تحققًا إضافيًا من تغييراتها</option></select></div><button id="trainStart" class="primary-btn training-start">ابدأ الجولة</button></div><div class="chart-panel"><span class="kicker">ما الذي سيتغير فعلًا؟</span><div class="training-log training-config-summary">12 مجموعة: فقد وحدة يترك 11 مجموعة متاحة، أي هامش أعطال أكبر.<br>8 مجموعات: فقد وحدة يترك 7 مجموعات متاحة، أي هامش أضيق.<br>نقطة أكثر اختبارًا: نطاق تحقق إضافي أقل.<br>نقطة أحدث: نطاق تحقق إضافي أكبر قبل الإطلاق.</div></div></div></div>`);
     $('#trainStart').addEventListener('click',()=>{
       state.flags.trainingCompute=$('#computeSel').value;
       state.flags.trainingCheckpoint=$('#checkpointSel').value;
