@@ -51,6 +51,10 @@ async function setLoad(page, values) {
   }, values);
 }
 
+async function selectedOptionText(page, selector) {
+  return page.locator(selector).evaluate(select => select.options[select.selectedIndex]?.textContent || '');
+}
+
 async function runJourney(viewport, label) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport });
@@ -127,11 +131,12 @@ async function runJourney(viewport, label) {
   await page.getByText('29 دقيقة').waitFor({ state: 'visible' });
   await click(page, '#closeShift');
   await page.getByText('4 أمثلة مؤكدة، و2 قيد المراجعة', { exact: false }).waitFor({ state: 'visible' });
-  await page.getByText('وقت غير مدفوع').waitFor({ state: 'visible' });
+  await page.getByText('وقت غير مدفوع', { exact: true }).waitFor({ state: 'visible' });
   await click(page, '#annotAbstract'); await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
-  await page.getByText('4 أمثلة بشرية مؤكدة', { exact: false }).waitFor({ state: 'visible' });
+  const trainingInput = await selectedOptionText(page, '.config-panel select');
+  if (!trainingInput.includes('4 أمثلة بشرية مؤكدة')) throw new Error(`${label}: confirmed annotation inputs are not shown in the training configuration.`);
   await page.getByText('2 حالة معلقة', { exact: false }).waitFor({ state: 'visible' });
   await page.getByText('ليس سلوكًا تلقائيًا', { exact: false }).waitFor({ state: 'visible' });
   await page.selectOption('#computeSel', '8');
@@ -227,7 +232,8 @@ async function runPrecisionChecks() {
     { index:0, choice:'آمن', acceptedAsReasonable:true, pending:false },
     { index:1, choice:'غير واضح', acceptedAsReasonable:true, pending:true }
   ] } });
-  await page.getByText('1 أمثلة بشرية مؤكدة', { exact: false }).waitFor({ state: 'visible' });
+  const precisionTrainingInput = await selectedOptionText(page, '.config-panel select');
+  if (!precisionTrainingInput.includes('1 أمثلة بشرية مؤكدة')) throw new Error('Training configuration did not keep the pending annotation outside the confirmed input.');
   await page.getByText('1 حالة معلقة', { exact: false }).waitFor({ state: 'visible' });
 
   await loadState(page, { scene: 'launchDecision', flags: { safetyChoice:'details', safetyRemediated:true, trainingCheckpoint:'recent', trainingCompute:'8', trainingIncidentChoice:'continue' } });
