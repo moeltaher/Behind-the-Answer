@@ -67,8 +67,6 @@
 .work-node .node-icon { font-size:2.1rem; }
 .work-node .node-yield { color:var(--accent); font-weight:900; }
 .work-node.risky { border-color:rgba(255,191,105,.45); }
-.pulse-ring { position:absolute; inset:12px; border:1px solid rgba(255,191,105,.25); border-radius:14px; animation:pulseRing 1.4s infinite; pointer-events:none; }
-@keyframes pulseRing { 0%{transform:scale(.96);opacity:.2}50%{opacity:1}100%{transform:scale(1.05);opacity:0} }
 
 .alert { border-radius:16px; border:1px solid rgba(255,191,105,.36); background:rgba(255,191,105,.07); padding:14px 16px; margin:16px 0; }
 .alert.dangerish { border-color:rgba(255,107,120,.42); background:rgba(255,107,120,.08); }
@@ -154,9 +152,6 @@
 .incident-tabs { display:flex; gap:8px; margin:16px 0; flex-wrap:wrap; }
 .incident-tabs button { border:1px solid var(--line); background:rgba(255,255,255,.03); border-radius:999px; padding:8px 13px; cursor:pointer; }
 .incident-tabs button.active { border-color:var(--accent); color:var(--accent); }
-
-.pipeline { display:grid; gap:6px; max-width:620px; margin:24px auto; }
-.pipeline-step { display:flex; align-items:center; justify-content:center; min-height:54px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); font-weight:800; direction:rtl; }
 .pipeline-arrow { text-align:center; color:var(--muted); }
 
 .people-wall { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-width:920px; margin-inline:auto; }
