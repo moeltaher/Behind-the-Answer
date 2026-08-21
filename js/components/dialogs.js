@@ -8,10 +8,6 @@ export function bindDialogs(ctx) {
     ctx.ledgerDialog.showModal();
   });
 
-  ctx.$('#brandHome').addEventListener('click', () => {
-    if (ctx.state.scene !== 'intro') ctx.settingsDialog.showModal();
-  });
-
   ctx.$$('[data-close-dialog]').forEach(button => {
     button.addEventListener('click', () => {
       const dialog = ctx.$(`#${button.dataset.closeDialog}`);
