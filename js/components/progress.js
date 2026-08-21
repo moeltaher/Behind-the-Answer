@@ -34,8 +34,7 @@ export function renderJourneyProgress(ctx, index) {
 function journeyMap(ctx, currentIndex) {
   const nodes = ctx.chapters.map((chapter, index) => {
     const stateClass = index === currentIndex ? 'current' : index < currentIndex ? 'done' : '';
-    const currentAttr=index===currentIndex?' aria-current="step"':'';
-    return `<div class="journey-node ${stateClass}"${currentAttr}><span class="journey-icon" aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></div>`;
+    return `<div class="journey-node ${stateClass}"><span class="journey-icon" aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></div>`;
   }).join('');
   return `<div class="journey-map" aria-label="ترتيب اللعب عبر ثماني مراحل، وليس مخططًا هندسيًا للنظام">${nodes}</div>`;
 }
