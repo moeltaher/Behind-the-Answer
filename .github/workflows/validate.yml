@@ -1,0 +1,62 @@
+name: Validate static game
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done < <(find js -type f -name '*.js' -print0)
+
+      - name: Check local assets referenced by index.html
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class AssetParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.paths = []
+
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == 'link' and attrs.get('rel') == 'stylesheet':
+                      self.paths.append(attrs.get('href'))
+                  if tag == 'script' and attrs.get('src'):
+                      self.paths.append(attrs.get('src'))
+
+          parser = AssetParser()
+          parser.feed(Path('index.html').read_text(encoding='utf-8'))
+
+          missing = []
+          for path in filter(None, parser.paths):
+              if path.startswith(('http://', 'https://')):
+                  continue
+              local = Path(path.removeprefix('./'))
+              if not local.exists():
+                  missing.append(str(local))
+
+          if missing:
+              raise SystemExit('Missing referenced assets: ' + ', '.join(missing))
+
+          print('All local CSS and JavaScript references exist.')
+          PY

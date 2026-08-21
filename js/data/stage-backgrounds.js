@@ -1,13 +1,81 @@
-const GROUPS = {
-  mining: new Set(['ch1Intro','mineOrientation','mineTask','mineInspection','mineEnd','abstract1','transportMontage']),
-  factory: new Set(['ch2Intro','factoryOrientation','factoryMonitor','factoryIncident','factoryOutcome','abstract2','hardwareMontage']),
-  datacenter: new Set(['ch3Intro','dcInstall','dcCooling','dcWorkers','abstract3']),
-  data: new Set(['ch4Intro','dataOrigins','dataClean','dataCleanSummary','abstract4']),
-  annotation: new Set(['ch5Intro','annotationIntro','annotationTask','annotationReview','annotationEnd','abstract5']),
-  training: new Set(['ch6Intro','trainingSetup','trainingRun','trainingEval']),
-  evaluation: new Set(['ch7Intro','evalTask','safetyTest','launchDecision','abstract7']),
-  deployment: new Set(['ch8Intro','deployLoad','deployIncident','onCall','supportTask','deployEnd','abstract8']),
-  user: new Set(['intro','introLoading','introError','zoomOut','ch9Intro','pipelineAssemble','aiAbstraction','finalAnswer','timelineReveal','peopleReveal','results','finalMessage','methodology'])
+const STAGE_SCENES = {
+  mining: [
+    'ch1Intro',
+    'mineOrientation',
+    'mineTask',
+    'mineInspection',
+    'mineEnd',
+    'abstract1',
+    'transportMontage'
+  ],
+  factory: [
+    'ch2Intro',
+    'factoryOrientation',
+    'factoryMonitor',
+    'factoryIncident',
+    'factoryOutcome',
+    'abstract2',
+    'hardwareMontage'
+  ],
+  datacenter: [
+    'ch3Intro',
+    'dcInstall',
+    'dcCooling',
+    'dcWorkers',
+    'abstract3'
+  ],
+  data: [
+    'ch4Intro',
+    'dataOrigins',
+    'dataClean',
+    'dataCleanSummary',
+    'abstract4'
+  ],
+  annotation: [
+    'ch5Intro',
+    'annotationIntro',
+    'annotationTask',
+    'annotationReview',
+    'annotationEnd',
+    'abstract5'
+  ],
+  training: [
+    'ch6Intro',
+    'trainingSetup',
+    'trainingRun',
+    'trainingEval'
+  ],
+  evaluation: [
+    'ch7Intro',
+    'evalTask',
+    'safetyTest',
+    'launchDecision',
+    'abstract7'
+  ],
+  deployment: [
+    'ch8Intro',
+    'deployLoad',
+    'deployIncident',
+    'onCall',
+    'supportTask',
+    'deployEnd',
+    'abstract8'
+  ],
+  user: [
+    'intro',
+    'introLoading',
+    'introError',
+    'zoomOut',
+    'ch9Intro',
+    'pipelineAssemble',
+    'aiAbstraction',
+    'finalAnswer',
+    'timelineReveal',
+    'peopleReveal',
+    'results',
+    'finalMessage',
+    'methodology'
+  ]
 };
 
 export const STAGE_BACKDROPS = {
@@ -22,9 +90,18 @@ export const STAGE_BACKDROPS = {
   user: './assets/images/scenes/09-user.svg'
 };
 
+const SCENE_TO_STAGE = Object.fromEntries(
+  Object.entries(STAGE_SCENES).flatMap(([stage, scenes]) =>
+    scenes.map(scene => [scene, stage])
+  )
+);
+
 export function backdropForScene(sceneId) {
-  for (const [group, scenes] of Object.entries(GROUPS)) {
-    if (scenes.has(sceneId)) return { group, image: STAGE_BACKDROPS[group] };
-  }
-  return null;
+  const group = SCENE_TO_STAGE[sceneId];
+  if (!group) return null;
+
+  return {
+    group,
+    image: STAGE_BACKDROPS[group]
+  };
 }
