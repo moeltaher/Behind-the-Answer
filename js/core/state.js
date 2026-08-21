@@ -9,7 +9,6 @@ export const DEFAULT_STATE = {
     factoryChoice: null,
     serverSteps: [],
     dcCoolingChoice: null,
-    revealedWorkers: [],
     dataOrigins: [],
     dataIndex: 0,
     dataSort: {
