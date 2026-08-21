@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes eslint@9.39.1 js tests \
+          npx --yes eslint@10.8.1 js tests \
             --no-config-lookup \
             --rule 'no-unused-vars: ["error", {"args":"after-used","caughtErrors":"none"}]'
 
