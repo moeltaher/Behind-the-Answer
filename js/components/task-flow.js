@@ -40,3 +40,7 @@ export function actorMessage(actor, message, label = 'قال') {
   if (!actor) return '';
   return `<aside class="actor-message" data-actor-message><img src="${h(actor.image)}" alt="رسم كرتوني يمثل ${h(actor.name)}" loading="lazy"/><div><span>${h(label)}</span><strong>${h(actor.name)}</strong><small>${h(actor.role)}</small><p>${h(message)}</p></div></aside>`;
 }
+
+export function institutionCard({ name, type, role, symbol = '▦' }) {
+  return `<aside class="institution-card" data-institution-card aria-label="جهة أو نظام في هذا المشهد"><div class="institution-card__symbol" aria-hidden="true">${h(symbol)}</div><div><span>${h(type)}</span><strong>${h(name)}</strong><p>${h(role)}</p></div></aside>`;
+}
