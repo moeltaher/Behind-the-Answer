@@ -1,7 +1,7 @@
 import { clone } from './state.js';
 
-export const STORAGE_KEY = 'behindTheAnswerGame';
-export const SETTINGS_KEY = 'behindTheAnswerSettings';
+export const STORAGE_KEY = 'behindTheAnswerGame_v1';
+export const SETTINGS_KEY = 'behindTheAnswerSettings_v1';
 
 export const DEFAULT_SETTINGS = {
   reduceMotion: false,
@@ -10,33 +10,32 @@ export const DEFAULT_SETTINGS = {
   soundOn: false
 };
 
-function hasCurrentShape(template, value) {
-  if (template === null || value === null) return template === value;
-
-  if (Array.isArray(template)) return Array.isArray(value);
-
-  if (typeof template === 'object') {
-    if (typeof value !== 'object' || Array.isArray(value)) return false;
-
-    const templateKeys = Object.keys(template);
-    const valueKeys = Object.keys(value);
-    if (templateKeys.length !== valueKeys.length) return false;
-
-    return templateKeys.every(key =>
-      Object.hasOwn(value, key) && hasCurrentShape(template[key], value[key])
-    );
+function restoreCurrentShape(template, saved) {
+  if (Array.isArray(template)) {
+    return Array.isArray(saved) ? saved : clone(template);
   }
 
-  return typeof template === typeof value;
+  if (template && typeof template === 'object') {
+    const source = saved && typeof saved === 'object' && !Array.isArray(saved)
+      ? saved
+      : {};
+    const restored = {};
+
+    for (const [key, value] of Object.entries(template)) {
+      restored[key] = restoreCurrentShape(value, source[key]);
+    }
+
+    return restored;
+  }
+
+  return typeof saved === typeof template ? saved : template;
 }
 
 export function loadState(defaultState) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return clone(defaultState);
-
-    const saved = JSON.parse(raw);
-    return hasCurrentShape(defaultState, saved) ? saved : clone(defaultState);
+    return restoreCurrentShape(defaultState, JSON.parse(raw));
   } catch {
     return clone(defaultState);
   }
@@ -54,11 +53,7 @@ export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
-
-    const saved = JSON.parse(raw);
-    return hasCurrentShape(DEFAULT_SETTINGS, saved)
-      ? saved
-      : { ...DEFAULT_SETTINGS };
+    return restoreCurrentShape(DEFAULT_SETTINGS, JSON.parse(raw));
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
