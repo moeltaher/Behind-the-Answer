@@ -56,6 +56,9 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.09);
   color: var(--text);
+  opacity: 1;
+  filter: none;
+  transform: none;
 }
 
 .human-group-visible .human-chip--character {
@@ -145,6 +148,7 @@
     rgba(124, 164, 255, 0.08)
   );
   opacity: 0.96;
+  transform: none;
   transition: opacity 0.35s ease;
 }
 
@@ -155,9 +159,13 @@
 .abstraction-stage .abstract-word {
   margin: 10px 0 8px;
   color: #fff;
+  direction: rtl;
   font-size: clamp(2rem, 8vw, 4.9rem);
+  font-weight: 950;
+  letter-spacing: normal;
   line-height: 1.2;
   text-align: center;
+  -webkit-text-stroke: 0;
 }
 
 .abstraction-stage .term-note {
