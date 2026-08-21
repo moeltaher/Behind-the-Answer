@@ -28,144 +28,45 @@ jobs:
         run: npm run audit:ci
 
       - name: Validate JavaScript syntax
-        shell: bash
-        run: |
-          set -euo pipefail
-          while IFS= read -r -d '' file; do
-            echo "Checking $file"
-            node --check "$file"
-          done < <(find js tests -type f \( -name '*.js' -o -name '*.mjs' \) -print0)
+        run: npm run check:syntax
 
       - name: Detect unused local JavaScript
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx eslint js tests \
-            --no-config-lookup \
-            --rule 'no-unused-vars: ["error", {"args":"after-used","caughtErrors":"none"}]'
+        run: npm run check:lint
 
       - name: Validate static architecture and references
-        run: node tests/static-integrity.mjs
+        run: npm run check:static
 
-      - name: Validate versioned storage schema and migrations
-        run: node tests/storage-schema.mjs
+      - name: Validate versioned storage schema and invariants
+        run: npm run check:storage
 
       - name: Detect unused CSS selectors and definitions
-        run: node tests/css-integrity.mjs
+        run: npm run check:css
 
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run browser checks and classify any failure
-        id: browser_checks
-        shell: bash
+      - name: Start static server
         run: |
-          set -uo pipefail
           python3 -m http.server 4173 > /tmp/behind-answer-server.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill "$SERVER_PID" || true' EXIT
+          echo $! > /tmp/behind-answer-server.pid
           for attempt in {1..20}; do
             if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
-              break
+              exit 0
             fi
             sleep 0.5
           done
-          set +e
-          node tests/smoke.mjs > /tmp/smoke.log 2>&1
-          STATUS=$?
-          set -e
-          LAST="start"
-          AREA="unknown"
-          grep -q 'Complete journey passed: desktop' /tmp/smoke.log && LAST="desktop"
-          grep -q 'Complete journey passed: mobile-390' /tmp/smoke.log && LAST="mobile"
-          grep -q 'Precision checks passed.' /tmp/smoke.log && LAST="precision"
-          grep -q 'Targeted axe accessibility checks passed.' /tmp/smoke.log && LAST="axe"
-          grep -q 'Cross-browser smoke passed: firefox' /tmp/smoke.log && LAST="firefox"
-          grep -q 'Cross-browser smoke passed: webkit' /tmp/smoke.log && LAST="webkit"
-          if [ "$STATUS" -ne 0 ] && [ "$LAST" = "start" ]; then
-            LINE=$(grep -oE 'smoke\.mjs:[0-9]+' /tmp/smoke.log | cut -d: -f2 | awk '$1 >= 39 && $1 <= 143 {line=$1} END {if (line) print line}' || true)
-            if [ -n "$LINE" ]; then
-              if [ "$LINE" -le 63 ]; then AREA="mining";
-              elif [ "$LINE" -le 67 ]; then AREA="factory";
-              elif [ "$LINE" -le 79 ]; then AREA="datacenter";
-              elif [ "$LINE" -le 91 ]; then AREA="data";
-              elif [ "$LINE" -le 99 ]; then AREA="annotation";
-              elif [ "$LINE" -le 107 ]; then AREA="training";
-              elif [ "$LINE" -le 114 ]; then AREA="evaluation";
-              elif [ "$LINE" -le 126 ]; then AREA="deployment";
-              else AREA="ending";
-              fi
-            fi
+          cat /tmp/behind-answer-server.log
+          exit 1
+
+      - name: Run complete browser, causality, accessibility and cross-browser suite
+        run: npm run test:browser
+
+      - name: Run second-audit regression suite
+        run: npm run test:second-audit
+
+      - name: Stop static server
+        if: always()
+        run: |
+          if [ -f /tmp/behind-answer-server.pid ]; then
+            kill "$(cat /tmp/behind-answer-server.pid)" || true
           fi
-          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-          echo "last=$LAST" >> "$GITHUB_OUTPUT"
-          echo "area=$AREA" >> "$GITHUB_OUTPUT"
-          if [ "$STATUS" -ne 0 ]; then
-            echo "Browser suite failed after phase: $LAST; desktop area: $AREA"
-            tail -n 25 /tmp/smoke.log
-          fi
-          exit 0
-
-      - name: Desktop failure in mining
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'mining'
-        run: exit 1
-
-      - name: Desktop failure in factory
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'factory'
-        run: exit 1
-
-      - name: Desktop failure in datacenter
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'datacenter'
-        run: exit 1
-
-      - name: Desktop failure in data
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'data'
-        run: exit 1
-
-      - name: Desktop failure in annotation
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'annotation'
-        run: exit 1
-
-      - name: Desktop failure in training
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'training'
-        run: exit 1
-
-      - name: Desktop failure in evaluation
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'evaluation'
-        run: exit 1
-
-      - name: Desktop failure in deployment
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'deployment'
-        run: exit 1
-
-      - name: Desktop failure in ending
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'ending'
-        run: exit 1
-
-      - name: Desktop failure in unknown area
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start' && steps.browser_checks.outputs.area == 'unknown'
-        run: exit 1
-
-      - name: Failure is in mobile journey
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'desktop'
-        run: exit 1
-
-      - name: Failure is in precision checks
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'mobile'
-        run: exit 1
-
-      - name: Failure is in axe accessibility checks
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'precision'
-        run: exit 1
-
-      - name: Failure is in Firefox smoke
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'axe'
-        run: exit 1
-
-      - name: Failure is in WebKit smoke
-        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'firefox'
-        run: exit 1
-
-      - name: Browser suite completed
-        if: steps.browser_checks.outputs.status == '0'
-        run: echo 'All browser checks passed.'
