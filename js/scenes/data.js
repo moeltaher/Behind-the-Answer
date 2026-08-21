@@ -37,6 +37,11 @@ function statusCounts(state) {
   };
 }
 
+function feedbackMarkup(state, h) {
+  if (!state.flags.dataFeedbackLabel) return '';
+  return `<div class="decision-feedback-inline" role="status"><strong>${h(state.flags.dataFeedbackLabel)}</strong><span>${h(state.flags.dataFeedbackDetail)}</span></div>`;
+}
+
 export function createDataRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
@@ -88,24 +93,14 @@ export function createDataRoutes(ctx) {
     });
   }
 
-  function dataFeedback() {
-    html(`<div class="centered decision-feedback"><span class="eyebrow">أثر قرارك على الدفعة</span><h1 class="scene-title">${ctx.h(state.flags.dataFeedbackLabel)}</h1><p class="scene-subtitle">${ctx.h(state.flags.dataFeedbackDetail)}</p><div class="action-row center"><button id="nextDataItem" class="primary-btn">تابع مراجعة الدفعة</button></div></div>`);
-    $('#nextDataItem').addEventListener('click',()=>{
-      state.flags.dataFeedbackLabel='';
-      state.flags.dataFeedbackDetail='';
-      saveState();
-      dataClean();
-    });
-  }
-
   function dataClean() {
     if(state.flags.dataFollowup){ go('dataFollowup'); return; }
-    if(state.flags.dataFeedbackLabel){ dataFeedback(); return; }
     const index=state.flags.dataIndex;
     if(index>=DATA_ITEMS.length){ go('dataCleanSummary'); return; }
     const item=DATA_ITEMS[index];
     const counts=statusCounts(state);
-    html(`<div><span class="eyebrow">دفعة بيانات رقم 18</span><h1 class="scene-title">أنت الآن نور، متخصصة تجهيز بيانات.</h1><div class="reality-note"><strong>سياسة الدفعة الافتراضية</strong> المشكلة الواحدة قد تحتاج أكثر من إجراء. المادة التي تتوقف للمراجعة لا تُعد جاهزة لمجرد مرور الوقت؛ تبقى معلقة حتى يظهر قرار يحسمها.</div><div class="hud-grid"><div class="hud-item"><span>العنصر</span><strong>${index+1}/${DATA_ITEMS.length}</strong></div><div class="hud-item"><span>وقت المراجعة الإضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div><div class="hud-item"><span>الجاهز / المعلق</span><strong>${counts.ready} / ${counts.pending}</strong></div></div><div class="sort-layout"><div class="data-item card"><span class="kicker">${ctx.h(item.title)}</span><div class="data-preview">${ctx.h(item.body)}</div><div class="card flat"><p><strong>المصدر:</strong> ${ctx.h(item.source)}</p><p><strong>حالة الحقوق:</strong> ${ctx.h(item.rights)}</p><p><strong>الخصوصية:</strong> ${ctx.h(item.privacy)}</p></div></div><div class="sort-actions"><button data-sort="keep" class="choice-btn"><strong>احتفظ</strong><small>يمر كما هو إلى الجزء الجاهز من الدفعة.</small></button><button data-sort="redact" class="choice-btn"><strong>نقّح البيانات غير اللازمة</strong><small>يعالج المعلومات المباشرة فقط.</small></button><button data-sort="review" class="choice-btn"><strong>أوقفه للمراجعة</strong><small>يضيف 4 دقائق افتراضية ويبقي المادة معلقة خارج الجزء الجاهز.</small></button><button data-sort="remove" class="choice-btn"><strong>استبعد</strong><small>لا يدخل هذه الدفعة.</small></button></div></div></div>`);
+    const feedback=feedbackMarkup(state,ctx.h);
+    html(`<div><span class="eyebrow">دفعة بيانات رقم 18</span><h1 class="scene-title">أنت الآن نور، متخصصة تجهيز بيانات.</h1>${feedback}<div class="reality-note"><strong>سياسة الدفعة الافتراضية</strong> المشكلة الواحدة قد تحتاج أكثر من إجراء. المادة التي تتوقف للمراجعة لا تُعد جاهزة لمجرد مرور الوقت؛ تبقى معلقة حتى يظهر قرار يحسمها.</div><div class="hud-grid"><div class="hud-item"><span>العنصر</span><strong>${index+1}/${DATA_ITEMS.length}</strong></div><div class="hud-item"><span>وقت المراجعة الإضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div><div class="hud-item"><span>الجاهز / المعلق</span><strong>${counts.ready} / ${counts.pending}</strong></div></div><div class="sort-layout"><div class="data-item card"><span class="kicker">${ctx.h(item.title)}</span><div class="data-preview">${ctx.h(item.body)}</div><div class="card flat"><p><strong>المصدر:</strong> ${ctx.h(item.source)}</p><p><strong>حالة الحقوق:</strong> ${ctx.h(item.rights)}</p><p><strong>الخصوصية:</strong> ${ctx.h(item.privacy)}</p></div></div><div class="sort-actions"><button data-sort="keep" class="choice-btn"><strong>احتفظ</strong><small>يمر كما هو إلى الجزء الجاهز من الدفعة.</small></button><button data-sort="redact" class="choice-btn"><strong>نقّح البيانات غير اللازمة</strong><small>يعالج المعلومات المباشرة فقط.</small></button><button data-sort="review" class="choice-btn"><strong>أوقفه للمراجعة</strong><small>يضيف 4 دقائق افتراضية ويبقي المادة معلقة خارج الجزء الجاهز.</small></button><button data-sort="remove" class="choice-btn"><strong>استبعد</strong><small>لا يدخل هذه الدفعة.</small></button></div></div></div>`);
     bind('[data-sort]','click',event=>{
       const choice=event.currentTarget.dataset.sort;
       const [label,effectText]=choiceEffect(item,choice);
@@ -114,6 +109,8 @@ export function createDataRoutes(ctx) {
       addDecision(`data-${item.type}-${choice}`,label,effectText);
       if(item.followup && choice===item.recommended){
         state.flags.dataFollowup={index,reason:'rights-cleared'};
+        state.flags.dataFeedbackLabel='';
+        state.flags.dataFeedbackDetail='';
         saveState(); go('dataFollowup'); return;
       }
       state.flags.dataStatuses[index]=choice==='review'?'pending':choice==='remove'?'excluded':'ready';
@@ -128,7 +125,7 @@ export function createDataRoutes(ctx) {
   function dataCleanSummary() {
     const counts=statusCounts(state);
     addLedger(3,'منتجو المحتوى + نور','إنتاج مواد أصلية ثم جمع وفرز وتنقيح ومراجعة الحقوق والخصوصية والملاءمة',`${counts.ready} مواد جاهزة + ${counts.pending} معلقة`,'المواد المعلقة تبقى خارج الجزء الجاهز حتى تُحسم، ولا تتحول إلى مدخل تقني بمجرد انتهاء المرحلة.');
-    html(`<div><span class="eyebrow">انتهت مراجعة الدفعة</span><h1 class="scene-title">ماذا أنتجت هذه المرحلة؟</h1><div class="stage-output"><strong>${counts.ready} مواد جاهزة للتطوير</strong>${counts.pending?`${counts.pending} مواد ما زالت معلقة للمراجعة ولن تمر إلى الجولة التالية.`:'لا توجد مواد معلقة في نهاية هذه الجولة.'}</div><div class="hud-grid"><div class="hud-item"><span>جاهزة</span><strong>${counts.ready}</strong></div><div class="hud-item"><span>معلقة</span><strong>${counts.pending}</strong></div><div class="hud-item"><span>مستبعدة</span><strong>${counts.excluded}</strong></div><div class="hud-item"><span>وقت مراجعة إضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div></div><p class="muted">سجل الإجراءات قد يكون أكبر من عدد العناصر لأن المشكلة الواحدة يمكن أن تمر بمراجعة ثم معالجة ثانية.</p><div class="action-row"><button id="dataAbstract" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
+    html(`<div><span class="eyebrow">انتهت مراجعة الدفعة</span><h1 class="scene-title">ماذا أنتجت هذه المرحلة؟</h1>${feedbackMarkup(state,ctx.h)}<div class="stage-output"><strong>${counts.ready} مواد جاهزة للتطوير</strong>${counts.pending?`${counts.pending} مواد ما زالت معلقة للمراجعة ولن تمر إلى الجولة التالية.`:'لا توجد مواد معلقة في نهاية هذه الجولة.'}</div><div class="hud-grid"><div class="hud-item"><span>جاهزة</span><strong>${counts.ready}</strong></div><div class="hud-item"><span>معلقة</span><strong>${counts.pending}</strong></div><div class="hud-item"><span>مستبعدة</span><strong>${counts.excluded}</strong></div><div class="hud-item"><span>وقت مراجعة إضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div></div><p class="muted">سجل الإجراءات قد يكون أكبر من عدد العناصر لأن المشكلة الواحدة يمكن أن تمر بمراجعة ثم معالجة ثانية.</p><div class="action-row"><button id="dataAbstract" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
     $('#dataAbstract').addEventListener('click',()=>go('abstract4'));
   }
 
