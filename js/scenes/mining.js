@@ -1,7 +1,7 @@
 export function createMiningRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
-  const { setChapter, chapterIntro, html, go, bind, saveState, addDecision, addLedger } = ctx;
+  const { chapterIntro, html, go, bind, saveState, addDecision, addLedger } = ctx;
   const abstraction = (humans, word, line, next) =>
     ctx.abstraction(humans, word, line, next);
 
@@ -10,13 +10,11 @@ export function createMiningRoutes(ctx) {
   }
 
   function mineOrientation() {
-    setChapter(0);
     html(`<div><span class="eyebrow">موقع استخراج افتراضي</span><h1 class="scene-title">أنت الآن موسى، عامل استخراج وفرز.</h1><div class="role-card card flat"><div class="avatar">⛏</div><div><h3>موسى</h3><p>شخصية مركبة تمثل نوعًا من العمل في بداية السلسلة، ولا تشير إلى عامل أو شركة بعينها.</p></div></div><div class="reality-note"><strong>لماذا أنت هنا؟</strong> المواد التي تستخرجها لن تصبح أجهزة مباشرة. بعد الاستخراج ستنتقل عبر النقل والتنقية والمعالجة قبل أن تصل إلى المصنع.</div><p class="scene-subtitle">الشاحنة تغادر بعد دقائق. المطلوب تسليم 12 وحدة. توقف العمل قد يخفض دخل الوردية.</p><div class="hud-grid"><div class="hud-item"><span>الحصة</span><strong>12 وحدة</strong></div><div class="hud-item"><span>الأجر الأساسي</span><strong>100 وحدة لعب</strong></div><div class="hud-item"><span>السلطة على قواعد الوردية</span><strong>محدودة</strong></div></div><div class="alert"><strong>المشرف</strong> نحتاج 12 وحدة قبل مغادرة الشاحنة. إذا ظهر خطر سجّله، لكن وقت التوقف يحسب على الوردية.</div><div class="action-row"><button id="startMine" class="primary-btn">ابدأ العمل</button></div></div>`);
     $('#startMine').addEventListener('click', () => go('mineTask'));
   }
 
   function mineTask() {
-    setChapter(0);
     const count = state.flags.miningCount;
     const warning = state.flags.miningWarning;
 
