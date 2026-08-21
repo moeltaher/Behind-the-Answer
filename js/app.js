@@ -37,7 +37,6 @@ const chapterTitle=$('#chapterTitle');
 const ledgerBtn=$('#ledgerBtn');
 const promptBtn=$('#promptBtn');
 const promptDialog=$('#promptDialog');
-const promptDialogText=$('#promptDialogText');
 const ledgerDialog=$('#ledgerDialog');
 const ledgerContent=$('#ledgerContent');
 const settingsDialog=$('#settingsDialog');
@@ -82,5 +81,4 @@ if(!router.routes[state.scene]){ state.scene='intro'; saveState(); }
 bindDialogs(ctx);
 for(const id of ['reduceMotion','highContrast','largeText','soundOn']){ $(`#${id}`).addEventListener('change',event=>{ settings[id]=event.target.checked; saveSettings(settings); applySettings(settings); }); }
 if(waitingPromptText)waitingPromptText.textContent=`«${DEMO_PROMPT}»`;
-if(promptDialogText)promptDialogText.textContent=DEMO_PROMPT;
 applySettings(settings); updateBackdrop(); router.render();
