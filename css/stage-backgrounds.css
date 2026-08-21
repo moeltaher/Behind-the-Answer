@@ -1,1 +1,88 @@
-.game-main{position:relative;isolation:isolate;overflow:hidden}.stage-backdrop{position:fixed;inset:70px 0 0;z-index:-3;background-image:var(--stage-image);background-size:cover;background-position:center;opacity:.38;transition:opacity .45s ease,filter .45s ease,background-image .45s ease;pointer-events:none}.stage-backdrop::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,13,24,.88) 0%,rgba(8,13,24,.58) 42%,rgba(8,13,24,.42) 100%)}.stage-backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,24,.22),rgba(8,13,24,.42) 64%,rgba(8,13,24,.78));backdrop-filter:saturate(.9)}.scene{position:relative;z-index:1}.scene>.card,.scene>.annotation-shell,.scene>.chat-shell,.scene>.training-board,.scene>.chapter-intro,.scene>.learning-intro,.scene>.abstraction-stage>div,.scene>.centered>.dual-view{backdrop-filter:blur(12px) saturate(1.1)}body.high-contrast .stage-backdrop{opacity:.16;filter:grayscale(1) contrast(1.2)}body.reduced-motion .stage-backdrop{transition:none}@media(max-width:850px){.stage-backdrop{inset:96px 0 0;opacity:.28;background-position:center top}.stage-backdrop::before{background:rgba(8,13,24,.66)}}@media(max-width:620px){.stage-backdrop{opacity:.22;background-position:center top}.stage-backdrop::after{background:linear-gradient(180deg,rgba(8,13,24,.45),rgba(8,13,24,.7))}}
+.game-main{position:relative;isolation:isolate;overflow:hidden}
+.stage-backdrop{position:fixed;inset:70px 0 0;z-index:-3;background-image:var(--stage-image);background-size:cover;background-position:center;opacity:.55;filter:saturate(1.08) contrast(1.04);transition:opacity .45s ease,filter .45s ease,background-image .45s ease;pointer-events:none}
+.stage-backdrop::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,13,24,.58) 0%,rgba(8,13,24,.34) 46%,rgba(8,13,24,.20) 100%)}
+.stage-backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,24,.08),rgba(8,13,24,.20) 62%,rgba(8,13,24,.44));pointer-events:none}
+.scene{position:relative;z-index:1}
+
+/* واجهة مقروءة فوق الرسم من دون إخفاء البيئة بالكامل */
+.scene .card,
+.scene .learning-card,
+.scene .journey-node,
+.scene .journey-link,
+.scene .stage-output,
+.scene .reality-note,
+.scene .scene-character,
+.scene .view-panel,
+.scene .response-card,
+.scene .metric-card,
+.scene .load-card,
+.scene .hud-item,
+.scene .work-node,
+.scene .connect-step,
+.scene .worker-person,
+.scene .montage-card,
+.scene .data-bit,
+.scene .config-panel,
+.scene .chart-panel{
+  background-color:rgba(10,18,32,.84);
+  border-color:rgba(255,255,255,.20);
+  box-shadow:0 12px 30px rgba(0,0,0,.22);
+  backdrop-filter:blur(8px) saturate(1.08);
+}
+.scene .card.flat{background:rgba(10,18,32,.82)}
+.scene .learning-card p,
+.scene .reality-note,
+.scene .scene-character__copy p,
+.scene .view-panel,
+.scene .metric-card{color:#d9e2ef}
+.scene .muted,.scene small{color:#b8c5d6}
+.scene .learning-card h3,.scene .stage-output strong{color:#82efd1}
+
+/* بعض الحاويات لها خلفياتها الخاصة بالفعل، فقط نقوي فصلها عن المشهد */
+.scene .chat-shell,
+.scene .annotation-shell,
+.scene .training-board{
+  box-shadow:0 24px 60px rgba(0,0,0,.34);
+}
+
+body.high-contrast .stage-backdrop{opacity:.22;filter:grayscale(.8) contrast(1.15)}
+body.reduced-motion .stage-backdrop{transition:none}
+
+@media(max-width:850px){
+  .stage-backdrop{inset:96px 0 0;opacity:.50;background-position:center top;filter:saturate(1.12) contrast(1.05)}
+  .stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.24),rgba(8,13,24,.34) 70%,rgba(8,13,24,.52))}
+  .stage-backdrop::after{background:rgba(8,13,24,.10)}
+  .scene .card,
+  .scene .learning-card,
+  .scene .journey-node,
+  .scene .journey-link,
+  .scene .stage-output,
+  .scene .reality-note,
+  .scene .scene-character,
+  .scene .view-panel,
+  .scene .response-card,
+  .scene .metric-card,
+  .scene .load-card,
+  .scene .hud-item,
+  .scene .work-node,
+  .scene .connect-step,
+  .scene .worker-person,
+  .scene .montage-card,
+  .scene .data-bit,
+  .scene .config-panel,
+  .scene .chart-panel{background-color:rgba(10,18,32,.90);border-color:rgba(255,255,255,.24);backdrop-filter:blur(7px) saturate(1.05)}
+}
+
+@media(max-width:620px){
+  .stage-backdrop{opacity:.46;background-position:center top}
+  .stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.16),rgba(8,13,24,.28) 58%,rgba(8,13,24,.46))}
+  .stage-backdrop::after{background:rgba(8,13,24,.06)}
+  .scene .learning-card,
+  .scene .stage-output,
+  .scene .reality-note,
+  .scene .scene-character,
+  .scene .card,
+  .scene .view-panel,
+  .scene .metric-card{background-color:rgba(9,17,30,.94)}
+  .scene .learning-card p,.scene .reality-note,.scene .scene-character__copy p,.scene .muted,.scene small{color:#d2dbea}
+}
