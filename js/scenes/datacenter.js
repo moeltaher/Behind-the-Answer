@@ -49,7 +49,7 @@ export function createDatacenterRoutes(ctx) {
         'dc-move',
         'نقلت عبء اختبار مركز البيانات',
         'حافظت على الجدول عبر نقل الضغط إلى بنية أخرى.',
-        { pressure: 5, cost: -2, burden: 5, quality: -2 }
+        { pressure: 5, cost: -2, burden: 5, reliability: -2 }
       );
       go('dcWorkers');
     });
@@ -59,7 +59,7 @@ export function createDatacenterRoutes(ctx) {
         'dc-stop',
         'أوقفت مجموعة خوادم بسبب التبريد',
         'أصبحت تكلفة التوقف مرئية بدل دفع البنية للعمل عند حدها.',
-        { pressure: -3, cost: 6, burden: -5, quality: 4 }
+        { pressure: -3, cost: 6, burden: -5, reliability: 4 }
       );
       go('dcWorkers');
     });
@@ -73,7 +73,7 @@ export function createDatacenterRoutes(ctx) {
       return `<button class="worker-person ${isRevealed ? 'revealed' : ''}" data-worker="${id}"><span class="person-icon">${icon}</span><strong>${ctx.h(actor.name)}</strong><small>${isRevealed ? ctx.h(actor.role) : 'اضغط للكشف عن الدور'}</small></button>`;
     }).join('');
 
-    html(`<div><span class="eyebrow">العمل المحيط بالخادم</span><h1 class="scene-title">مركز البيانات لا يعمل بفني خوادم واحد.</h1><p class="scene-subtitle">اكشف ثلاثة أدوار على الأقل قبل المتابعة. ما تكشفه هنا يقيس استكشافك للعبة، لا «ظهور» العمل داخل الشركة.</p><div class="worker-map">${cards}</div><div class="stage-output"><strong>ما الذي تنتجه هذه المرحلة؟</strong>خوادم تعمل ويمكن تخصيص قدرتها لتدريب النموذج أو تشغيله.</div><div class="action-row"><button id="dcReady" class="primary-btn" ${revealed < 3 ? 'disabled' : ''}>${revealed < 3 ? `اكشف ${3 - revealed} أدوار أخرى` : 'المجموعة جاهزة'}</button></div></div>`);
+    html(`<div><span class="eyebrow">العمل المحيط بالخادم</span><h1 class="scene-title">مركز البيانات لا يعمل بفني خوادم واحد.</h1><p class="scene-subtitle">اكشف ثلاثة أدوار على الأقل قبل المتابعة. الأدوار الثلاثة الأولى المطلوبة جزء من المهمة؛ ما تكشفه بعدها يحسب ضمن الاستكشاف الاختياري.</p><div class="worker-map">${cards}</div><div class="stage-output"><strong>ما الذي تنتجه هذه المرحلة؟</strong>خوادم تعمل ويمكن تخصيص قدرتها لتدريب النموذج أو تشغيله.</div><div class="action-row"><button id="dcReady" class="primary-btn" ${revealed < 3 ? 'disabled' : ''}>${revealed < 3 ? `اكشف ${3 - revealed} أدوار أخرى` : 'المجموعة جاهزة'}</button></div></div>`);
 
     bind('[data-worker]', 'click', event => {
       const id = event.currentTarget.dataset.worker;
