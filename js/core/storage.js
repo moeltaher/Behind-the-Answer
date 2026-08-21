@@ -153,7 +153,20 @@ function migrateLegacyState(defaultState, saved) {
     migrated.flags.dataChecks=oldStatuses.map(legacyCheckForStatus);
     migrated.flags.dataIndex=oldStatuses.length;
     migrated.flags.dcCoolingRestored=saved.flags.dcCoolingChoice==='stop';
-    migrated.systemNotice='تم تحديث الحفظ السابق إلى بنية اللعبة الجديدة. الحالات القديمة للبيانات نُقلت باعتبار تفاصيل الحقوق والخصوصية غير محسومة لأن النسخة السابقة لم تكن تحفظها منفصلة.';
+    if (!Array.isArray(saved.flags.deployLoad)) {
+      migrated.flags.deployLoad=null;
+      migrated.flags.deployTabs=[];
+      migrated.flags.deployRecovery=null;
+      migrated.flags.supportIndex=0;
+      migrated.flags.supportFeedbackLabel='';
+      migrated.flags.supportFeedbackDetail='';
+    }
+    if (migrated.flags.safetyRetested && (!migrated.flags.safetyRemediated || migrated.flags.safetyChoice===null)) {
+      migrated.flags.safetyRetested=false;
+      migrated.flags.launchChoice=null;
+    }
+    if (migrated.flags.launchChoice!==null && !migrated.flags.safetyRetested) migrated.flags.launchChoice=null;
+    migrated.systemNotice='تم تحديث الحفظ السابق إلى بنية اللعبة الجديدة. الحالات القديمة للبيانات نُقلت باعتبار تفاصيل الحقوق والخصوصية غير محسومة لأن النسخة السابقة لم تكن تحفظها منفصلة، كما أزيلت الحالات التابعة التي لم تكن النسخة السابقة تحفظ مدخلاتها اللازمة.';
     return validState(migrated) ? migrated : null;
   } catch { return null; }
 }
