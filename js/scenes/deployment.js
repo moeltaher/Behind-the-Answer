@@ -56,8 +56,8 @@ export function createDeploymentRoutes(ctx) {
       }
 
       mutateMetrics(max > 60
-        ? { burden: 3, quality: -2, pressure: 2 }
-        : { quality: 2 });
+        ? { burden: 3, reliability: -2, pressure: 2 }
+        : { reliability: 2 });
       go('deployIncident');
     });
   }
@@ -82,7 +82,7 @@ export function createDeploymentRoutes(ctx) {
         'deploy-restart',
         'أعدت تشغيل الوحدات المتأثرة',
         'عادت الخدمة أسرع مع احتمال بقاء سبب العطل.',
-        { pressure: 5, cost: -3, burden: 5, quality: -3 }
+        { pressure: 5, cost: -3, burden: 5, reliability: -3 }
       );
       saveState();
       go('onCall');
@@ -94,7 +94,7 @@ export function createDeploymentRoutes(ctx) {
         'deploy-rollback',
         'عدت إلى الإصدار السابق',
         'تحملت وقت استعادة أطول مقابل استقرار أعلى.',
-        { pressure: -3, cost: 4, burden: 1, quality: 5 }
+        { pressure: -3, cost: 4, burden: 1, reliability: 5 }
       );
       saveState();
       go('onCall');
@@ -118,14 +118,14 @@ export function createDeploymentRoutes(ctx) {
     html(`<div><span class="eyebrow">سامر — دعم المستخدمين</span><h1 class="scene-title">بلاغ مرتبط بالحادث ${index + 1}/${SUPPORT_TASKS.length}</h1><p class="scene-subtitle">الدعم يحول أثر العطل من تجربة فردية إلى معلومة يمكن أن تعود إلى فرق التشغيل والجودة.</p><div class="card"><div class="message user">${ctx.h(task.q)}</div><div class="choice-grid"><button id="supportGood" class="choice-btn"><strong>${ctx.h(task.a)}</strong></button><button id="supportGeneric" class="choice-btn"><strong>أرسل ردًا عامًا وأغلق الحالة</strong><small>أسرع، لكنه قد لا يحل المشكلة أو يعيد المعلومة إلى الفريق المناسب.</small></button></div></div></div>`);
 
     $('#supportGood').addEventListener('click', () => {
-      mutateMetrics({ quality: 2 });
+      mutateMetrics({ serviceQuality: 2 });
       state.flags.supportIndex += 1;
       saveState();
       supportTask();
     });
 
     $('#supportGeneric').addEventListener('click', () => {
-      mutateMetrics({ pressure: 2, quality: -2 });
+      mutateMetrics({ pressure: 2, serviceQuality: -2 });
       state.flags.supportIndex += 1;
       saveState();
       supportTask();
