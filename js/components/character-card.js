@@ -22,7 +22,7 @@ export function characterCard(character) {
   `;
 }
 
-export function characterGridCard(character) {
+function characterGridCard(character) {
   return `
     <article class="person-card">
       <div class="person-card__portrait">
