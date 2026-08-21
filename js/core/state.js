@@ -5,7 +5,10 @@ export const DEFAULT_STATE = {
     pressure: 50,
     cost: 50,
     burden: 42,
-    quality: 62
+    dataQuality: 62,
+    modelQuality: 62,
+    reliability: 62,
+    serviceQuality: 62
   },
   decisions: [],
   ledger: [],
@@ -27,6 +30,7 @@ export const DEFAULT_STATE = {
     annotationIndex: 0,
     annotationCorrect: 0,
     annotationAnswered: 0,
+    annotationResults: [],
     annotationCounts: {
       accepted: 0,
       pending: 0,
