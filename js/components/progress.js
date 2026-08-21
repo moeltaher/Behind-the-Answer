@@ -3,40 +3,14 @@ function chapterLabel(chapter) {
 }
 
 function miniMap(ctx, currentIndex) {
-  return ctx.chapters
-    .map((chapter, index) => {
-      const stateClass = index === currentIndex
-        ? 'current'
-        : index < currentIndex
-          ? 'done'
-          : '';
-
-      return `
-        <span
-          class="mini-node ${stateClass}"
-          title="${ctx.h(chapter.title)}"
-        >
-          <span aria-hidden="true">${chapter.icon}</span>
-          <small>${ctx.h(chapterLabel(chapter))}</small>
-        </span>
-      `;
-    })
-    .join('');
+  return ctx.chapters.map((chapter, index) => {
+    const stateClass = index === currentIndex ? 'current' : index < currentIndex ? 'done' : '';
+    return `<span class="mini-node ${stateClass}" title="${ctx.h(chapter.title)}"><span aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></span>`;
+  }).join('');
 }
 
 export function setChapter(ctx, index) {
-  const {
-    state,
-    progressEl,
-    ledgerBtn,
-    persistentFooter,
-    chapterLabel: chapterLabelEl,
-    chapterTitle,
-    progressFill,
-    chapters,
-    saveState
-  } = ctx;
-
+  const { state, progressEl, ledgerBtn, persistentFooter, chapterLabel: chapterLabelEl, chapterTitle, progressFill, chapters, saveState } = ctx;
   state.chapter = index;
   const miniJourney = ctx.$('#miniJourney');
 
@@ -54,113 +28,37 @@ export function setChapter(ctx, index) {
     persistentFooter.hidden = true;
     if (miniJourney) miniJourney.innerHTML = '';
   }
-
   saveState();
 }
 
 function journeyMap(ctx, currentIndex) {
-  const nodes = ctx.chapters
-    .map((chapter, index) => {
-      const stateClass = index === currentIndex
-        ? 'current'
-        : index < currentIndex
-          ? 'done'
-          : '';
-
-      return `
-        <div class="journey-node ${stateClass}">
-          <span class="journey-icon" aria-hidden="true">${chapter.icon}</span>
-          <small>${ctx.h(chapterLabel(chapter))}</small>
-        </div>
-      `;
-    })
-    .join('');
-
-  return `<div class="journey-map" aria-label="خريطة رحلة الإجابة">${nodes}</div>`;
+  return `<div class="journey-map" aria-label="خريطة رحلة الإجابة">${ctx.chapters.map((chapter, index) => {
+    const stateClass = index === currentIndex ? 'current' : index < currentIndex ? 'done' : '';
+    return `<div class="journey-node ${stateClass}"><span class="journey-icon" aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></div>`;
+  }).join('')}</div>`;
 }
 
 function terminology(index) {
   const definitions = {
-    0: `
-      <div class="learning-card term-card">
-        <h3>مصطلح سنستخدمه طوال الرحلة: النموذج</h3>
-        <p>المقصود بـ«النموذج» برنامج رياضي يتعلم أنماطًا من كميات كبيرة من البيانات، ثم يستخدم ما تعلمه لإنتاج إجابات جديدة عندما ترسل إليه طلبًا.</p>
-      </div>
-    `,
-    1: `
-      <div class="learning-card term-card">
-        <h3>ما هي الرقاقة الإلكترونية؟</h3>
-        <p>قطعة صغيرة تحتوي على دوائر إلكترونية دقيقة تنفذ العمليات الحسابية. تدخل أنواع مختلفة من الرقائق في الحواسيب والخوادم التي تشغّل أنظمة الذكاء الاصطناعي.</p>
-      </div>
-    `,
-    2: `
-      <div class="learning-card term-card">
-        <h3>ما هو الخادم؟</h3>
-        <p>الخادم حاسوب قوي مخصص لتشغيل خدمات وبرامج باستمرار. توجد أعداد كبيرة من هذه الأجهزة داخل مراكز البيانات.</p>
-      </div>
-    `,
-    5: `
-      <div class="learning-card term-card">
-        <h3>ما معنى تدريب النموذج؟</h3>
-        <p>هي العملية التي تُعرض فيها أمثلة كثيرة على النموذج وتُعدَّل قيمه الداخلية تدريجيًا حتى يتحسن في توقع الأنماط وإنتاج النص.</p>
-      </div>
-    `
+    0: ['النموذج', 'برنامج رياضي يتعلم أنماطًا من كميات كبيرة من البيانات، ثم يستخدم ما تعلمه لإنتاج نتائج جديدة.'],
+    1: ['الرقاقة الإلكترونية', 'قطعة صغيرة تحتوي على دوائر دقيقة تنفذ العمليات الحسابية داخل الحواسيب والخوادم.'],
+    2: ['الخادم', 'حاسوب قوي مخصص لتشغيل خدمات وبرامج باستمرار، وتوجد أعداد كبيرة منه داخل مراكز البيانات.'],
+    5: ['تدريب النموذج', 'عملية تعرض فيها أمثلة كثيرة على النموذج وتُعدَّل قيمه الداخلية تدريجيًا حتى يتحسن.']
   };
-
-  return definitions[index] || '';
+  if (!definitions[index]) return '';
+  const [title, text] = definitions[index];
+  return `<div class="learning-card term-card"><h3>مصطلح مهم: ${title}</h3><p>${text}</p></div>`;
 }
 
 function learningCard(title, text) {
-  return `
-    <div class="learning-card">
-      <h3>${title}</h3>
-      <p>${text}</p>
-    </div>
-  `;
+  return `<div class="learning-card"><h3>${title}</h3><p>${text}</p></div>`;
 }
 
 export function chapterIntro(ctx, index, _title, _subtitle, next) {
   const chapter = ctx.chapters[index];
   ctx.setChapter(index);
 
-  ctx.html(`
-    <div class="learning-intro">
-      <div>
-        <span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span>
-        <h1 class="display-title">${ctx.h(chapter.title)}</h1>
-        <p class="scene-subtitle">لا تحتاج إلى معرفة هذه المرحلة مسبقًا. سنبني الرابط بينها وبين الإجابة خطوة بخطوة.</p>
-      </div>
-
-      ${journeyMap(ctx, index)}
-      ${terminology(index)}
-
-      <div class="learning-grid">
-        ${learningCard('أين نحن؟', ctx.h(chapter.where))}
-        ${learningCard('ماذا يحدث هنا؟', ctx.h(chapter.what))}
-        ${learningCard('ما علاقتها بالذكاء الاصطناعي؟', ctx.h(chapter.link))}
-        ${learningCard('من يعمل هنا؟', ctx.h(chapter.workers))}
-      </div>
-
-      <details class="reality-note">
-        <summary><strong>أين يحدث هذا في الواقع؟</strong></summary>
-        <p>${ctx.h(chapter.where)} ${ctx.h(chapter.workers)} تختلف الشركات والبلدان والتقنيات من سلسلة إلى أخرى، لذلك تمثل اللعبة نوع المرحلة لا موردًا أو شركة بعينها.</p>
-      </details>
-
-      <div class="journey-link">
-        <strong>اربطها بطلبك:</strong>
-        إجابتك ما زالت تنتظر. هذه المرحلة تبني شيئًا تحتاجه المراحل التالية قبل أن تصل إلى مربع المحادثة.
-      </div>
-
-      <div class="stage-output">
-        <strong>ما الذي سنخرج به من هذه المرحلة؟</strong>
-        ${ctx.h(chapter.output)}
-      </div>
-
-      <div class="action-row">
-        <button id="chapterNext" class="primary-btn">ابدأ هذه المرحلة</button>
-      </div>
-    </div>
-  `);
+  ctx.html(`<div class="learning-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="scene-subtitle">يكفي أن تعرف أين نحن، لماذا تهم هذه المرحلة، ومن يعمل فيها. التفاصيل الإضافية اختيارية.</p></div>${terminology(index)}<div class="learning-grid learning-grid--essential">${learningCard('أين نحن؟', ctx.h(chapter.where))}${learningCard('ما علاقتها بالإجابة؟', ctx.h(chapter.link))}${learningCard('من يعمل هنا؟', ctx.h(chapter.workers))}</div><details class="learning-more"><summary>اعرف أكثر عن هذه المرحلة</summary>${learningCard('ماذا يحدث هنا؟', ctx.h(chapter.what))}<div class="stage-output"><strong>ما الذي سنخرج به؟</strong>${ctx.h(chapter.output)}</div><div class="reality-note"><strong>ملاحظة عن الواقع</strong><p>تختلف الشركات والبلدان والتقنيات من سلسلة إلى أخرى؛ اللعبة تمثل نوع المرحلة لا موردًا أو شركة بعينها.</p></div><details class="journey-map-details"><summary>عرض خريطة المراحل التسع</summary>${journeyMap(ctx, index)}</details></details><div class="journey-link"><strong>اربطها بطلبك:</strong> إجابتك ما زالت تنتظر. هذه المرحلة تبني جزءًا تحتاجه المراحل التالية.</div><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ هذه المرحلة</button></div></div>`);
 
   ctx.$('#chapterNext').addEventListener('click', () => ctx.go(next));
 }
