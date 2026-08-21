@@ -41,7 +41,8 @@ export function createDataRoutes(ctx) {
       const revealed = state.flags.dataOrigins.includes(id);
       return `<button class="data-bit data-bit--label ${revealed?'revealed':''}" data-origin="${id}" aria-pressed="${revealed}"><strong>${ctx.h(label)}</strong>${revealed?`<small>${ctx.h(detail)}</small>`:'<small>استكشاف اختياري</small>'}</button>`;
     }).join('');
-    html(`<div><span class="eyebrow">من المحتوى إلى مواد البيانات</span><h1 class="scene-title">قبل أن تصبح المادة «بيانات»، كانت محتوى له مصدر وسياق.</h1><p class="scene-subtitle">المهمة الأساسية هي مراجعة الدفعة. يمكنك البدء فورًا، أو فتح أمثلة المصادر إذا أردت معرفة الأسئلة التي تثيرها.</p><div class="action-row"><button id="toClean" class="primary-btn">ابدأ مراجعة الدفعة</button></div><details class="optional-source-details"><summary>استكشف أمثلة لمصادر البيانات — اختياري</summary><div class="data-cloud data-cloud--labels">${cards}</div></details></div>`);
+    const keepOpen = state.flags.dataOrigins.length ? ' open' : '';
+    html(`<div><span class="eyebrow">من المحتوى إلى مواد البيانات</span><h1 class="scene-title">قبل أن تصبح المادة «بيانات»، كانت محتوى له مصدر وسياق.</h1><p class="scene-subtitle">المهمة الأساسية هي مراجعة الدفعة. يمكنك البدء فورًا، أو فتح أمثلة المصادر إذا أردت معرفة الأسئلة التي تثيرها.</p><div class="action-row"><button id="toClean" class="primary-btn">ابدأ مراجعة الدفعة</button></div><details class="optional-source-details"${keepOpen}><summary>استكشف أمثلة لمصادر البيانات — اختياري</summary><div class="data-cloud data-cloud--labels">${cards}</div></details></div>`);
     bind('[data-origin]','click',event=>{ const id=event.currentTarget.dataset.origin; if(state.flags.dataOrigins.includes(id))return; state.flags.dataOrigins.push(id); saveState(); dataOrigins(); });
     $('#toClean')?.addEventListener('click',()=>go('dataClean'));
   }
