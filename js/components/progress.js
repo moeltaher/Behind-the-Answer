@@ -14,18 +14,14 @@ function miniMap(ctx, currentIndex) {
 
 export function setChapter(ctx, index) {
   const {
-    state,
     progressEl,
     ledgerBtn,
     persistentFooter,
     chapterLabel: chapterLabelEl,
     chapterTitle,
     progressFill,
-    chapters,
-    saveState
+    chapters
   } = ctx;
-
-  state.chapter = index;
   const miniJourney = ctx.$('#miniJourney');
 
   if (index >= 0) {
@@ -42,8 +38,6 @@ export function setChapter(ctx, index) {
     persistentFooter.hidden = true;
     if (miniJourney) miniJourney.innerHTML = '';
   }
-
-  saveState();
 }
 
 function journeyMap(ctx, currentIndex) {

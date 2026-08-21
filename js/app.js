@@ -186,7 +186,6 @@ ctx.resetGame = (goToIntro = false) => {
 
 if (!router.routes[state.scene]) {
   state.scene = 'intro';
-  state.chapter = -1;
   saveState();
 }
 

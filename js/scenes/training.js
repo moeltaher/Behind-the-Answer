@@ -8,13 +8,12 @@ export function createTrainingRoutes(ctx) {
   }
 
   function trainingSetup() {
-    const checkpoint = state.flags.trainingCheckpoint || 'validated';
+    const checkpoint = state.flags.trainingCheckpoint;
     html(`<div><span class="eyebrow">مختبر تدريب افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما المقصود بتدريب النموذج؟</strong> أثناء التدريب تُعرض أمثلة كثيرة على النموذج وتُعدَّل قيمه الداخلية تدريجيًا. هذا السيناريو يمثل جولة تطوير تستأنف من نقطة حفظ سابقة، وليس قاعدة تقول إن كل نموذج يُدرَّب بالطريقة نفسها.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد البيانات</label><select disabled><option>الدفعة 18 + أمثلة بشرية — جاهزة</option></select></div><div class="form-row"><label for="computeSel">الخوادم المخصصة للتدريب</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute === '12' ? 'selected' : ''}>12 مجموعة — أسرع وأعلى تكلفة</option><option value="8" ${state.flags.trainingCompute === '8' ? 'selected' : ''}>8 مجموعات — أوفر وأبطأ</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ التي يبدأ منها السيناريو</label><select id="checkpointSel"><option value="validated" ${checkpoint === 'validated' ? 'selected' : ''}>نقطة حفظ اختُبرت جيدًا — أبطأ في الوصول لأحدث التغييرات</option><option value="recent" ${checkpoint === 'recent' ? 'selected' : ''}>نقطة حفظ أحدث — تحتوي تغييرات لم تكتمل اختبارات التحقق منها</option></select><small class="term-note">الفرق هنا سببه حالة الاختبار الموضحة في السيناريو، وليس افتراضًا عامًا أن الأقدم أفضل أو الأحدث أسوأ.</small></div><button id="trainStart" class="primary-btn training-start">ابدأ التدريب بهذه الإعدادات</button></div><div class="chart-panel"><span class="kicker">ما الذي سيتغير؟</span><div class="training-log training-config-summary" dir="rtl">12 مجموعة: تكلفة أعلى وضغط وقت أقل، من دون افتراض أن زيادة الخوادم وحدها تجعل النموذج أفضل.<br>8 مجموعات: تكلفة أقل والجولة أبطأ.<br>نقطة مختبرة: مخاطرة تحقق أقل لكن تحتاج وقتًا أكبر للحاق بالتغييرات.<br>نقطة أحدث: أسرع للوصول لأحدث العمل لكن تحتاج تحققًا إضافيًا.</div></div></div></div>`);
 
     $('#trainStart').addEventListener('click', () => {
       state.flags.trainingCompute = $('#computeSel').value;
       state.flags.trainingCheckpoint = $('#checkpointSel').value;
-      state.flags.trainingConfigured = true;
 
       if (state.flags.trainingCompute === '12') {
         addDecision(
@@ -54,7 +53,7 @@ export function createTrainingRoutes(ctx) {
   }
 
   function trainingRun() {
-    const total = Number(state.flags.trainingCompute || 12);
+    const total = Number(state.flags.trainingCompute);
     const available = Math.max(1, total - 1);
 
     html(`<div><span class="eyebrow">جولة التدريب</span><h1 class="scene-title">بدأ التدريب على ${total} مجموعة خوادم.</h1><div class="chart-panel"><div class="hud-grid"><div class="hud-item"><span>التقدم</span><strong>35%</strong></div><div class="hud-item"><span>مؤشر الخطأ</span><strong>ينخفض ↓</strong></div><div class="hud-item"><span>المجموعات المتاحة</span><strong>${available}/${total}</strong></div></div><div class="alert dangerish"><strong>إحدى وحدات الحوسبة غير متاحة</strong><span>${total === 8 ? 'بما أنك اخترت سعة أقل، فإن فقد وحدة واحدة يؤثر نسبيًا أكثر في الجولة.' : 'ما زالت هناك سعة احتياطية أكبر، لكن العطل يحتاج إلى قرار.'}</span></div></div><div class="choice-grid"><button id="trainPause" class="choice-btn"><strong>أوقف التدريب وافحص العطل</strong><small>تأخير أعلى مع تشخيص أوضح.</small></button><button id="trainContinue" class="choice-btn"><strong>استمر بقدرة أقل</strong><small>يحافظ على الجولة مع ضغط أعلى على الموارد المتبقية.</small></button></div></div>`);
