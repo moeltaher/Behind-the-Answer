@@ -10,9 +10,10 @@
 - `dataStatuses` يمثل حالة المرور داخل workflow، بينما `dataChecks` يمثل الحقوق والخصوصية والملاءمة بصورة منفصلة.
 - `deployLoad` يحفظ توزيع الحمل المعتمد حتى يمكن استخدام هامشه في حادث التشغيل من دون إسناد سبب العطل إليه.
 - مرحلة التدريب تستخدم حدًا أدنى معلنًا قدره سبع مجموعات لحساب هامش السعة؛ لا تستنتج تحمل أعطال عام من عدد المجموعات وحده.
-- Playwright وESLint وaxe تبعيات تطوير واختبار فقط ومثبتة بإصدارات مباشرة محددة في `package.json`.
+- Playwright وESLint وaxe تبعيات تطوير واختبار فقط. الإصدارات المباشرة مثبتة في `package.json`، وشجرة التبعيات الانتقالية مثبتة في `package-lock.json`.
+- GitHub Actions يستخدم `npm ci --ignore-scripts` لضمان إعادة إنتاج شجرة التبعيات المقفلة، ثم يشغّل `npm audit --audit-level=high` قبل بقية الفحوص.
 - اختبارات المتصفح تشغل رحلة كاملة على Chromium لسطح المكتب والهاتف، وفحوص precision للحالات الحدية والمسارات غير الموصى بها، وفحوص axe مستهدفة، وsmoke مختصر على Firefox وWebKit.
 - `tests/static-integrity.mjs` يفحص المراجع والمسارات والملفات والـexports والأصول غير المستخدمة وخريطة المشاهد وحقول الحالة.
 - `tests/css-integrity.mjs` يفحص class selectors وCSS custom properties و`@keyframes` غير المستخدمة.
 - `tests/storage-schema.mjs` يختبر القيم الدلالية، migration، والإعداد الافتراضي للحركة من النظام.
-- GitHub Actions يثبت أدوات التطوير ثم متصفحات Chromium وFirefox وWebKit ويشغل جميع طبقات التحقق قبل الدمج.
+- GitHub Actions يثبت أدوات التطوير من lockfile ثم متصفحات Chromium وFirefox وWebKit ويشغل جميع طبقات التحقق قبل الدمج.
