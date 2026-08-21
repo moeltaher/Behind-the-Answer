@@ -49,7 +49,9 @@ const STAGE_SCENES = {
     'ch7Intro',
     'evalTask',
     'safetyTest',
+    'safetyOutcome',
     'launchDecision',
+    'launchOutcome',
     'abstract7'
   ],
   deployment: [
@@ -64,7 +66,7 @@ const STAGE_SCENES = {
   user: [
     'intro',
     'introLoading',
-    'introError',
+    'introExplain',
     'zoomOut',
     'ch9Intro',
     'pipelineAssemble',
