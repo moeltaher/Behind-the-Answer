@@ -52,10 +52,11 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run complete journey, precision, accessibility, and cross-browser checks
+      - name: Run browser checks and classify any failure
+        id: browser_checks
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           python3 -m http.server 4173 > /tmp/behind-answer-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" || true' EXIT
@@ -65,4 +66,49 @@ jobs:
             fi
             sleep 0.5
           done
-          node tests/smoke.mjs
+          set +e
+          node tests/smoke.mjs > /tmp/smoke.log 2>&1
+          STATUS=$?
+          set -e
+          LAST="start"
+          grep -q 'Complete journey passed: desktop' /tmp/smoke.log && LAST="desktop"
+          grep -q 'Complete journey passed: mobile-390' /tmp/smoke.log && LAST="mobile"
+          grep -q 'Precision checks passed.' /tmp/smoke.log && LAST="precision"
+          grep -q 'Targeted axe accessibility checks passed.' /tmp/smoke.log && LAST="axe"
+          grep -q 'Cross-browser smoke passed: firefox' /tmp/smoke.log && LAST="firefox"
+          grep -q 'Cross-browser smoke passed: webkit' /tmp/smoke.log && LAST="webkit"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "last=$LAST" >> "$GITHUB_OUTPUT"
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Browser suite failed after phase: $LAST"
+            tail -n 25 /tmp/smoke.log
+          fi
+          exit 0
+
+      - name: Failure is in desktop journey
+        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'start'
+        run: exit 1
+
+      - name: Failure is in mobile journey
+        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'desktop'
+        run: exit 1
+
+      - name: Failure is in precision checks
+        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'mobile'
+        run: exit 1
+
+      - name: Failure is in axe accessibility checks
+        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'precision'
+        run: exit 1
+
+      - name: Failure is in Firefox smoke
+        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'axe'
+        run: exit 1
+
+      - name: Failure is in WebKit smoke
+        if: steps.browser_checks.outputs.status != '0' && steps.browser_checks.outputs.last == 'firefox'
+        run: exit 1
+
+      - name: Browser suite completed
+        if: steps.browser_checks.outputs.status == '0'
+        run: echo 'All browser checks passed.'
