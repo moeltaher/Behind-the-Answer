@@ -9,33 +9,15 @@ import {
 } from '../js/core/storage.js';
 
 class MemoryStorage {
-  constructor() {
-    this.values = new Map();
-  }
-
-  getItem(key) {
-    return this.values.has(key) ? this.values.get(key) : null;
-  }
-
-  setItem(key, value) {
-    this.values.set(key, String(value));
-  }
-
-  clear() {
-    this.values.clear();
-  }
+  constructor() { this.values = new Map(); }
+  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
+  setItem(key, value) { this.values.set(key, String(value)); }
+  clear() { this.values.clear(); }
 }
 
 globalThis.localStorage = new MemoryStorage();
-
-function saveRaw(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function expectDefaultState(value) {
-  saveRaw(STORAGE_KEY, value);
-  assert.deepEqual(loadState(DEFAULT_STATE), DEFAULT_STATE);
-}
+function saveRaw(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function expectDefaultState(value) { saveRaw(STORAGE_KEY, value); assert.deepEqual(loadState(DEFAULT_STATE), DEFAULT_STATE); }
 
 const validState = clone(DEFAULT_STATE);
 validState.scene = 'evalTask';
@@ -46,9 +28,11 @@ validState.flags.trainingIncidentChoice = 'pause';
 validState.flags.evalCorrectCount = 2;
 validState.flags.evalFeedback = { choice: 'a', correct: true };
 validState.flags.safetyChoice = 'details';
+validState.flags.safetyRemediated = true;
 validState.flags.launchChoice = 'delay';
 validState.flags.deployRecovery = 'rollback';
 validState.flags.dataSort.redact = 1;
+validState.flags.annotationShiftMinutes = 29;
 saveRaw(STORAGE_KEY, validState);
 assert.deepEqual(loadState(DEFAULT_STATE), validState);
 
@@ -72,9 +56,9 @@ const legacyFactoryPpe = clone(DEFAULT_STATE);
 legacyFactoryPpe.flags.factoryPPE = ['hair'];
 expectDefaultState(legacyFactoryPpe);
 
-const legacyModelMetric = clone(DEFAULT_STATE);
-legacyModelMetric.metrics.modelQuality = 62;
-expectDefaultState(legacyModelMetric);
+const legacyMetrics = clone(DEFAULT_STATE);
+legacyMetrics.metrics = { pressure: 50, cost: 50, burden: 42 };
+expectDefaultState(legacyMetrics);
 
 const extraStateField = clone(DEFAULT_STATE);
 extraStateField.flags.legacyCompatibility = true;
@@ -82,8 +66,7 @@ expectDefaultState(extraStateField);
 
 saveRaw(SETTINGS_KEY, DEFAULT_SETTINGS);
 assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
-
 saveRaw(SETTINGS_KEY, { ...DEFAULT_SETTINGS, oldSetting: true });
 assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
 
-console.log('Storage schema accepts only the current causality-first state and settings shapes.');
+console.log('Storage schema accepts only the current evidence-first state and settings shapes.');
