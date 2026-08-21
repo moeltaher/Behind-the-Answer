@@ -13,7 +13,9 @@ export const DEFAULT_SETTINGS = {
 function hasExactShape(template, value) {
   if (Array.isArray(template)) return Array.isArray(value);
 
-  if (template && typeof template === 'object') {
+  if (template === null) return value !== undefined;
+
+  if (typeof template === 'object') {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
 
     const templateKeys = Object.keys(template);
