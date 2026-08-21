@@ -4,6 +4,7 @@ export const DEFAULT_STATE = {
   ledger: [],
   flags: {
     miningCount: 0,
+    miningMinutes: 0,
     miningWarning: false,
     miningIncidentChoice: null,
     factoryChoice: null,
@@ -11,6 +12,7 @@ export const DEFAULT_STATE = {
     dcCoolingChoice: null,
     dataOrigins: [],
     dataIndex: 0,
+    dataFollowup: null,
     dataSort: {
       keep: 0,
       remove: 0,
@@ -18,6 +20,7 @@ export const DEFAULT_STATE = {
       review: 0
     },
     annotationResults: [],
+    annotationUnpaidMinutes: 0,
     tookBreak: false,
     trainingCompute: '12',
     trainingCheckpoint: 'validated',
