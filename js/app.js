@@ -184,6 +184,12 @@ ctx.resetGame = (goToIntro = false) => {
   createEndingRoutes
 ].forEach(createRoutes => router.register(createRoutes(ctx)));
 
+if (!router.routes[state.scene]) {
+  state.scene = 'intro';
+  state.chapter = -1;
+  saveState();
+}
+
 bindDialogs(ctx);
 
 for (const id of ['reduceMotion', 'highContrast', 'largeText', 'soundOn']) {
