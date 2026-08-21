@@ -100,7 +100,6 @@ export function createEndingRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
   const {
-    setChapter,
     chapterIntro,
     html,
     go,
@@ -117,7 +116,6 @@ export function createEndingRoutes(ctx) {
   }
 
   function pipelineAssemble() {
-    setChapter(8);
     html(`<div class="centered"><span class="eyebrow">تجميع الرحلة</span><h1 class="scene-title">هذه هي السلسلة التي مررت بها</h1><div class="pipeline">${renderPipeline()}</div><div class="reality-note reality-note--wide"><strong>تنبيه مهم للدقة:</strong> عندما ترسل طلبًا الآن لا يبدأ عمال التعدين والمصانع عملهم من جديد. هذه المراحل بنت الأجهزة والبيانات والنموذج سابقًا، بينما يعتمد الاستخدام اللحظي على البنية التي أصبحت موجودة بالفعل.</div><div class="action-row center"><button id="compressAI" class="primary-btn">شاهد كيف تختصر الواجهة كل هذه المراحل</button></div></div>`);
     $('#compressAI').addEventListener('click', () => go('aiAbstraction'));
   }

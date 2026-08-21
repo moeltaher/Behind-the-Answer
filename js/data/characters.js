@@ -1,4 +1,4 @@
-export const CHARACTERS = {
+const CHARACTERS = {
   user: {
     name: 'أنت',
     role: 'المستخدم',

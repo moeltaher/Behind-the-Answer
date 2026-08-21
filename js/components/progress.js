@@ -12,7 +12,7 @@ function miniMap(ctx, currentIndex) {
   }).join('');
 }
 
-export function setChapter(ctx, index) {
+export function renderJourneyProgress(ctx, index) {
   const {
     progressEl,
     ledgerBtn,
@@ -32,12 +32,13 @@ export function setChapter(ctx, index) {
     chapterTitle.textContent = chapterLabel(chapters[index]);
     progressFill.style.width = `${((index + 1) / chapters.length) * 100}%`;
     if (miniJourney) miniJourney.innerHTML = miniMap(ctx, index);
-  } else {
-    progressEl.hidden = true;
-    ledgerBtn.hidden = true;
-    persistentFooter.hidden = true;
-    if (miniJourney) miniJourney.innerHTML = '';
+    return;
   }
+
+  progressEl.hidden = true;
+  ledgerBtn.hidden = true;
+  persistentFooter.hidden = true;
+  if (miniJourney) miniJourney.innerHTML = '';
 }
 
 function journeyMap(ctx, currentIndex) {
@@ -69,7 +70,6 @@ function learningCard(title, text) {
 export function chapterIntro(ctx, index, next) {
   const chapter = ctx.chapters[index];
   const task = STAGE_TASKS[chapter.key];
-  ctx.setChapter(index);
 
   ctx.html(`<div class="learning-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="scene-subtitle">يكفي أن تعرف أين نحن، لماذا تهم هذه المرحلة، من يعمل فيها، وما المهمة التي ستنفذها. التفاصيل الإضافية اختيارية.</p></div>${taskPanel(task, { status: 'active', progress: 'تبدأ المهمة بعد الضغط على الزر أدناه' })}${terminology(index)}<div class="learning-grid learning-grid--essential">${learningCard('أين نحن؟', ctx.h(chapter.where))}${learningCard('ما علاقتها بالإجابة؟', ctx.h(chapter.link))}${learningCard('من يعمل هنا؟', ctx.h(chapter.workers))}</div><details class="learning-more"><summary>اعرف أكثر عن هذه المرحلة</summary>${learningCard('ماذا يحدث هنا؟', ctx.h(chapter.what))}<div class="stage-output"><strong>ما الذي سنخرج به؟</strong>${ctx.h(chapter.output)}</div><div class="reality-note"><strong>ملاحظة عن الواقع</strong><p>تختلف الشركات والبلدان والتقنيات من سلسلة إلى أخرى؛ اللعبة تمثل نوع المرحلة لا موردًا أو شركة بعينها.</p></div><details class="journey-map-details"><summary>عرض خريطة المراحل التسع</summary>${journeyMap(ctx, index)}</details></details><div class="journey-link"><strong>اربطها بطلبك:</strong> إجابتك ما زالت تنتظر. هذه المرحلة تبني جزءًا تحتاجه المراحل التالية.</div><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ المهمة في هذه المرحلة</button></div></div>`);
 
