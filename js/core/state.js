@@ -13,6 +13,7 @@ export const DEFAULT_STATE = {
     dcCoolingChoice: null,
     dataOrigins: [],
     dataIndex: 0,
+    dataReviewMinutes: 0,
     dataFollowup: null,
     dataSort: {
       keep: 0,
@@ -50,7 +51,6 @@ export function escapeHtml(value = '') {
     "'": '&#39;',
     '"': '&quot;'
   };
-
   return String(value).replace(/[&<>'"]/g, character => entities[character]);
 }
 
