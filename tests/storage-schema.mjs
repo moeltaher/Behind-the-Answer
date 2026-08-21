@@ -39,12 +39,16 @@ function expectDefaultState(value) {
 
 const validState = clone(DEFAULT_STATE);
 validState.scene = 'evalTask';
-validState.flags.evalFeedback = { choice: 'a', correct: true };
+validState.flags.miningIncidentChoice = 'stop';
 validState.flags.factoryChoice = 'stop';
+validState.flags.dcCoolingChoice = 'move';
 validState.flags.trainingIncidentChoice = 'pause';
+validState.flags.evalCorrectCount = 2;
+validState.flags.evalFeedback = { choice: 'a', correct: true };
 validState.flags.safetyChoice = 'details';
 validState.flags.launchChoice = 'delay';
 validState.flags.deployRecovery = 'rollback';
+validState.flags.dataSort.redact = 1;
 saveRaw(STORAGE_KEY, validState);
 assert.deepEqual(loadState(DEFAULT_STATE), validState);
 
@@ -57,8 +61,20 @@ malformedObject.flags.evalFeedback = { choice: 'a', correct: true, legacy: true 
 expectDefaultState(malformedObject);
 
 const malformedChoice = clone(DEFAULT_STATE);
-malformedChoice.flags.factoryChoice = { value: 'stop' };
+malformedChoice.flags.dcCoolingChoice = { value: 'stop' };
 expectDefaultState(malformedChoice);
+
+const legacyMiningStopped = clone(DEFAULT_STATE);
+legacyMiningStopped.flags.miningStopped = true;
+expectDefaultState(legacyMiningStopped);
+
+const legacyFactoryPpe = clone(DEFAULT_STATE);
+legacyFactoryPpe.flags.factoryPPE = ['hair'];
+expectDefaultState(legacyFactoryPpe);
+
+const legacyModelMetric = clone(DEFAULT_STATE);
+legacyModelMetric.metrics.modelQuality = 62;
+expectDefaultState(legacyModelMetric);
 
 const extraStateField = clone(DEFAULT_STATE);
 extraStateField.flags.legacyCompatibility = true;
@@ -70,4 +86,4 @@ assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
 saveRaw(SETTINGS_KEY, { ...DEFAULT_SETTINGS, oldSetting: true });
 assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
 
-console.log('Storage schema accepts only the current state and settings shapes.');
+console.log('Storage schema accepts only the current causality-first state and settings shapes.');
