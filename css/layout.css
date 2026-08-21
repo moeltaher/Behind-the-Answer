@@ -22,7 +22,7 @@
   align-items: center;
   text-align: right;
   padding: 6px;
-  cursor: pointer;
+  cursor: default;
   border-radius: 12px;
 }
 .brand-mark {
