@@ -45,7 +45,7 @@ export function createMiningRoutes(ctx) {
         'mine-stop',
         'أوقفت العمل في التعدين للفحص',
         'تحملت الوردية جزءًا من تكلفة التوقف بدل مواصلة الإنتاج تحت الخطر.',
-        { pressure: -4, cost: 6, burden: -8, quality: 2 }
+        { pressure: -4, cost: 6, burden: -8 }
       );
       state.flags.miningCount = Math.min(12, state.flags.miningCount + 3);
       saveState();
@@ -59,7 +59,7 @@ export function createMiningRoutes(ctx) {
         'mine-continue',
         'واصلت العمل بعد تحذير السلامة',
         'حافظت على الحصة، بينما ارتفع العبء والمخاطر على العامل.',
-        { pressure: 5, cost: -4, burden: 10, quality: -2 }
+        { pressure: 5, cost: -4, burden: 10 }
       );
       state.flags.miningCount = 12;
       saveState();
