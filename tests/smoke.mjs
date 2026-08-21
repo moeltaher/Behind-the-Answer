@@ -225,7 +225,8 @@ async function runPrecisionChecks(){
 
 async function runA11yChecks(){
   const browser=await chromium.launch();
-  const page=await browser.newPage({viewport:{width:1280,height:900}});
+  const context=await browser.newContext({viewport:{width:1280,height:900}});
+  const page=await context.newPage();
   for(const scene of ['intro','ch1Intro','dataClean']){
     const patch=scene==='dataClean'?{scene,flags:{dataIndex:0,dataStatuses:[],dataChecks:[]}}:{scene};
     await loadState(page,patch);
@@ -233,6 +234,7 @@ async function runA11yChecks(){
     const serious=results.violations.filter(item=>['serious','critical'].includes(item.impact));
     if(serious.length) throw new Error(`Accessibility violations in ${scene}: ${serious.map(item=>item.id).join(', ')}`);
   }
+  await context.close();
   await browser.close();
   console.log('Targeted axe accessibility checks passed.');
 }
