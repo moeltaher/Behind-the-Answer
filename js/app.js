@@ -32,6 +32,7 @@ import {
 import { abstraction as drawAbstraction } from './components/abstraction.js';
 import { bindDialogs } from './components/dialogs.js';
 import { characterCard } from './components/character-card.js';
+import { sceneGuidance } from './components/scene-guidance.js';
 import { createIntroRoutes } from './scenes/intro.js';
 import { createMiningRoutes } from './scenes/mining.js';
 import { createFactoryRoutes } from './scenes/factory.js';
@@ -62,126 +63,58 @@ const persistentFooter = $('#persistentFooter');
 const state = loadState(DEFAULT_STATE);
 const settings = loadSettings();
 
-function saveState() {
-  persistState(state);
-}
-
-function mutateMetrics(delta) {
-  applyMetricDelta(state, delta);
-  saveState();
-}
-
-function addDecision(id, label, effectText, delta = {}) {
-  recordDecision(state, id, label, effectText, delta);
-  saveState();
-}
-
-function addLedger(chapter, human, work, system, details = '') {
-  recordLedger(state, chapter, human, work, system, details);
-  saveState();
-  drawLedger(state, CHAPTERS, ledgerContent);
-}
-
-function renderLedger() {
-  drawLedger(state, CHAPTERS, ledgerContent);
-}
-
-function tone(frequency = 440, duration = 0.06, type = 'sine') {
-  playTone(settings, frequency, duration, type);
-}
+function saveState() { persistState(state); }
+function mutateMetrics(delta) { applyMetricDelta(state, delta); saveState(); }
+function addDecision(id, label, effectText, delta = {}) { recordDecision(state, id, label, effectText, delta); saveState(); }
+function addLedger(chapter, human, work, system, details = '') { recordLedger(state, chapter, human, work, system, details); saveState(); drawLedger(state, CHAPTERS, ledgerContent); }
+function renderLedger() { drawLedger(state, CHAPTERS, ledgerContent); }
+function tone(frequency = 440, duration = 0.06, type = 'sine') { playTone(settings, frequency, duration, type); }
 
 function updateBackdrop() {
   const backdrop = backdropForScene(state.scene);
-
   if (!backdrop) {
     stageBackdrop.style.removeProperty('--stage-image');
     stageBackdrop.dataset.stage = '';
     return;
   }
-
   stageBackdrop.style.setProperty('--stage-image', `url("${backdrop.image}")`);
   stageBackdrop.dataset.stage = backdrop.group;
 }
 
 const ctx = {
-  $,
-  $$,
-  state,
-  settings,
-  h,
-  chapters: CHAPTERS,
-  progressEl,
-  progressFill,
-  chapterLabel,
-  chapterTitle,
-  ledgerBtn,
-  ledgerDialog,
-  ledgerContent,
-  settingsDialog,
-  confirmResetDialog,
-  persistentFooter,
-  saveState,
-  mutateMetrics,
-  addDecision,
-  addLedger,
-  renderLedger,
-  tone,
-  monitorTile,
-  metric
+  $, $$, state, settings, h, chapters: CHAPTERS, progressEl, progressFill,
+  chapterLabel, chapterTitle, ledgerBtn, ledgerDialog, ledgerContent,
+  settingsDialog, confirmResetDialog, persistentFooter, saveState, mutateMetrics,
+  addDecision, addLedger, renderLedger, tone, monitorTile, metric
 };
 
-const router = createRouter({
-  state,
-  settings,
-  sceneEl,
-  save: saveState,
-  tone,
-  renderLedger
-});
+const router = createRouter({ state, settings, sceneEl, save: saveState, tone, renderLedger });
 
 function sceneHtml(content) {
   updateBackdrop();
   const character = characterForScene(state.scene);
-  router.html(`${characterCard(character)}${content}`);
+  const guidance = sceneGuidance(state.scene, state);
+  router.html(`${guidance}${characterCard(character)}${content}`);
 }
 
-Object.assign(ctx, {
-  html: sceneHtml,
-  bind: router.bind,
-  go: router.go,
-  render: router.render
-});
-
+Object.assign(ctx, { html: sceneHtml, bind: router.bind, go: router.go, render: router.render });
 ctx.setChapter = index => updateChapter(ctx, index);
-ctx.chapterIntro = (index, title, subtitle, next) =>
-  drawChapterIntro(ctx, index, title, subtitle, next);
-ctx.abstraction = (humans, word, line, next) =>
-  drawAbstraction(ctx, humans, word, line, next);
+ctx.chapterIntro = (index, title, subtitle, next) => drawChapterIntro(ctx, index, title, subtitle, next);
+ctx.abstraction = (humans, word, line, next) => drawAbstraction(ctx, humans, word, line, next);
 ctx.resetGame = (goToIntro = false) => {
   replaceObjectContents(state, clone(DEFAULT_STATE));
   saveState();
-  ledgerDialog.close();
-  settingsDialog.close();
-  confirmResetDialog.close();
-  if (goToIntro) router.go('intro');
-  else router.render();
+  ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close();
+  if (goToIntro) router.go('intro'); else router.render();
 };
 
 [
-  createIntroRoutes,
-  createMiningRoutes,
-  createFactoryRoutes,
-  createDatacenterRoutes,
-  createDataRoutes,
-  createAnnotationRoutes,
-  createTrainingRoutes,
-  createEvaluationRoutes,
-  createDeploymentRoutes,
-  createEndingRoutes
+  createIntroRoutes, createMiningRoutes, createFactoryRoutes, createDatacenterRoutes,
+  createDataRoutes, createAnnotationRoutes, createTrainingRoutes,
+  createEvaluationRoutes, createDeploymentRoutes, createEndingRoutes
 ].forEach(createRoutes => router.register(createRoutes(ctx)));
 
 bindDialogs(ctx);
-
 for (const id of ['reduceMotion', 'highContrast', 'largeText', 'soundOn']) {
   $(`#${id}`).addEventListener('change', event => {
     settings[id] = event.target.checked;
