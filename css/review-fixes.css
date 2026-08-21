@@ -38,12 +38,15 @@ body[data-stage] .scene-character { border-inline-start: 3px solid rgba(var(--st
 .epilogue-chat .dual-view { margin-top: 18px; }
 .verification-bundles { display: grid; gap: 10px; margin: 16px 0; }
 
-/* Let the element's HTML dir=auto/bdi algorithm determine mixed Arabic/numeric content. */
+/* Neutralize the legacy LTR rule on the wrapper; each value isolates itself with bdi dir=auto. */
+.monitor-tile strong { direction: inherit; }
 .monitor-tile strong > bdi[dir="auto"] { unicode-bidi: isolate; }
+.monitor-tile strong.numeric-value { direction: ltr; }
 
 .journey-map { grid-template-columns: repeat(8, minmax(72px,1fr)); }
 
 @media (max-width:700px) {
   .journey-map { grid-template-columns: repeat(8,110px); }
   .worker-person__avatar { width: 52px; height: 52px; }
+  .optional-source-details { padding: 10px 12px; }
 }
