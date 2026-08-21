@@ -10,7 +10,10 @@ const REMOVED_STATE_PATHS = [
   'metrics.discovery',
   'flags.finalEnding'
 ];
-const LEGACY_STATE_MIGRATION_FILE = 'js/core/storage.js';
+const LEGACY_SCAN_EXCLUSIONS = new Set([
+  'js/core/storage.js',
+  'tests/static-integrity.mjs'
+]);
 
 async function walk(directory) {
   const entries = await readdir(directory);
@@ -63,7 +66,7 @@ for (const match of index.matchAll(/(?:href|src)="(\.\/[^"?#]+)"/g)) {
 
 for (const file of sourceFiles) {
   const rel = relative(file);
-  if (rel === LEGACY_STATE_MIGRATION_FILE) continue;
+  if (LEGACY_SCAN_EXCLUSIONS.has(rel)) continue;
   const source = await readFile(file, 'utf8');
 
   for (const statePath of REMOVED_STATE_PATHS) {
