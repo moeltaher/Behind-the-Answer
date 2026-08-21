@@ -43,6 +43,14 @@ function localPath(fromFile, specifier) {
   return normalize(resolve(dirname(fromFile), specifier));
 }
 
+function importedNames(importList) {
+  return importList
+    .split(',')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => part.split(/\s+as\s+/)[0].trim());
+}
+
 const files = await walk(ROOT);
 const fileSet = new Set(files.map(file => normalize(file)));
 const textFiles = files.filter(file => TEXT_EXTENSIONS.has(extname(file)));
@@ -50,6 +58,7 @@ const sourceFiles = files.filter(file => SOURCE_EXTENSIONS.has(extname(file)));
 const runtimeSources = sourceFiles.filter(file => relative(file).startsWith('js/'));
 const failures = [];
 const importedRuntimeFiles = new Set();
+const importedRuntimeNames = new Map();
 const referencedAssets = new Set();
 
 for (const file of sourceFiles) {
@@ -69,6 +78,16 @@ for (const file of sourceFiles) {
       importedRuntimeFiles.add(target);
     }
   }
+
+  const namedImportPattern = /import\s*{([^}]+)}\s*from\s*['"]([^'"]+)['"]/gs;
+  for (const match of source.matchAll(namedImportPattern)) {
+    const target = localPath(file, match[2]);
+    if (!target || !relative(target).startsWith('js/')) continue;
+
+    const names = importedRuntimeNames.get(target) || new Set();
+    for (const name of importedNames(match[1])) names.add(name);
+    importedRuntimeNames.set(target, names);
+  }
 }
 
 for (const file of textFiles) {
@@ -86,9 +105,17 @@ for (const match of index.matchAll(/(?:href|src)="(\.\/[^"?#]+)"/g)) {
 }
 
 for (const file of runtimeSources) {
-  if (relative(file) === 'js/app.js') continue;
-  if (!importedRuntimeFiles.has(normalize(file))) {
+  if (relative(file) !== 'js/app.js' && !importedRuntimeFiles.has(normalize(file))) {
     failures.push(`Unused runtime JavaScript file: ${relative(file)}`);
+  }
+
+  const source = await readFile(file, 'utf8');
+  const names = importedRuntimeNames.get(normalize(file)) || new Set();
+  const exportPattern = /export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g;
+  for (const match of source.matchAll(exportPattern)) {
+    if (!names.has(match[1])) {
+      failures.push(`Unused runtime export: ${relative(file)}#${match[1]}`);
+    }
   }
 }
 
@@ -123,6 +150,13 @@ for (const field of [
 ]) {
   if (Object.hasOwn(DEFAULT_STATE.flags, field)) {
     failures.push(`DEFAULT_STATE contains derived flag: ${field}`);
+  }
+}
+
+for (const file of runtimeSources) {
+  const source = await readFile(file, 'utf8');
+  if (source.includes('setChapter')) {
+    failures.push(`Manual chapter progress API found in ${relative(file)}.`);
   }
 }
 
