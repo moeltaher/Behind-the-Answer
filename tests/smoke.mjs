@@ -181,7 +181,8 @@ async function runPrecisionChecks(){
       {rights:'unresolved',privacy:'unresolved',fitness:'clear'}
     ]
   }});
-  await page.getByText('1 محسومة / 1 غير محسومة',{exact:false}).waitFor({state:'visible'});
+  const precisionTrainingInput=await selectedOptionText(page,'.config-panel select');
+  if(!precisionTrainingInput.includes('1 محسومة / 1 غير محسومة')) throw new Error('Precision training input lost the resolved/unresolved distinction.');
 
   await loadState(page,{scene:'launchDecision',flags:{safetyChoice:'details',safetyRemediated:true,safetyRetested:true,trainingCheckpoint:'validated',trainingCompute:'12',trainingIncidentChoice:'pause',dataStatuses:['ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'}]}});
   await page.getByText('حسم مسائل بيانات مرّت إلى التطوير',{exact:true}).waitFor({state:'visible'});
