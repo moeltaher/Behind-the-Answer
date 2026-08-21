@@ -21,3 +21,23 @@ export function characterCard(character) {
     </aside>
   `;
 }
+
+export function characterGridCard(character) {
+  return `
+    <article class="person-card">
+      <div class="person-card__portrait">
+        <img
+          src="${h(character.image)}"
+          alt="رسم كرتوني لشخصية ${h(character.name)}"
+          loading="lazy"
+        />
+      </div>
+      <strong>${h(character.name)}</strong>
+      <small>${h(character.role)}</small>
+    </article>
+  `;
+}
+
+export function characterGrid(characters) {
+  return characters.map(characterGridCard).join('');
+}
