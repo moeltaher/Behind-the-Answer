@@ -61,6 +61,18 @@ export const CHARACTERS = {
   }
 };
 
+export const STORY_CHARACTER_IDS = [
+  'moussa',
+  'layla',
+  'carlos',
+  'noor',
+  'amani',
+  'david',
+  'reem',
+  'hana',
+  'samer'
+];
+
 export const SCENE_CHARACTER = {
   intro: 'user',
   introLoading: 'user',
@@ -112,4 +124,8 @@ export function characterForScene(sceneId) {
 
 export function characterByName(name) {
   return Object.values(CHARACTERS).find(character => character.name === name) || null;
+}
+
+export function storyCharacters() {
+  return STORY_CHARACTER_IDS.map(id => CHARACTERS[id]);
 }
