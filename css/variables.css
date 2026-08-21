@@ -1,0 +1,18 @@
+:root {
+  --bg: #080d18;
+  --surface: #101827;
+  --surface-2: #151f31;
+  --surface-3: #1c2940;
+  --text: #f6f8fb;
+  --muted: #9cabbe;
+  --line: rgba(255,255,255,.12);
+  --accent: #68e1c1;
+  --accent-2: #7ca4ff;
+  --warn: #ffbf69;
+  --danger: #ff6b78;
+  --good: #72e69c;
+  --shadow: 0 20px 60px rgba(0,0,0,.28);
+  --radius: 22px;
+  --font-scale: 1;
+  --scene-max: 1180px;
+}
