@@ -20,10 +20,15 @@ function saveRaw(key, value) { localStorage.setItem(key, JSON.stringify(value));
 function expectDefaultState(value) { saveRaw(STORAGE_KEY, value); assert.deepEqual(loadState(DEFAULT_STATE), DEFAULT_STATE); }
 
 const validState = clone(DEFAULT_STATE);
-validState.scene = 'evalTask';
+validState.scene = 'dataFollowup';
+validState.flags.miningMinutes = 35;
+validState.flags.miningBUses = 2;
 validState.flags.miningIncidentChoice = 'stop';
 validState.flags.factoryChoice = 'stop';
 validState.flags.dcCoolingChoice = 'move';
+validState.flags.dataReviewMinutes = 4;
+validState.flags.dataFollowup = { index: 2, reason: 'rights-cleared' };
+validState.flags.annotationUnpaidMinutes = 9;
 validState.flags.trainingIncidentChoice = 'pause';
 validState.flags.evalCorrectCount = 2;
 validState.flags.evalFeedback = { choice: 'a', correct: true };
@@ -42,6 +47,10 @@ expectDefaultState(malformedNullable);
 const malformedObject = clone(DEFAULT_STATE);
 malformedObject.flags.evalFeedback = { choice: 'a', correct: true, legacy: true };
 expectDefaultState(malformedObject);
+
+const malformedFollowup = clone(DEFAULT_STATE);
+malformedFollowup.flags.dataFollowup = { index: '2', reason: 'rights-cleared' };
+expectDefaultState(malformedFollowup);
 
 const malformedChoice = clone(DEFAULT_STATE);
 malformedChoice.flags.dcCoolingChoice = { value: 'stop' };
@@ -72,4 +81,4 @@ assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
 saveRaw(SETTINGS_KEY, { ...DEFAULT_SETTINGS, oldSetting: true });
 assert.deepEqual(loadSettings(), DEFAULT_SETTINGS);
 
-console.log('Storage schema accepts only the current evidence-first state and settings shapes.');
+console.log('Storage schema accepts only the current tradeoff-first state and settings shapes.');
