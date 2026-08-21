@@ -18,36 +18,42 @@ export function createAnnotationRoutes(ctx) {
     $('#startAnnot').addEventListener('click', () => go('annotationTask'));
   }
 
-  function currentAgreement() {
-    if (!state.flags.annotationAnswered) return 100;
-    return Math.round((state.flags.annotationCorrect / state.flags.annotationAnswered) * 100);
-  }
+  function annotationSummary() {
+    const results = state.flags.annotationResults;
+    const accepted = results.filter(result => result.acceptedAsReasonable && !result.pending).length;
+    const pending = results.filter(result => result.pending).length;
+    const rejected = results.filter(result => !result.acceptedAsReasonable).length;
+    const correct = results.filter(result => result.acceptedAsReasonable).length;
 
-  function paidTasks() {
-    return state.flags.annotationCounts.accepted;
+    return {
+      answered: results.length,
+      accepted,
+      pending,
+      rejected,
+      agreement: results.length ? Math.round((correct / results.length) * 100) : 100
+    };
   }
 
   function currentEarnings() {
-    return (paidTasks() * PAY_PER_ACCEPTED_TASK).toFixed(2);
+    return (annotationSummary().accepted * PAY_PER_ACCEPTED_TASK).toFixed(2);
   }
 
   function annotationTask() {
-    const index = state.flags.annotationIndex;
+    const summary = annotationSummary();
+    const index = summary.answered;
     if (index >= ANNOTATION_TASKS.length) {
       go('annotationReview');
       return;
     }
 
     const task = ANNOTATION_TASKS[index];
-    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مشروع تصنيف البيانات</strong><span>المهمة ${index + 1} من ${ANNOTATION_TASKS.length}</span></div><div class="annotation-body">${task.sensitive ? '<div class="alert annotation-sensitive"><strong>تنبيه محتوى</strong><span>وصف مقتضب وغير تفصيلي لمادة حساسة.</span></div>' : ''}<div class="annotation-stats"><span>المهام المكتملة: ${state.flags.annotationAnswered}</span><span>التوافق المؤقت مع المعيار: ${currentAgreement()}%</span><span>الدفع النهائي: بعد المراجعة</span>${state.flags.tookBreak ? '<span>أخذت استراحة خلال الوردية</span>' : ''}</div><div class="annotation-copy">${ctx.h(task.text)}</div><div class="annotation-tags">${ANNOTATION_LABELS.map(label => `<button data-tag="${ctx.h(label)}">${ctx.h(label)}</button>`).join('')}</div>${index === 5 && !state.flags.tookBreak ? '<div class="action-row"><button id="takeBreak" class="choice-btn break-btn"><strong>خذ استراحة</strong><small>تتوقف المهمة مؤقتًا ولا تُحتسب كمكتملة ولا مدفوعة.</small></button></div>' : ''}</div></div>`);
+    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مشروع تصنيف البيانات</strong><span>المهمة ${index + 1} من ${ANNOTATION_TASKS.length}</span></div><div class="annotation-body">${task.sensitive ? '<div class="alert annotation-sensitive"><strong>تنبيه محتوى</strong><span>وصف مقتضب وغير تفصيلي لمادة حساسة.</span></div>' : ''}<div class="annotation-stats"><span>المهام المكتملة: ${summary.answered}</span><span>التوافق المؤقت مع المعيار: ${summary.agreement}%</span><span>الدفع النهائي: بعد المراجعة</span>${state.flags.tookBreak ? '<span>أخذت استراحة خلال الوردية</span>' : ''}</div><div class="annotation-copy">${ctx.h(task.text)}</div><div class="annotation-tags">${ANNOTATION_LABELS.map(label => `<button data-tag="${ctx.h(label)}">${ctx.h(label)}</button>`).join('')}</div>${index === 5 && !state.flags.tookBreak ? '<div class="action-row"><button id="takeBreak" class="choice-btn break-btn"><strong>خذ استراحة</strong><small>تتوقف المهمة مؤقتًا ولا تُحتسب كمكتملة ولا مدفوعة.</small></button></div>' : ''}</div></div>`);
 
     bind('[data-tag]', 'click', event => {
       const choice = event.currentTarget.dataset.tag;
       const pending = task.ambiguity && choice === 'غير واضح';
       const acceptedAsReasonable = choice === task.best || pending;
 
-      state.flags.annotationAnswered += 1;
-      if (acceptedAsReasonable) state.flags.annotationCorrect += 1;
       state.flags.annotationResults.push({
         index,
         choice,
@@ -67,7 +73,6 @@ export function createAnnotationRoutes(ctx) {
         });
       }
 
-      state.flags.annotationIndex += 1;
       saveState();
       annotationTask();
     });
@@ -86,16 +91,10 @@ export function createAnnotationRoutes(ctx) {
   }
 
   function annotationReview() {
-    const results = state.flags.annotationResults;
-    const accepted = results.filter(result => result.acceptedAsReasonable && !result.pending).length;
-    const pending = results.filter(result => result.pending).length;
-    const rejected = results.filter(result => !result.acceptedAsReasonable).length;
+    const summary = annotationSummary();
+    const rejectedCopy = summary.rejected === 1 ? 'مهمة واحدة مرفوضة' : `${summary.rejected} مهام مرفوضة`;
 
-    state.flags.annotationCounts = { accepted, pending, rejected };
-    saveState();
-
-    const rejectedCopy = rejected === 1 ? 'مهمة واحدة مرفوضة' : `${rejected} مهام مرفوضة`;
-    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مراجعة الجودة</strong><span>اكتملت الوردية</span></div><div class="annotation-body"><h1 class="annotation-review-title">${rejected ? `المراجع رفض ${rejected === 1 ? 'مهمة واحدة' : `${rejected} مهام`}.` : 'لم يرفض المراجع أي مهمة في هذه الجولة.'}</h1><p>«التوافق مع معيار المشروع» يقيس مدى توافق اختياراتك مع معيار هذه اللعبة، وليس حقيقة مطلقة عن كل حالة غامضة.</p><div class="annotation-stats"><span>مقبولة: ${accepted}</span><span>قيد المراجعة: ${pending}</span><span>مرفوضة: ${rejected}</span><span>الدخل المؤكد: ${currentEarnings()} وحدة</span></div>${rejected ? `<div class="alert annotation-rejected"><strong>${rejectedCopy} — الدفع عنها: صفر</strong><span>يمكنك الاعتراض على قرار المراجعة، لكن وقت الاعتراض غير مدفوع.</span></div><div class="choice-grid"><button id="appeal" class="choice-btn annotation-light-choice"><strong>اعترض</strong><small>يحتاج إلى وقت إضافي غير مدفوع.</small></button><button id="skipAppeal" class="choice-btn annotation-light-choice"><strong>لا تعترض</strong><small>استمر وأغلق الوردية.</small></button></div>` : '<div class="action-row"><button id="closeShift" class="primary-btn">أغلق الوردية</button></div>'}</div></div>`);
+    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مراجعة الجودة</strong><span>اكتملت الوردية</span></div><div class="annotation-body"><h1 class="annotation-review-title">${summary.rejected ? `المراجع رفض ${summary.rejected === 1 ? 'مهمة واحدة' : `${summary.rejected} مهام`}.` : 'لم يرفض المراجع أي مهمة في هذه الجولة.'}</h1><p>«التوافق مع معيار المشروع» يقيس مدى توافق اختياراتك مع معيار هذه اللعبة، وليس حقيقة مطلقة عن كل حالة غامضة.</p><div class="annotation-stats"><span>مقبولة: ${summary.accepted}</span><span>قيد المراجعة: ${summary.pending}</span><span>مرفوضة: ${summary.rejected}</span><span>الدخل المؤكد: ${currentEarnings()} وحدة</span></div>${summary.rejected ? `<div class="alert annotation-rejected"><strong>${rejectedCopy} — الدفع عنها: صفر</strong><span>يمكنك الاعتراض على قرار المراجعة، لكن وقت الاعتراض غير مدفوع.</span></div><div class="choice-grid"><button id="appeal" class="choice-btn annotation-light-choice"><strong>اعترض</strong><small>يحتاج إلى وقت إضافي غير مدفوع.</small></button><button id="skipAppeal" class="choice-btn annotation-light-choice"><strong>لا تعترض</strong><small>استمر وأغلق الوردية.</small></button></div>` : '<div class="action-row"><button id="closeShift" class="primary-btn">أغلق الوردية</button></div>'}</div></div>`);
 
     $('#appeal')?.addEventListener('click', () => {
       addDecision(
@@ -119,6 +118,7 @@ export function createAnnotationRoutes(ctx) {
   }
 
   function annotationEnd() {
+    const summary = annotationSummary();
     addLedger(
       4,
       'أماني — عاملة بيانات',
@@ -127,14 +127,14 @@ export function createAnnotationRoutes(ctx) {
       'المرحلة التالية ترى أمثلة مصنفة، لا تفاصيل الأجر والاستراحة والرفض.'
     );
 
-    html(`<div><span class="eyebrow">وردية مكتملة</span><h1 class="scene-title">ماذا أنتج عمل أماني؟</h1><div class="stage-output"><strong>${state.flags.annotationAnswered} أمثلة صُنفت أو أُرسلت للمراجعة</strong>يمكن أن تستخدم هذه الأمثلة في تجهيز البيانات أو ضبط النموذج أو تقييمه.</div><div class="card"><div class="hud-grid"><div class="hud-item"><span>مدفوعة بعد المراجعة</span><strong>${paidTasks()}</strong></div><div class="hud-item"><span>قيد المراجعة</span><strong>${state.flags.annotationCounts.pending}</strong></div><div class="hud-item"><span>مرفوضة</span><strong>${state.flags.annotationCounts.rejected}</strong></div><div class="hud-item"><span>التوافق مع المعيار</span><strong>${currentAgreement()}%</strong></div><div class="hud-item"><span>دخل الوردية</span><strong>${currentEarnings()} وحدة</strong></div></div><p class="muted">عند انتقال الناتج إلى فريق التطوير، لا تظهر حالة الدفع أو الاستراحة أو الاعتراض بجوار كل مثال.</p></div><div class="action-row"><button id="annotAbstract" class="primary-btn">شاهد كيف يختصر النظام هذا العمل</button></div></div>`);
+    html(`<div><span class="eyebrow">وردية مكتملة</span><h1 class="scene-title">ماذا أنتج عمل أماني؟</h1><div class="stage-output"><strong>${summary.answered} أمثلة صُنفت أو أُرسلت للمراجعة</strong>يمكن أن تستخدم هذه الأمثلة في تجهيز البيانات أو ضبط النموذج أو تقييمه.</div><div class="card"><div class="hud-grid"><div class="hud-item"><span>مدفوعة بعد المراجعة</span><strong>${summary.accepted}</strong></div><div class="hud-item"><span>قيد المراجعة</span><strong>${summary.pending}</strong></div><div class="hud-item"><span>مرفوضة</span><strong>${summary.rejected}</strong></div><div class="hud-item"><span>التوافق مع المعيار</span><strong>${summary.agreement}%</strong></div><div class="hud-item"><span>دخل الوردية</span><strong>${currentEarnings()} وحدة</strong></div></div><p class="muted">عند انتقال الناتج إلى فريق التطوير، لا تظهر حالة الدفع أو الاستراحة أو الاعتراض بجوار كل مثال.</p></div><div class="action-row"><button id="annotAbstract" class="primary-btn">شاهد كيف يختصر النظام هذا العمل</button></div></div>`);
     $('#annotAbstract').addEventListener('click', () => go('abstract5'));
   }
 
   function abstract5() {
     abstraction(
       [['أماني', 'عاملة بيانات', '⌨']],
-      `${state.flags.annotationAnswered} أمثلة مصنفة`,
+      `${annotationSummary().answered} أمثلة مصنفة`,
       'وقت العمل والقراءة والقرارات الغامضة والأجر أصبحت في النظام مجموعة من الأمثلة المصنفة.',
       'ch6Intro'
     );
