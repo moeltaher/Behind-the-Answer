@@ -1,6 +1,6 @@
 import { STAGE_TASKS } from '../data/stage-tasks.js';
 import { supportingActor } from '../data/supporting-actors.js';
-import { taskPanel, eventPanel, decisionPrompt, taskOutcome, actorStrip, actorMessage } from './task-flow.js';
+import { taskPanel, eventPanel, decisionPrompt, taskOutcome, actorStrip, actorMessage, institutionCard } from './task-flow.js';
 
 const STAGE_KEYS = ['mining','factory','datacenter','data','annotation','training','evaluation','deployment','ending'];
 const COMPLETE_SCENES = new Set(['mineEnd','abstract1','factoryOutcome','abstract2','dcWorkers','abstract3','dataCleanSummary','abstract4','annotationEnd','abstract5','trainingEval','launchOutcome','abstract7','deployEnd','abstract8','results','finalMessage']);
@@ -71,9 +71,12 @@ function taskChoiceGuidance(scene) {
 }
 
 function contextualMessages(scene) {
-  if (scene === 'mineOrientation') return actorMessage(supportingActor('supervisor'),'نحتاج 12 وحدة قبل مغادرة الشاحنة. إذا ظهر خطر سجّله، لكن وقت التوقف يحسب على الوردية.','يحدد قواعد الوردية');
-  if (scene === 'supportTask') return actorMessage(supportingActor('affectedUser'),'أنا واحد من المستخدمين الذين وصل إليهم أثر الحادث، وهذا البلاغ يشرح ما حدث لي.','يرسل بلاغًا');
-  return '';
+  let content = '';
+  if (scene === 'mineOrientation') content += actorMessage(supportingActor('supervisor'),'نحتاج 12 وحدة قبل مغادرة الشاحنة. إذا ظهر خطر سجّله، لكن وقت التوقف يحسب على الوردية.','يحدد قواعد الوردية');
+  if (scene === 'supportTask') content += actorMessage(supportingActor('affectedUser'),'أنا واحد من المستخدمين الذين وصل إليهم أثر الحادث، وهذا البلاغ يشرح ما حدث لي.','يرسل بلاغًا');
+  if (['annotationIntro','annotationTask','annotationReview','annotationEnd'].includes(scene)) content += institutionCard({name:'منصة «مهمة»',type:'منصة عمل رقمية',role:'توزع المهام، تعرض معيار المشروع، وتسجل القبول والرفض والدفع.',symbol:'▦'});
+  if (scene === 'launchDecision') content += institutionCard({name:'خطة الإصدار',type:'قيد تنظيمي',role:'تحدد موعد الإطلاق المخطط وتخلق تعارضًا مع الوقت المتبقي للاختبارات.',symbol:'◷'});
+  return content;
 }
 
 function outcomeGuidance(scene, state) {
