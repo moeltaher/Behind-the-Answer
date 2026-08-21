@@ -10,13 +10,20 @@ export const DEFAULT_SETTINGS = {
   soundOn: false
 };
 
-const STATE_NULLABLE_TYPES = {
-  factoryChoice: ['string'],
-  trainingIncidentChoice: ['string'],
-  evalFeedback: ['string'],
-  safetyChoice: ['string'],
-  launchChoice: ['string'],
-  deployRecovery: ['string']
+const STATE_NULLABLE_VALIDATORS = {
+  factoryChoice: value => typeof value === 'string',
+  trainingIncidentChoice: value => typeof value === 'string',
+  evalFeedback: value => (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 2 &&
+    typeof value.choice === 'string' &&
+    typeof value.correct === 'boolean'
+  ),
+  safetyChoice: value => typeof value === 'string',
+  launchChoice: value => typeof value === 'string',
+  deployRecovery: value => typeof value === 'string'
 };
 
 function hasExactShape(template, value, key = '') {
@@ -24,8 +31,8 @@ function hasExactShape(template, value, key = '') {
 
   if (template === null) {
     if (value === null) return true;
-    const allowedTypes = STATE_NULLABLE_TYPES[key] || [];
-    return allowedTypes.includes(typeof value);
+    const validate = STATE_NULLABLE_VALIDATORS[key];
+    return validate ? validate(value) : false;
   }
 
   if (typeof template === 'object') {
