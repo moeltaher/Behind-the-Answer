@@ -10,10 +10,30 @@ export const DEFAULT_SETTINGS = {
   soundOn: false
 };
 
-function hasExactShape(template, value) {
+const STATE_NULLABLE_VALIDATORS = {
+  factoryChoice: value => typeof value === 'string',
+  trainingIncidentChoice: value => typeof value === 'string',
+  evalFeedback: value => (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 2 &&
+    typeof value.choice === 'string' &&
+    typeof value.correct === 'boolean'
+  ),
+  safetyChoice: value => typeof value === 'string',
+  launchChoice: value => typeof value === 'string',
+  deployRecovery: value => typeof value === 'string'
+};
+
+function hasExactShape(template, value, key = '') {
   if (Array.isArray(template)) return Array.isArray(value);
 
-  if (template === null) return value !== undefined;
+  if (template === null) {
+    if (value === null) return true;
+    const validate = STATE_NULLABLE_VALIDATORS[key];
+    return validate ? validate(value) : false;
+  }
 
   if (typeof template === 'object') {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -22,8 +42,8 @@ function hasExactShape(template, value) {
     const valueKeys = Object.keys(value);
     if (templateKeys.length !== valueKeys.length) return false;
 
-    return templateKeys.every(key =>
-      Object.hasOwn(value, key) && hasExactShape(template[key], value[key])
+    return templateKeys.every(childKey =>
+      Object.hasOwn(value, childKey) && hasExactShape(template[childKey], value[childKey], childKey)
     );
   }
 

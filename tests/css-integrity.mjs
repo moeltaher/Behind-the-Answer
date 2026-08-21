@@ -43,10 +43,11 @@ const runtimeFiles = files.filter(file =>
   (file.startsWith(join(ROOT, 'js')) && extname(file) === '.js')
 );
 const runtimeSource = (await Promise.all(runtimeFiles.map(file => readFile(file, 'utf8')))).join('\n');
+const cssSources = await Promise.all(cssFiles.map(async file => [file, await readFile(file, 'utf8')]));
+const allCss = cssSources.map(([, css]) => css).join('\n');
 const failures = [];
 
-for (const file of cssFiles) {
-  const css = await readFile(file, 'utf8');
+for (const [file, css] of cssSources) {
   const classes = new Set();
 
   for (const match of css.matchAll(/\.([A-Za-z_][A-Za-z0-9_-]*)/g)) {
@@ -58,6 +59,27 @@ for (const file of cssFiles) {
       failures.push(`${file.slice(ROOT.length + 1)} contains unused class selector .${className}`);
     }
   }
+}
+
+const customPropertyDefinitions = new Set(
+  [...allCss.matchAll(/(^|[;{]\s*)(--[A-Za-z0-9_-]+)\s*:/gm)].map(match => match[2])
+);
+const customPropertyUses = new Set(
+  [...allCss.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)].map(match => match[1])
+);
+
+for (const property of customPropertyDefinitions) {
+  if (!customPropertyUses.has(property)) {
+    failures.push(`Unused CSS custom property: ${property}`);
+  }
+}
+
+const keyframes = new Set(
+  [...allCss.matchAll(/@keyframes\s+([A-Za-z_][A-Za-z0-9_-]*)/g)].map(match => match[1])
+);
+for (const name of keyframes) {
+  const usage = new RegExp(`animation(?:-name)?\\s*:[^;{}]*\\b${escapeRegExp(name)}\\b`);
+  if (!usage.test(allCss)) failures.push(`Unused CSS keyframes: ${name}`);
 }
 
 if (failures.length) {
