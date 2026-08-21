@@ -1,0 +1,20 @@
+.pipeline-step {
+  direction: rtl;
+}
+
+.reality-note--wide {
+  max-width: 820px;
+}
+
+.results-decisions {
+  margin-top: 18px;
+}
+
+.final-comparison {
+  width: 100%;
+  max-width: 900px;
+}
+
+.methodology-card {
+  margin-top: 14px;
+}
