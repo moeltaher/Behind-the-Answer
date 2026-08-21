@@ -30,4 +30,3 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .centered .scene-subtitle { margin-inline:auto; }
 .muted { color:var(--muted); }
 .small { font-size:.82rem; }
-.micro { font-size:.72rem; }
