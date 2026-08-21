@@ -41,7 +41,7 @@ export function createEvaluationRoutes(ctx) {
     bind('[data-eval]', 'click', event => {
       const choice = event.currentTarget.dataset.eval;
       const correct = choice === task.good;
-      mutateMetrics(correct ? { quality: 2 } : { quality: -1 });
+      mutateMetrics(correct ? { modelQuality: 2 } : { modelQuality: -1 });
       state.flags.evalFeedback = { choice, correct };
       saveState();
       evalTask();
@@ -55,7 +55,7 @@ export function createEvaluationRoutes(ctx) {
       button.addEventListener('click', () => {
         const choice = button.dataset.safety;
         state.flags.safetyChoice = choice;
-        mutateMetrics(choice === 'details' ? { quality: 4 } : { quality: -2 });
+        mutateMetrics(choice === 'details' ? { modelQuality: 4 } : { modelQuality: -2 });
         saveState();
         go('safetyOutcome');
       });
@@ -69,7 +69,7 @@ export function createEvaluationRoutes(ctx) {
   }
 
   function launchDecision() {
-    html(`<div><span class="eyebrow">موعد الإصدار</span><h1 class="scene-title">الإطلاق غدًا. بقي 14 اختبارًا.</h1><p class="scene-subtitle">هنا يصبح موعد الإطلاق نفسه قيدًا على الوقت المتاح للمراجعة البشرية.</p><div class="choice-grid"><button id="criticalOnly" class="choice-btn"><strong>أكمل الاختبارات الحرجة فقط</strong><small>يحافظ على الموعد مع بقاء جزء من الاختبارات دون إكمال.</small></button><button id="delayLaunch" class="choice-btn"><strong>أجّل الإطلاق</strong><small>يكلف وقتًا ومالًا إضافيين لإكمال المجموعة.</small></button></div></div>`);
+    html(`<div><span class="eyebrow">موعد الإصدار</span><h1 class="scene-title">الإطلاق غدًا. بقي 14 اختبارًا.</h1><p class="scene-subtitle">هنا يصبح موعد الإطلاق نفسه قيدًا على الوقت المتاح للمراجعة البشرية. القرار يؤثر في الثقة في الإصدار ومخاطر التشغيل، ولا يغيّر جودة النموذج لغويًا بمجرد التأجيل.</p><div class="choice-grid"><button id="criticalOnly" class="choice-btn"><strong>أكمل الاختبارات الحرجة فقط</strong><small>يحافظ على الموعد مع بقاء جزء من الاختبارات دون إكمال.</small></button><button id="delayLaunch" class="choice-btn"><strong>أجّل الإطلاق</strong><small>يكلف وقتًا ومالًا إضافيين لإكمال المجموعة.</small></button></div></div>`);
 
     $('#criticalOnly').addEventListener('click', () => {
       state.flags.launchChoice = 'fast';
@@ -77,7 +77,7 @@ export function createEvaluationRoutes(ctx) {
         'launch-fast',
         'أطلقت النموذج بعد الاختبارات الحرجة فقط',
         'حافظت على الموعد بينما بقيت مساحة اختبار غير مكتملة.',
-        { pressure: 7, cost: -5, burden: 5, quality: -6 }
+        { pressure: 7, cost: -5, burden: 5, reliability: -6 }
       );
       saveState();
       go('launchOutcome');
@@ -89,7 +89,7 @@ export function createEvaluationRoutes(ctx) {
         'launch-delay',
         'أجلت الإطلاق لإكمال الاختبارات',
         'انتقلت تكلفة الاختبارات إلى الشركة والجدول بدل تركها كمخاطرة غير مختبرة.',
-        { pressure: -6, cost: 8, burden: -2, quality: 8 }
+        { pressure: -6, cost: 8, burden: -2, reliability: 8 }
       );
       saveState();
       go('launchOutcome');
@@ -98,7 +98,7 @@ export function createEvaluationRoutes(ctx) {
 
   function launchOutcome() {
     const delayed = state.flags.launchChoice === 'delay';
-    html(`<div><span class="eyebrow">نتيجة قرار الإطلاق</span><h1 class="scene-title">${delayed ? 'تأجل الإطلاق حتى اكتملت مجموعة الاختبارات.' : 'تم الإطلاق في الموعد بعد إكمال الاختبارات الحرجة.'}</h1><div class="stage-output"><strong>${delayed ? 'تكلفة القرار' : 'المخاطرة المتبقية'}</strong>${delayed ? 'دفعت الشركة تكلفة وقت وحوسبة وعمل إضافي، لكن مساحة الاختبار أصبحت أوسع.' : 'دخل المنتج مرحلة التشغيل مع اختبارات أقل اكتمالًا، وهو ما يزيد أهمية المراقبة بعد الإطلاق.'}</div><div class="action-row"><button id="finishEval" class="primary-btn">انتقل إلى تشغيل الخدمة</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة قرار الإطلاق</span><h1 class="scene-title">${delayed ? 'تأجل الإطلاق حتى اكتملت مجموعة الاختبارات.' : 'تم الإطلاق في الموعد بعد إكمال الاختبارات الحرجة.'}</h1><div class="stage-output"><strong>${delayed ? 'تكلفة القرار' : 'المخاطرة المتبقية'}</strong>${delayed ? 'دفعت الشركة تكلفة وقت وحوسبة وعمل إضافي، لكن الثقة في الإصدار أصبحت أعلى.' : 'دخل المنتج مرحلة التشغيل مع اختبارات أقل اكتمالًا، وهو ما يزيد أهمية المراقبة بعد الإطلاق.'}</div><div class="action-row"><button id="finishEval" class="primary-btn">انتقل إلى تشغيل الخدمة</button></div></div>`);
     $('#finishEval').addEventListener('click', finishEval);
   }
 

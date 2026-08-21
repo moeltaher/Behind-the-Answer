@@ -9,7 +9,7 @@ export function createTrainingRoutes(ctx) {
 
   function trainingSetup() {
     const checkpoint = state.flags.trainingCheckpoint || 'validated';
-    html(`<div><span class="eyebrow">مختبر تدريب افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما المقصود بتدريب النموذج؟</strong> أثناء التدريب تُعرض أمثلة كثيرة على النموذج وتُعدَّل قيمه الداخلية تدريجيًا. هذا السيناريو يمثل جولة تطوير تستأنف من نقطة حفظ سابقة، وليس قاعدة تقول إن كل نموذج يُدرَّب بالطريقة نفسها.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد البيانات</label><select disabled><option>الدفعة 18 + أمثلة بشرية — جاهزة</option></select></div><div class="form-row"><label for="computeSel">الخوادم المخصصة للتدريب</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute === '12' ? 'selected' : ''}>12 مجموعة — أسرع وأعلى تكلفة</option><option value="8" ${state.flags.trainingCompute === '8' ? 'selected' : ''}>8 مجموعات — أوفر وأبطأ</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ التي يبدأ منها السيناريو</label><select id="checkpointSel"><option value="validated" ${checkpoint === 'validated' ? 'selected' : ''}>نقطة حفظ اختُبرت جيدًا — أبطأ في الوصول لأحدث التغييرات</option><option value="recent" ${checkpoint === 'recent' ? 'selected' : ''}>نقطة حفظ أحدث — تحتوي تغييرات لم تكتمل اختبارات التحقق منها</option></select><small class="term-note">الفرق هنا سببه حالة الاختبار الموضحة في السيناريو، وليس افتراضًا عامًا أن الأقدم أفضل أو الأحدث أسوأ.</small></div><button id="trainStart" class="primary-btn training-start">ابدأ التدريب بهذه الإعدادات</button></div><div class="chart-panel"><span class="kicker">ما الذي سيتغير؟</span><div class="training-log training-config-summary" dir="rtl">12 مجموعة: تكلفة أعلى وضغط وقت أقل.<br>8 مجموعات: تكلفة أقل والجولة أبطأ.<br>نقطة مختبرة: مخاطرة تحقق أقل لكن تحتاج وقتًا أكبر للحاق بالتغييرات.<br>نقطة أحدث: أسرع للوصول لأحدث العمل لكن تحتاج تحققًا إضافيًا.</div></div></div></div>`);
+    html(`<div><span class="eyebrow">مختبر تدريب افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما المقصود بتدريب النموذج؟</strong> أثناء التدريب تُعرض أمثلة كثيرة على النموذج وتُعدَّل قيمه الداخلية تدريجيًا. هذا السيناريو يمثل جولة تطوير تستأنف من نقطة حفظ سابقة، وليس قاعدة تقول إن كل نموذج يُدرَّب بالطريقة نفسها.</div><div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد البيانات</label><select disabled><option>الدفعة 18 + أمثلة بشرية — جاهزة</option></select></div><div class="form-row"><label for="computeSel">الخوادم المخصصة للتدريب</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute === '12' ? 'selected' : ''}>12 مجموعة — أسرع وأعلى تكلفة</option><option value="8" ${state.flags.trainingCompute === '8' ? 'selected' : ''}>8 مجموعات — أوفر وأبطأ</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ التي يبدأ منها السيناريو</label><select id="checkpointSel"><option value="validated" ${checkpoint === 'validated' ? 'selected' : ''}>نقطة حفظ اختُبرت جيدًا — أبطأ في الوصول لأحدث التغييرات</option><option value="recent" ${checkpoint === 'recent' ? 'selected' : ''}>نقطة حفظ أحدث — تحتوي تغييرات لم تكتمل اختبارات التحقق منها</option></select><small class="term-note">الفرق هنا سببه حالة الاختبار الموضحة في السيناريو، وليس افتراضًا عامًا أن الأقدم أفضل أو الأحدث أسوأ.</small></div><button id="trainStart" class="primary-btn training-start">ابدأ التدريب بهذه الإعدادات</button></div><div class="chart-panel"><span class="kicker">ما الذي سيتغير؟</span><div class="training-log training-config-summary" dir="rtl">12 مجموعة: تكلفة أعلى وضغط وقت أقل، من دون افتراض أن زيادة الخوادم وحدها تجعل النموذج أفضل.<br>8 مجموعات: تكلفة أقل والجولة أبطأ.<br>نقطة مختبرة: مخاطرة تحقق أقل لكن تحتاج وقتًا أكبر للحاق بالتغييرات.<br>نقطة أحدث: أسرع للوصول لأحدث العمل لكن تحتاج تحققًا إضافيًا.</div></div></div></div>`);
 
     $('#trainStart').addEventListener('click', () => {
       state.flags.trainingCompute = $('#computeSel').value;
@@ -21,7 +21,7 @@ export function createTrainingRoutes(ctx) {
           'training-compute-12',
           'خصصت 12 مجموعة خوادم للتدريب',
           'ارتفعت التكلفة، لكن الجولة تملك هامشًا زمنيًا أكبر.',
-          { cost: 5, pressure: -2, quality: 1 }
+          { cost: 5, pressure: -2 }
         );
       } else {
         addDecision(
@@ -37,14 +37,14 @@ export function createTrainingRoutes(ctx) {
           'training-checkpoint-validated',
           'بدأت من نقطة حفظ اختُبرت جيدًا',
           'اخترت أساسًا خضع لتحقق أوسع مقابل وقت أكبر للوصول إلى أحدث التغييرات.',
-          { pressure: 2, cost: 2, quality: 2 }
+          { pressure: 2, cost: 2, modelQuality: 2 }
         );
       } else {
         addDecision(
           'training-checkpoint-recent',
           'بدأت من نقطة حفظ أحدث لم يكتمل التحقق منها',
           'وفرت جزءًا من وقت التطوير لكن أضفت حاجة أكبر للتحقق أثناء الجولة وبعدها.',
-          { pressure: -2, cost: -1, quality: -1 }
+          { pressure: -2, cost: -1, modelQuality: -1 }
         );
       }
 
@@ -65,7 +65,7 @@ export function createTrainingRoutes(ctx) {
         'train-pause',
         'أوقفت جولة التدريب لتشخيص عطل',
         'تحملت تكلفة تأخير بدل الاستمرار بحالة غير مستقرة.',
-        { pressure: -3, cost: 5, burden: -2, quality: 5 }
+        { pressure: -3, cost: 5, burden: -2, reliability: 4 }
       );
       saveState();
       go('trainingEval');
@@ -77,7 +77,7 @@ export function createTrainingRoutes(ctx) {
         'train-continue',
         'واصلت التدريب بقدرة أقل',
         'حافظت على الجولة لكنها أصبحت أبطأ وارتفع الضغط على البنية.',
-        { pressure: 4, cost: -1, burden: 3, quality: -2 }
+        { pressure: 4, cost: -1, burden: 3, reliability: -2 }
       );
       saveState();
       go('trainingEval');

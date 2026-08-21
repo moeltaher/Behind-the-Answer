@@ -222,16 +222,18 @@ function renderIncident(scene, state) {
   }
 
   if (scene === 'annotationReview' && state.flags.annotationCounts.rejected) {
+    const rejected = state.flags.annotationCounts.rejected;
+    const rejectedLabel = rejected === 1 ? 'مهمة واحدة' : `${rejected} مهام`;
     return [
       actorMessage(
         supportingActor('dataReviewer'),
-        'رفضت مهمة واحدة وفق معيار المراجعة في المنصة.',
+        `رفضت ${rejectedLabel} وفق معيار المراجعة في المنصة.`,
         'يصدر قرار المراجعة'
       ),
       eventPanel({
-        title: 'المراجع رفض إحدى المهام بعد انتهاء الوردية',
-        trigger: 'بعد إرسال التصنيفات راجع طرف آخر العمل ورفض مهمة واحدة.',
-        meaning: 'ظهر خيار الاعتراض لأن شخصًا آخر اتخذ قرارًا يؤثر في أجر أماني.',
+        title: `المراجع رفض ${rejectedLabel} بعد انتهاء الوردية`,
+        trigger: `بعد إرسال التصنيفات راجع طرف آخر العمل ورفض ${rejectedLabel} بناءً على الاختيارات المسجلة في هذه الجولة.`,
+        meaning: 'ظهر خيار الاعتراض لأن قرار المراجعة الفعلي يؤثر في أجر أماني.',
         causal: 'after',
         actors: actorsFor(scene)
       }),

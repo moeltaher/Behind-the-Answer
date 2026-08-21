@@ -56,15 +56,15 @@ export function createFactoryRoutes(ctx) {
   }
 
   function factoryIncident() {
-    html(`<div><span class="eyebrow">تنبيه جودة</span><h1 class="scene-title">عدد الجسيمات داخل البيئة النظيفة يرتفع.</h1><div class="monitor">${monitorTile('درجة الحرارة', '21.6° م', 57)}<div class="monitor-tile"><span>عدد الجسيمات</span><strong>49 ↑</strong><div class="bar"><i style="width:86%;background:var(--warn)"></i></div></div>${monitorTile('الضغط', '0.9 بار', 58)}${monitorTile('نسبة الوحدات السليمة', '—', 10)}</div><div class="alert dangerish"><strong>الدفعة مطلوبة للشحن اليوم.</strong><span>إيقاف الخط يعني تأخيرًا. الاستمرار قد يرفع نسبة الوحدات المعيبة.</span></div><div class="choice-grid"><button id="fabStop" class="choice-btn"><strong>أوقف الخط وافحص المرشح</strong><small>وقت وتكلفة أعلى، مع حماية أفضل للجودة.</small></button><button id="fabContinue" class="choice-btn"><strong>استمر حتى نهاية الدفعة</strong><small>يحافظ على الجدول لكنه ينقل المخاطرة إلى الفحص والجودة.</small></button></div></div>`);
+    html(`<div><span class="eyebrow">تنبيه جودة</span><h1 class="scene-title">عدد الجسيمات داخل البيئة النظيفة يرتفع.</h1><div class="monitor">${monitorTile('درجة الحرارة', '21.6° م', 57)}<div class="monitor-tile"><span>عدد الجسيمات</span><strong>49 ↑</strong><div class="bar"><i style="width:86%;background:var(--warn)"></i></div></div>${monitorTile('الضغط', '0.9 بار', 58)}${monitorTile('نسبة الوحدات السليمة', '—', 10)}</div><div class="alert dangerish"><strong>الدفعة مطلوبة للشحن اليوم.</strong><span>إيقاف الخط يعني تأخيرًا. الاستمرار قد يرفع نسبة الوحدات المعيبة.</span></div><div class="choice-grid"><button id="fabStop" class="choice-btn"><strong>أوقف الخط وافحص المرشح</strong><small>وقت وتكلفة أعلى، مع حماية أفضل لجودة المكونات.</small></button><button id="fabContinue" class="choice-btn"><strong>استمر حتى نهاية الدفعة</strong><small>يحافظ على الجدول لكنه ينقل المخاطرة إلى الفحص وجودة الأجهزة.</small></button></div></div>`);
 
     $('#fabStop').addEventListener('click', () => {
       state.flags.factoryChoice = 'stop';
       addDecision(
         'factory-stop',
         'أوقفت خط التصنيع للفحص',
-        'ارتفعت تكلفة التوقف، وانخفض خطر تمرير دفعة منخفضة الجودة.',
-        { pressure: -3, cost: 7, burden: -3, quality: 9 }
+        'ارتفعت تكلفة التوقف، وانخفض خطر تمرير دفعة منخفضة الجودة إلى البنية المادية.',
+        { pressure: -3, cost: 7, burden: -3, reliability: 9 }
       );
       saveState();
       go('factoryOutcome');
@@ -75,8 +75,8 @@ export function createFactoryRoutes(ctx) {
       addDecision(
         'factory-continue',
         'واصلت تشغيل خط التصنيع',
-        'حافظت على الموعد مع ارتفاع عبء الفحص ونسبة الرفض.',
-        { pressure: 5, cost: -3, burden: 4, quality: -8 }
+        'حافظت على الموعد مع ارتفاع عبء الفحص ومخاطر موثوقية المكونات.',
+        { pressure: 5, cost: -3, burden: 4, reliability: -8 }
       );
       saveState();
       go('factoryOutcome');
@@ -85,7 +85,7 @@ export function createFactoryRoutes(ctx) {
 
   function factoryOutcome() {
     const stopped = state.flags.factoryChoice === 'stop';
-    html(`<div><span class="eyebrow">الفحص النهائي</span><h1 class="scene-title">${stopped ? 'تأخرت الدفعة، لكن المؤشرات عادت إلى النطاق.' : 'وصلت الدفعة للفحص في الموعد، لكن نسبة الرفض ارتفعت.'}</h1><div class="stage-output"><strong>ماذا أنتجت هذه المرحلة؟</strong>المكونات التي اجتازت الفحص ستدخل مع أجزاء أخرى في صناعة الخوادم.</div><div class="card"><div class="hud-grid"><div class="hud-item"><span>نسبة الوحدات السليمة</span><strong>${stopped ? '96%' : '88%'}</strong></div><div class="hud-item"><span>التوقف</span><strong>${stopped ? '20 دقيقة' : '0'}</strong></div><div class="hud-item"><span>حالة الشحن</span><strong>${stopped ? 'متأخر' : 'في الموعد'}</strong></div></div><p class="muted">لا يصبح الخادم رقاقة واحدة؛ ستضاف إليها لوحات وطاقة وشبكات وتبريد ومكونات أخرى.</p></div><div class="action-row"><button id="chipsDone" class="primary-btn">جهّز المكونات التي اجتازت الفحص</button></div></div>`);
+    html(`<div><span class="eyebrow">الفحص النهائي</span><h1 class="scene-title">${stopped ? 'تأخرت الدفعة، لكن المؤشرات عادت إلى النطاق.' : 'وصلت الدفعة للفحص في الموعد، لكن نسبة الرفض ارتفعت.'}</h1><div class="stage-output"><strong>ماذا أنتجت هذه المرحلة؟</strong>المكونات التي اجتازت الفحص ستدخل مع أجزاء أخرى في صناعة الخوادم.</div><div class="card"><div class="hud-grid"><div class="hud-item"><span>نسبة الوحدات السليمة</span><strong>${stopped ? '96%' : '88%'}</strong></div><div class="hud-item"><span>التوقف</span><strong>${stopped ? '20 دقيقة' : '0'}</strong></div><div class="hud-item"><span>حالة الشحن</span><strong>${stopped ? 'متأخر' : 'في الموعد'}</strong></div></div><p class="muted">هذا القرار يؤثر في موثوقية المكونات والبنية، لا في جودة لغة النموذج مباشرة.</p></div><div class="action-row"><button id="chipsDone" class="primary-btn">جهّز المكونات التي اجتازت الفحص</button></div></div>`);
 
     $('#chipsDone').addEventListener('click', () => {
       addLedger(

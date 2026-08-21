@@ -4,7 +4,10 @@ import { storyCharacters } from '../data/characters.js';
 import { characterGrid } from '../components/character-card.js';
 
 const PIPELINE_STEPS = CHAPTERS.slice(0, -1).map(chapter => chapter.pipelineLabel);
-const DISCOVERY_MAX = 21;
+const REQUIRED_DC_REVEALS = 3;
+const OPTIONAL_DC_REVEALS = 3;
+const OPTIONAL_DATA_ORIGINS = 12;
+const DISCOVERY_MAX = OPTIONAL_DC_REVEALS + OPTIONAL_DATA_ORIGINS;
 
 const SECONDARY_LABOR = [
   'عمال النقل والمعالجة',
@@ -15,35 +18,6 @@ const SECONDARY_LABOR = [
   'مختبرو السلامة',
   'مراجعو اللغة'
 ];
-
-const RECOGNITION_POSITIVE = new Set([
-  'mine-stop',
-  'factory-stop',
-  'dc-stop',
-  'annotation-break',
-  'annotation-appeal',
-  'train-pause',
-  'launch-delay',
-  'deploy-rollback',
-  'data-review-code',
-  'data-review-ambiguous',
-  'data-review-foreign',
-  'data-review-forum'
-]);
-
-const RECOGNITION_NEGATIVE = new Set([
-  'mine-continue',
-  'factory-continue',
-  'dc-move',
-  'annotation-noappeal',
-  'train-continue',
-  'launch-fast',
-  'deploy-restart',
-  'data-keep-code',
-  'data-keep-ambiguous',
-  'data-keep-foreign',
-  'data-keep-forum'
-]);
 
 function renderPipeline() {
   return PIPELINE_STEPS.map((step, index) =>
@@ -58,22 +32,15 @@ function level(value) {
 }
 
 function discoveryCount(state) {
-  return Math.min(6, state.flags.revealedWorkers.length)
-    + Math.min(12, state.flags.dataOrigins.length)
-    + Math.min(3, state.flags.deployTabs.length);
+  const optionalWorkers = Math.max(
+    0,
+    Math.min(OPTIONAL_DC_REVEALS, state.flags.revealedWorkers.length - REQUIRED_DC_REVEALS)
+  );
+  return optionalWorkers + Math.min(OPTIONAL_DATA_ORIGINS, state.flags.dataOrigins.length);
 }
 
 function discoveryPercent(state) {
   return Math.round((discoveryCount(state) / DISCOVERY_MAX) * 100);
-}
-
-function laborRecognition(state) {
-  let score = 50;
-  for (const decision of state.decisions) {
-    if (RECOGNITION_POSITIVE.has(decision.id)) score += 6;
-    if (RECOGNITION_NEGATIVE.has(decision.id)) score -= 6;
-  }
-  return Math.max(0, Math.min(100, score));
 }
 
 function resultInterpretation(name, value) {
@@ -94,25 +61,35 @@ function resultInterpretation(name, value) {
       : label === 'منخفض'
         ? 'انخفض العبء النسبي على العمال في قرارات أكثر.'
         : 'عبء العمل بقي متوسطًا عبر السلسلة.',
-    quality: label === 'مرتفع'
-      ? 'القرارات دعمت جودة واختبارًا أوسع.'
+    dataQuality: label === 'مرتفع'
+      ? 'قرارات التجهيز والتصنيف دعمت بيانات أكثر اتساقًا وحذرًا.'
       : label === 'منخفض'
-        ? 'تراكمت مخاطر أكبر على جودة الناتج.'
-        : 'الجودة مقبولة لكن بقيت تنازلات واضحة.',
-    recognition: label === 'مرتفع'
-      ? 'القرارات اعترفت أكثر بتكلفة العمل والوقت والمخاطر البشرية.'
+        ? 'تراكمت اختيارات أضعفت جودة مواد البيانات.'
+        : 'جودة البيانات متوسطة مع تنازلات واضحة.',
+    modelQuality: label === 'مرتفع'
+      ? 'اختيارات التدريب والتقييم دعمت مخرجات أفضل في هذا السيناريو.'
       : label === 'منخفض'
-        ? 'اختُصر العمل البشري أكثر داخل أهداف السرعة والكلفة.'
-        : 'ظهر العمل في بعض القرارات واختفى في أخرى.'
+        ? 'تراكمت اختيارات أضعفت أداء النموذج في الاختبارات.'
+        : 'أداء النموذج متوسط في الاختبارات التي تعرضها اللعبة.',
+    reliability: label === 'مرتفع'
+      ? 'اختيارات البنية والإطلاق دعمت موثوقية أعلى.'
+      : label === 'منخفض'
+        ? 'بقيت مخاطر أكبر في البنية أو الإصدار أو الاستعادة.'
+        : 'موثوقية البنية والخدمة متوسطة.',
+    serviceQuality: label === 'مرتفع'
+      ? 'التعامل مع بلاغات المستخدمين كان أكثر دقة وربطًا بالحادث.'
+      : label === 'منخفض'
+        ? 'عولجت البلاغات بصورة عامة قللت قيمة المعلومات العائدة للتشغيل.'
+        : 'جودة التعامل مع المستخدمين متوسطة.'
   };
   return copies[name];
 }
 
-function answerForQuality(quality) {
-  if (quality >= 70) {
+function answerForModelQuality(modelQuality) {
+  if (modelQuality >= 70) {
     return 'أعتذر عن التأخر في تسليم العمل. واجهت ظرفًا أدى إلى تأخير الإنجاز، وأعمل حاليًا على استكماله في أقرب وقت. أشكرك على تفهمك.';
   }
-  if (quality >= 45) {
+  if (modelQuality >= 45) {
     return 'أعتذر عن التأخير في تسليم العمل. حصل تأخير في الإنجاز وسأحاول إنهاء المطلوب في أقرب وقت. شكرًا لتفهمك.';
   }
   return 'أعتذر عن التأخير. العمل لم يكتمل في الوقت المحدد بسبب ظروف مختلفة، وسيتم إنهاؤه لاحقًا.';
@@ -151,14 +128,15 @@ export function createEndingRoutes(ctx) {
   }
 
   function finalAnswer() {
-    const answer = answerForQuality(state.metrics.quality);
-    const qualityNote = state.metrics.quality >= 70
-      ? 'الجودة المتراكمة في مسارك مرتفعة، لذلك تظهر نسخة أكثر ملاءمة وطبيعية.'
-      : state.metrics.quality >= 45
-        ? 'بعض تنازلات الجودة ظهرت في صياغة أقل ملاءمة.'
-        : 'تراكمت تنازلات كبيرة في الجودة، لذلك تظهر إجابة أضعف وأكثر عمومية.';
+    const modelQuality = state.metrics.modelQuality;
+    const answer = answerForModelQuality(modelQuality);
+    const qualityNote = modelQuality >= 70
+      ? 'اختيارات التدريب والتقييم في مسارك دعمت نسخة أكثر ملاءمة في هذا السيناريو.'
+      : modelQuality >= 45
+        ? 'بعض تنازلات التدريب والتقييم ظهرت في صياغة أقل ملاءمة.'
+        : 'تراكمت تنازلات في التدريب والتقييم، لذلك تظهر إجابة أضعف وأكثر عمومية.';
 
-    html(`<div class="chat-shell"><div class="chat-logo">ن</div><div class="message user">${h(DEMO_PROMPT)}</div><div class="message ai"><strong>الإجابة:</strong><br>${h(answer)}</div><div class="small muted">ظهرت الإجابة خلال 1.2 ثانية — زمن افتراضي داخل اللعبة</div><div class="reality-note"><strong>أثر رحلتك على هذه النسخة</strong>${h(qualityNote)}</div><div class="action-row"><button id="behindAnswer" class="primary-btn">ماذا حدث في هذه اللحظة القصيرة؟</button></div></div>`);
+    html(`<div class="chat-shell"><div class="chat-logo">ن</div><div class="message user">${h(DEMO_PROMPT)}</div><div class="message ai"><strong>الإجابة:</strong><br>${h(answer)}</div><div class="small muted">ظهرت الإجابة خلال 1.2 ثانية — زمن افتراضي داخل اللعبة</div><div class="reality-note"><strong>أثر اختيارات النموذج على هذه النسخة</strong>${h(qualityNote)} قرارات التعدين والتصنيع والتشغيل لا تغيّر صياغة الإجابة مباشرة.</div><div class="action-row"><button id="behindAnswer" class="primary-btn">ماذا حدث في هذه اللحظة القصيرة؟</button></div></div>`);
     $('#behindAnswer').addEventListener('click', () => go('timelineReveal'));
   }
 
@@ -174,14 +152,13 @@ export function createEndingRoutes(ctx) {
 
   function results() {
     const metrics = state.metrics;
-    const recognition = laborRecognition(state);
     const discovery = discoveryPercent(state);
     const found = discoveryCount(state);
     const decisions = state.decisions.length
       ? state.decisions.map(decision => `<div class="decision-row"><strong>${h(decision.label)}</strong><div class="small muted">${h(decision.effectText)}</div></div>`).join('')
       : '<p class="muted">لم تسجل قرارات بعد.</p>';
 
-    html(`<div><span class="eyebrow">نتيجة متعددة الأبعاد</span><h1 class="display-title">سلسلتك ليست وصفًا واحدًا.</h1><p class="scene-subtitle">قد تكون سريعة ومكلفة في الوقت نفسه، أو جيدة الجودة مع عبء مرتفع على العمال. لذلك تعرض النتيجة الأبعاد منفصلة بدل اختيار «نهاية» واحدة تخفي التناقضات.</p><div class="results-grid">${metric('ضغط الإنتاج', metrics.pressure, level(metrics.pressure))}${metric('تكلفة الشركة', metrics.cost, level(metrics.cost))}${metric('عبء العامل', metrics.burden, level(metrics.burden))}${metric('جودة الناتج', metrics.quality, level(metrics.quality))}${metric('الاعتراف بتكلفة العمل البشري', recognition, level(recognition))}</div><div class="card flat"><p><strong>ضغط الإنتاج:</strong> ${h(resultInterpretation('pressure', metrics.pressure))}</p><p><strong>تكلفة الشركة:</strong> ${h(resultInterpretation('cost', metrics.cost))}</p><p><strong>عبء العامل:</strong> ${h(resultInterpretation('burden', metrics.burden))}</p><p><strong>جودة الناتج:</strong> ${h(resultInterpretation('quality', metrics.quality))}</p><p><strong>العمل البشري:</strong> ${h(resultInterpretation('recognition', recognition))}</p></div><div class="card flat discovery-summary"><h2>استكشافك للعبة: ${discovery}%</h2><p>اكتشفت ${found} من ${DISCOVERY_MAX} عنصرًا اختياريًا في مركز البيانات والبيانات وحادث التشغيل. هذا المؤشر لا يغير تقييم السلسلة نفسها.</p></div><div class="card flat results-decisions"><h2>قراراتك</h2><div class="decision-list">${decisions}</div></div><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة متعددة الأبعاد</span><h1 class="display-title">سلسلتك ليست وصفًا واحدًا.</h1><p class="scene-subtitle">تعرض النتيجة أبعادًا منفصلة حتى لا تتحول قرارات مختلفة سببيًا إلى رقم جودة واحد مضلل.</p><div class="results-grid">${metric('ضغط الإنتاج', metrics.pressure, level(metrics.pressure))}${metric('تكلفة الشركة', metrics.cost, level(metrics.cost))}${metric('عبء العامل', metrics.burden, level(metrics.burden))}${metric('جودة البيانات', metrics.dataQuality, level(metrics.dataQuality))}${metric('جودة النموذج', metrics.modelQuality, level(metrics.modelQuality))}${metric('موثوقية البنية والخدمة', metrics.reliability, level(metrics.reliability))}${metric('جودة دعم المستخدم', metrics.serviceQuality, level(metrics.serviceQuality))}</div><div class="card flat"><p><strong>ضغط الإنتاج:</strong> ${h(resultInterpretation('pressure', metrics.pressure))}</p><p><strong>تكلفة الشركة:</strong> ${h(resultInterpretation('cost', metrics.cost))}</p><p><strong>عبء العامل:</strong> ${h(resultInterpretation('burden', metrics.burden))}</p><p><strong>جودة البيانات:</strong> ${h(resultInterpretation('dataQuality', metrics.dataQuality))}</p><p><strong>جودة النموذج:</strong> ${h(resultInterpretation('modelQuality', metrics.modelQuality))}</p><p><strong>الموثوقية:</strong> ${h(resultInterpretation('reliability', metrics.reliability))}</p><p><strong>دعم المستخدم:</strong> ${h(resultInterpretation('serviceQuality', metrics.serviceQuality))}</p></div><div class="card flat discovery-summary"><h2>استكشافك الاختياري: ${discovery}%</h2><p>اكتشفت ${found} من ${DISCOVERY_MAX} عنصرًا اختياريًا: مصادر البيانات والأدوار الإضافية في مركز البيانات بعد الحد الأدنى المطلوب. خطوات التشخيص الإلزامية لا تدخل في هذا المؤشر.</p></div><div class="card flat results-decisions"><h2>قراراتك</h2><div class="decision-list">${decisions}</div></div><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
 
     $('#resultsLedger').addEventListener('click', () => {
       renderLedger();
@@ -205,7 +182,7 @@ export function createEndingRoutes(ctx) {
   }
 
   function methodology() {
-    html(`<div><span class="eyebrow">عن اللعبة</span><h1 class="scene-title">المنهجية والدقة التقنية</h1><div class="card flat"><h2>ما الذي تمثله اللعبة؟</h2><p>«خلف الإجابة» تجربة تعليمية مبسطة حول سلسلة الإمداد والعمل المرتبط بأنظمة الذكاء الاصطناعي. الشخصيات والشركات والأرقام خيالية، وصُممت المواقف لتمثيل أنواع من العمل والحوافز والمخاطر.</p><p>لا تدعي اللعبة أن جميع النماذج تعتمد على الموردين أو الممارسات نفسها، أو أن كل طلب يعيد تشغيل التعدين والتصنيع والتدريب.</p></div><div class="card flat methodology-card"><h2>العمل البشري لا يقع في مرحلة واحدة</h2><p>تبسط اللعبة التصنيف والتقييم في مراحل منفصلة للتعلم، لكن هذه الأعمال قد تحدث قبل التدريب وأثناء الضبط وبعد التدريب وبعد الإطلاق، وقد تتكرر أكثر من مرة.</p></div><div class="card flat methodology-card"><h2>التصنيع نفسه سلسلة أوسع</h2><p>تختصر مرحلة المصنع تصميم الرقائق والتصنيع الدقيق والتغليف والذاكرة والشبكات والتجميع في مشهد واحد حتى تظل اللعبة قابلة للعب. كما تختصر بناء مراكز البيانات وشبكات الكهرباء والاتصالات في البنية التي تراها.</p></div><div class="card flat methodology-card"><h2>الفرق بين بناء النظام واستخدامه</h2><p>استخراج المواد وتصنيع الأجهزة وتجهيز البيانات والتدريب والتقييم تحدث قبل الاستخدام النهائي. عندما ترسل طلبًا، تستخدم الخدمة بنية ونموذجًا بُنيا سابقًا.</p></div><div class="card flat methodology-card"><h2>الخصوصية</h2><p>لا يوجد خادم خلفي ولا قاعدة بيانات ولا حساب مستخدم. تحفظ اللعبة تقدمك وإعداداتك داخل التخزين المحلي في متصفحك فقط.</p></div><div class="action-row"><button id="methodHome" class="primary-btn">العودة إلى النهاية</button></div></div>`);
+    html(`<div><span class="eyebrow">عن اللعبة</span><h1 class="scene-title">المنهجية والدقة التقنية</h1><div class="card flat"><h2>ما الذي تمثله اللعبة؟</h2><p>«خلف الإجابة» تجربة تعليمية مبسطة حول سلسلة الإمداد والعمل المرتبط بأنظمة الذكاء الاصطناعي. الشخصيات والشركات والأرقام خيالية، وصُممت المواقف لتمثيل أنواع من العمل والحوافز والمخاطر.</p><p>لا تدعي اللعبة أن جميع النماذج تعتمد على الموردين أو الممارسات نفسها، أو أن كل طلب يعيد تشغيل التعدين والتصنيع والتدريب.</p></div><div class="card flat methodology-card"><h2>كيف تُقرأ النتيجة؟</h2><p>لا يوجد مقياس واحد لـ«الجودة». تفصل اللعبة بين جودة البيانات وجودة النموذج وموثوقية البنية وجودة دعم المستخدم، ولا تغيّر قرارات التعدين أو المصنع صياغة إجابة النموذج مباشرة.</p></div><div class="card flat methodology-card"><h2>العمل البشري لا يقع في مرحلة واحدة</h2><p>تبسط اللعبة التصنيف والتقييم في مراحل منفصلة للتعلم، لكن هذه الأعمال قد تحدث قبل التدريب وأثناء الضبط وبعد التدريب وبعد الإطلاق، وقد تتكرر أكثر من مرة.</p></div><div class="card flat methodology-card"><h2>التصنيع نفسه سلسلة أوسع</h2><p>تختصر مرحلة المصنع تصميم الرقائق والتصنيع الدقيق والتغليف والذاكرة والشبكات والتجميع في مشهد واحد حتى تظل اللعبة قابلة للعب. كما تختصر بناء مراكز البيانات وشبكات الكهرباء والاتصالات في البنية التي تراها.</p></div><div class="card flat methodology-card"><h2>الفرق بين بناء النظام واستخدامه</h2><p>استخراج المواد وتصنيع الأجهزة وتجهيز البيانات والتدريب والتقييم تحدث قبل الاستخدام النهائي. عندما ترسل طلبًا، تستخدم الخدمة بنية ونموذجًا بُنيا سابقًا.</p></div><div class="card flat methodology-card"><h2>الخصوصية</h2><p>لا يوجد خادم خلفي ولا قاعدة بيانات ولا حساب مستخدم. تحفظ اللعبة تقدمك وإعداداتك داخل التخزين المحلي في متصفحك فقط.</p></div><div class="action-row"><button id="methodHome" class="primary-btn">العودة إلى النهاية</button></div></div>`);
     $('#methodHome').addEventListener('click', () => go('finalMessage'));
   }
 
