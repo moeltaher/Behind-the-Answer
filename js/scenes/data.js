@@ -14,7 +14,6 @@ const DATA_ORIGINS = [
   ['manual', 'أدلة تقنية', 'تحقق من المصدر والترخيص والإصدار قبل إدخال المادة.'],
   ['news', 'أخبار وتقارير', 'المحتوى المنشور يظل مرتبطًا بحقوق وشروط استخدام ومخاطر دقة.']
 ];
-const REQUIRED_ORIGINS = 3;
 
 function choiceEffect(item, choice) {
   if (choice === item.recommended) {
@@ -38,12 +37,11 @@ export function createDataRoutes(ctx) {
   function ch4Intro() { chapterIntro(3, 'dataOrigins'); }
 
   function dataOrigins() {
-    const revealedCount = state.flags.dataOrigins.length;
     const cards = DATA_ORIGINS.map(([id,label,detail]) => {
       const revealed = state.flags.dataOrigins.includes(id);
-      return `<button class="data-bit data-bit--label ${revealed?'revealed':''}" data-origin="${id}" aria-pressed="${revealed}"><strong>${ctx.h(label)}</strong>${revealed?`<small>${ctx.h(detail)}</small>`:'<small>اضغط لاستكشاف ما يحتاج مراجعة</small>'}</button>`;
+      return `<button class="data-bit data-bit--label ${revealed?'revealed':''}" data-origin="${id}" aria-pressed="${revealed}"><strong>${ctx.h(label)}</strong>${revealed?`<small>${ctx.h(detail)}</small>`:'<small>استكشاف اختياري</small>'}</button>`;
     }).join('');
-    html(`<div><span class="eyebrow">من المحتوى إلى مواد البيانات</span><h1 class="scene-title">قبل أن تصبح المادة «بيانات»، كانت محتوى له مصدر وسياق.</h1><p class="scene-subtitle">اكشف ثلاث بطاقات على الأقل. لا تبحث عن «الإجابة الصحيحة» هنا؛ لاحظ أن كل نوع يفتح أسئلة مختلفة عن الحقوق والخصوصية والسياق.</p><div class="data-cloud data-cloud--labels">${cards}</div><div class="action-row"><button id="toClean" class="primary-btn" ${revealedCount<REQUIRED_ORIGINS?'disabled':''}>${revealedCount<REQUIRED_ORIGINS?`اكشف ${REQUIRED_ORIGINS-revealedCount} مصادر أخرى`:'انتقل إلى مراجعة الدفعة'}</button></div></div>`);
+    html(`<div><span class="eyebrow">من المحتوى إلى مواد البيانات</span><h1 class="scene-title">قبل أن تصبح المادة «بيانات»، كانت محتوى له مصدر وسياق.</h1><p class="scene-subtitle">يمكنك فتح أي مصدر لمعرفة نوع الأسئلة التي يثيرها، أو الانتقال مباشرة إلى الحالات التي تتطلب قرارًا. الاستكشاف هنا اختياري؛ المهمة الأساسية تبدأ في مراجعة الدفعة.</p><div class="data-cloud data-cloud--labels">${cards}</div><div class="action-row"><button id="toClean" class="primary-btn">ابدأ مراجعة الدفعة</button></div></div>`);
     bind('[data-origin]','click',event=>{ const id=event.currentTarget.dataset.origin; if(state.flags.dataOrigins.includes(id))return; state.flags.dataOrigins.push(id); saveState(); dataOrigins(); });
     $('#toClean')?.addEventListener('click',()=>go('dataClean'));
   }
