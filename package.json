@@ -10,10 +10,12 @@
   },
   "scripts": {
     "check:syntax": "find js tests -type f \\( -name '*.js' -o -name '*.mjs' \\) -print0 | xargs -0 -n1 node --check",
+    "check:lint": "eslint js tests --no-config-lookup --rule 'no-unused-vars: [\"error\", {\"args\":\"after-used\",\"caughtErrors\":\"none\"}]'",
     "check:static": "node tests/static-integrity.mjs",
     "check:storage": "node tests/storage-schema.mjs",
     "check:css": "node tests/css-integrity.mjs",
     "audit:ci": "npm audit --audit-level=high",
-    "test:browser": "node tests/smoke.mjs"
+    "test:browser": "node tests/smoke.mjs",
+    "test:second-audit": "node tests/second-audit.mjs"
   }
 }
