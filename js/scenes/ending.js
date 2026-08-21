@@ -25,6 +25,15 @@ function decisionRows(decisions, h) {
   return decisions.map(decision => `<div class="decision-row"><strong>${h(decision.label)}</strong><div class="small muted">${h(decision.effectText)}</div></div>`).join('');
 }
 
+function lastDecision(decisions) {
+  return decisions.length ? decisions[decisions.length - 1] : null;
+}
+
+function highlightCard(title, decision, fallback, h) {
+  if (!decision) return `<article class="journey-highlight"><span>${h(title)}</span><strong>${h(fallback)}</strong></article>`;
+  return `<article class="journey-highlight"><span>${h(title)}</span><strong>${h(decision.label)}</strong><small>${h(decision.effectText)}</small></article>`;
+}
+
 function deliveryState(state) {
   if (state.flags.deployRecovery === 'restart') {
     return {
@@ -62,12 +71,14 @@ export function createEndingRoutes(ctx) {
     const materialAndData = selectedDecisions(state, id => id.startsWith('factory-') || id.startsWith('data-') || id.startsWith('dc-'));
     const trainingAndLaunch = selectedDecisions(state, id => id.startsWith('training-') || id.startsWith('train-') || id.startsWith('safety-') || id.startsWith('launch-'));
     const operations = selectedDecisions(state, id => id.startsWith('deploy-') || id.startsWith('support-'));
+    const dataReady=state.flags.dataStatuses.filter(status=>status==='ready').length;
+    const dataPending=state.flags.dataStatuses.filter(status=>status==='pending').length;
     const safety = state.flags.safetyChoice === 'details'
-      ? 'اكتشفت الخلل في اختبار السلامة، ثم مر عبر إصلاح وإعادة اختبار قبل قرار الجاهزية.'
-      : 'لم تلتقط الخلل أولًا؛ أوقفته مراجعة ثانية ثم مر عبر إصلاح وإعادة اختبار قبل قرار الجاهزية.';
+      ? 'اكتشفت الخلل في اختبار السلامة، ثم أُصلح واجتاز إعادة الاختبار الإلزامية قبل قرار الجاهزية.'
+      : 'لم تلتقط الخلل أولًا؛ أوقفته مراجعة ثانية ثم أُصلح واجتاز إعادة اختبار أوسع قبل قرار الجاهزية.';
     const evaluation = `طابقت معيار السيناريو في ${state.flags.evalCorrectCount} من ${EVAL_TASKS.length} مهام تقييم. هذه نتيجة لأداء المقيّم، وليست درجة جودة للنموذج.`;
 
-    html(`<div><span class="eyebrow">نتيجة رحلتك</span><h1 class="display-title">أعد البشر والقرارات إلى الصورة.</h1><p class="scene-subtitle">لم ينتج هؤلاء الأشخاص إجابتك كلمةً كلمة، لكن أنواع العمل التي يمثلونها ساهمت في بناء وتشغيل البنية التي جعلتها ممكنة.</p><div class="people-wall">${characterGrid(people)}</div><details class="secondary-labor-details"><summary>أدوار أخرى ظهرت في الرحلة</summary><div class="view-list">${SECONDARY_LABOR.map(role => `<span>${h(role)}</span>`).join('')}</div></details><h2 class="results-subtitle">أدلة من قراراتك، لا متوسط نقاط</h2><div class="evidence-results"><section class="evidence-card"><h2>العمل والوقت</h2><div class="decision-list">${decisionRows(labor,h)}</div></section><section class="evidence-card"><h2>المواد والبيانات والبنية</h2><div class="decision-list">${decisionRows(materialAndData,h)}</div></section><section class="evidence-card"><h2>التدريب والتحقق والسلامة</h2><div class="decision-list">${decisionRows(trainingAndLaunch,h)}</div></section><section class="evidence-card"><h2>التشغيل ودعم المستخدم</h2><div class="decision-list">${decisionRows(operations,h)}</div></section></div><div class="dual-view"><div class="view-panel"><h3>عملية التقييم البشري</h3><p>${h(evaluation)}</p></div><div class="view-panel"><h3>اختبار السلامة</h3><p>${h(safety)}</p></div></div><div class="card flat discovery-summary"><h2>استكشاف مصادر البيانات</h2><p>فتحت ${state.flags.dataOrigins.length} من بطاقات المصادر الاختيارية. هذا عداد للاستكشاف، وليس شرطًا للنجاح أو درجةً للعبة.</p></div><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة رحلتك</span><h1 class="display-title">أعد البشر والقرارات إلى الصورة.</h1><p class="scene-subtitle">لم ينتج هؤلاء الأشخاص إجابتك كلمةً كلمة، لكن أنواع العمل التي يمثلونها ساهمت في بناء وتشغيل البنية التي جعلتها ممكنة.</p><div class="journey-highlights">${highlightCard('العمل والوقت',lastDecision(labor),'لا قرار بارز مسجل',h)}${highlightCard('المواد والبيانات',lastDecision(materialAndData),`${dataReady} مواد جاهزة و${dataPending} معلقة`,h)}${highlightCard('التدريب والجاهزية',lastDecision(trainingAndLaunch),'بوابة السلامة اكتملت',h)}${highlightCard('التشغيل والدعم',lastDecision(operations),'الخدمة عادت بعد الحادث',h)}</div><div class="people-wall">${characterGrid(people)}</div><details class="secondary-labor-details"><summary>أدوار أخرى ظهرت في الرحلة</summary><div class="view-list">${SECONDARY_LABOR.map(role => `<span>${h(role)}</span>`).join('')}</div></details><div class="dual-view result-core"><div class="view-panel"><h3>عملية التقييم البشري</h3><p>${h(evaluation)}</p></div><div class="view-panel"><h3>اختبار السلامة</h3><p>${h(safety)}</p></div></div><details class="full-evidence-details"><summary>عرض السجل الكامل لكل قرارات الرحلة</summary><div class="evidence-results"><section class="evidence-card"><h2>العمل والوقت</h2><div class="decision-list">${decisionRows(labor,h)}</div></section><section class="evidence-card"><h2>المواد والبيانات والبنية</h2><div class="decision-list">${decisionRows(materialAndData,h)}</div></section><section class="evidence-card"><h2>التدريب والتحقق والسلامة</h2><div class="decision-list">${decisionRows(trainingAndLaunch,h)}</div></section><section class="evidence-card"><h2>التشغيل ودعم المستخدم</h2><div class="decision-list">${decisionRows(operations,h)}</div></section><div class="card flat discovery-summary"><h2>استكشاف مصادر البيانات</h2><p>فتحت ${state.flags.dataOrigins.length} من بطاقات المصادر الاختيارية. هذا عداد للاستكشاف، وليس شرطًا للنجاح أو درجةً للعبة.</p></div></div></details><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
     $('#resultsLedger').addEventListener('click', () => { renderLedger(); ledgerDialog.showModal(); });
     $('#toFinalMessage').addEventListener('click', () => go('finalMessage'));
   }
