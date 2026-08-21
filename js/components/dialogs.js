@@ -3,6 +3,10 @@ export function bindDialogs(ctx) {
     ctx.settingsDialog.showModal();
   });
 
+  ctx.promptBtn.addEventListener('click', () => {
+    ctx.promptDialog.showModal();
+  });
+
   ctx.ledgerBtn.addEventListener('click', () => {
     ctx.renderLedger();
     ctx.ledgerDialog.showModal();
