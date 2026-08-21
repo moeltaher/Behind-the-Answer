@@ -8,66 +8,34 @@ export function createIntroRoutes(ctx) {
 
   function intro() {
     html(`
-      <div class="chat-shell">
+      <div class="chat-shell intro-shell">
         <div class="chat-logo">ن</div>
-        <h1 class="chat-title">سنبدأ بطلب واحد طوال الرحلة</h1>
+        <h1 class="chat-title">ابدأ بطلب بسيط، ثم افتح ما يقف خلف الإجابة.</h1>
         <div class="chat-input-wrap">
-          <label class="kicker" for="introPrompt">الطلب التجريبي</label>
+          <label class="kicker" for="introPrompt">الطلب التجريبي الثابت</label>
           <textarea id="introPrompt" class="prompt-input" readonly>${h(DEMO_PROMPT)}</textarea>
-          <p class="small muted">هذا الطلب ثابت حتى نستطيع تتبع ما يقف خلف الإجابة من أول السلسلة إلى آخرها.</p>
-          <div class="chat-send">
-            <button id="introSend" class="primary-btn" type="button">ابدأ من هذا الطلب ←</button>
-          </div>
+          <p class="small muted">لن نعرض الإجابة فورًا. ستعود أولًا عبر الأجهزة والبيانات والعمل البشري الذي جعل الخدمة ممكنة، ثم ترجع إلى الطلب نفسه في النهاية.</p>
+          <div class="chat-send"><button id="introSend" class="primary-btn" type="button">افتح ما وراء الإجابة ←</button></div>
         </div>
-        <p class="small muted centered intro-privacy-note">اللعبة لا ترسل أي نص إلى خادم خارجي.</p>
+        <p class="small muted centered intro-privacy-note">اللعبة تعمل داخل متصفحك ولا ترسل هذا النص إلى خادم خارجي.</p>
       </div>
     `);
-    $('#introSend').addEventListener('click', () => go('introLoading'));
-  }
-
-  function introLoading() {
-    html(`
-      <div class="chat-shell">
-        <div class="chat-logo">ن</div>
-        <div class="message user">${h(DEMO_PROMPT)}</div>
-        <div class="message ai"><div class="typing" aria-label="جارٍ الانتقال خلف الإجابة"><i></i><i></i><i></i><span>سنفتح الآن ما يحدث خلف هذه الإجابة...</span></div></div>
-      </div>
-    `);
-    setTimeout(() => {
-      if (state.scene === 'introLoading') go('introExplain');
-    }, settings.reduceMotion ? 250 : 1200);
-  }
-
-  function introExplain() {
-    html(`
-      <div class="chat-shell">
-        <div class="chat-logo">ن</div>
-        <div class="message user">${h(DEMO_PROMPT)}</div>
-        <div class="alert goodish"><strong>قبل أن نعرض الإجابة، سنفكك ما يجعلها ممكنة.</strong><span>سنمر بالأجهزة والخوادم والبيانات والتدريب والعمل البشري الذي يبني النظام ويشغله.</span></div>
-        <div class="action-row stretch"><button id="preview" class="secondary-btn" type="button">لماذا لا نعرض الإجابة الآن؟</button><button id="why" class="primary-btn" type="button">ابدأ الرحلة خلف الإجابة</button></div>
-      </div>
-    `);
-    $('#preview').addEventListener('click', event => {
-      event.currentTarget.disabled = true;
-      event.currentTarget.textContent = 'لأن هدف اللعبة هو أن ترى السلسلة قبل النتيجة';
-      tone(260, 0.08);
-    });
-    $('#why').addEventListener('click', () => go('zoomOut'));
+    $('#introSend').addEventListener('click', () => go('zoomOut'));
   }
 
   function zoomOut() {
     html(`
-      <div class="centered">
-        <span class="eyebrow">لنبدأ من المكان الذي لا يظهر في مربع المحادثة</span>
-        <h1 class="scene-title">الإجابة هي آخر نقطة في سلسلة أطول.</h1>
-        <p class="scene-subtitle">لن نفترض أنك تعرف مراحلها. في كل محطة سنشرح المكان والعمل وعلاقته بالذكاء الاصطناعي قبل أن تبدأ المهمة.</p>
-        <div class="transition-map" aria-label="انتقال بصري من واجهة الذكاء الاصطناعي إلى موقع التعدين"><div class="map-layer"><span class="glyph">💬</span></div><div class="map-caption"><span>واجهة المحادثة</span><span>↓ البنية التي تقف خلفها</span></div></div>
-        <div class="action-row center"><button id="descend" class="primary-btn" type="button">ابدأ من أول السلسلة</button></div>
+      <div class="centered zoom-out-scene">
+        <span class="eyebrow">من الواجهة إلى البنية التي تسبقها</span>
+        <h1 class="scene-title">الإجابة هي آخر نقطة مرئية في سلسلة أطول.</h1>
+        <div class="transition-map" aria-label="انتقال بصري من واجهة المحادثة إلى بداية السلسلة"><div class="map-layer"><span class="glyph">💬</span></div><div class="map-caption"><span>واجهة المحادثة</span><span>↓ مواد وأجهزة وعمل بشري</span></div></div>
+        <p class="small muted">رحلة اللعب مرتبة خطيًا للتعلم، لكنك سترى في النهاية أن النظام الحقيقي يتضمن دورات واعتمادًا متبادلًا.</p>
+        <div class="action-row center"><button id="descend" class="primary-btn" type="button">ابدأ بالمادة التي تدخل الأجهزة</button></div>
       </div>
     `);
 
     const glyph = $('.glyph');
-    const icons = ['💬', '▥', '⚡', '🏭', '🚢', '🚚', '⛏'];
+    const icons = ['💬', '▥', '🏭', '🚚', '⛏'];
     let step = 0;
     const timer = setInterval(() => {
       if (state.scene !== 'zoomOut' || ++step >= icons.length) {
@@ -75,11 +43,11 @@ export function createIntroRoutes(ctx) {
         return;
       }
       if (glyph) glyph.textContent = icons[step];
-      tone(180 + step * 55, 0.025);
-    }, settings.reduceMotion ? 30 : 420);
+      tone(180 + step * 60, 0.025);
+    }, settings.reduceMotion ? 30 : 320);
 
     $('#descend').addEventListener('click', () => go('ch1Intro'));
   }
 
-  return { intro, introLoading, introExplain, zoomOut };
+  return { intro, zoomOut };
 }
