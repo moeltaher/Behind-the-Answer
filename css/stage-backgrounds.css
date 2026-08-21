@@ -5,7 +5,6 @@
 .scene{position:relative;z-index:1}
 
 .scene .card,
-.scene .learning-card,
 .scene .journey-node,
 .scene .stage-output,
 .scene .reality-note,
@@ -28,13 +27,12 @@
   backdrop-filter:blur(7px) saturate(1.06);
 }
 .scene .card.flat{background:rgba(10,18,32,.76)}
-.scene .learning-card p,
 .scene .reality-note,
 .scene .scene-character__copy p,
 .scene .view-panel,
 .scene .evidence-card{color:#d9e2ef}
 .scene .muted,.scene small{color:#b8c5d6}
-.scene .learning-card h3,.scene .stage-output strong{color:#82efd1}
+.scene .stage-output strong{color:#82efd1}
 .scene .chat-shell,.scene .annotation-shell,.scene .training-board{box-shadow:0 24px 60px rgba(0,0,0,.34)}
 
 body[data-stage="mining"] .work-node,
@@ -80,7 +78,6 @@ body.reduced-motion .stage-backdrop{transition:none}
   .stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.18),rgba(8,13,24,.28) 70%,rgba(8,13,24,.48))}
   .stage-backdrop::after{background:rgba(8,13,24,.07)}
   .scene .card,
-  .scene .learning-card,
   .scene .journey-node,
   .scene .stage-output,
   .scene .reality-note,
@@ -103,12 +100,11 @@ body.reduced-motion .stage-backdrop{transition:none}
   .stage-backdrop{opacity:.54;background-position:center top}
   .stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.12),rgba(8,13,24,.22) 58%,rgba(8,13,24,.43))}
   .stage-backdrop::after{background:rgba(8,13,24,.04)}
-  .scene .learning-card,
   .scene .stage-output,
   .scene .reality-note,
   .scene .scene-character,
   .scene .card,
   .scene .view-panel,
   .scene .evidence-card{background-color:rgba(9,17,30,.88)}
-  .scene .learning-card p,.scene .reality-note,.scene .scene-character__copy p,.scene .muted,.scene small{color:#d2dbea}
+  .scene .reality-note,.scene .scene-character__copy p,.scene .muted,.scene small{color:#d2dbea}
 }
