@@ -16,19 +16,19 @@ export function renderJourneyProgress(ctx, index) {
   const { progressEl, ledgerBtn, persistentFooter, chapterLabel: chapterLabelEl, chapterTitle, progressFill, chapters } = ctx;
   const miniJourney = ctx.$('#miniJourney');
 
-  persistentFooter.hidden = true;
+  if (persistentFooter) persistentFooter.hidden = true;
   if (index >= 0) {
-    progressEl.hidden = false;
-    ledgerBtn.hidden = false;
-    chapterLabelEl.textContent = `المرحلة ${index + 1} من ${chapters.length}`;
-    chapterTitle.textContent = chapterLabel(chapters[index]);
-    progressFill.style.width = `${((index + 1) / chapters.length) * 100}%`;
+    if (progressEl) progressEl.hidden = false;
+    if (ledgerBtn) ledgerBtn.hidden = false;
+    if (chapterLabelEl) chapterLabelEl.textContent = `المرحلة ${index + 1} من ${chapters.length}`;
+    if (chapterTitle) chapterTitle.textContent = chapterLabel(chapters[index]);
+    if (progressFill) progressFill.style.width = `${((index + 1) / chapters.length) * 100}%`;
     if (miniJourney) miniJourney.innerHTML = miniMap(ctx, index);
     return;
   }
 
-  progressEl.hidden = true;
-  ledgerBtn.hidden = true;
+  if (progressEl) progressEl.hidden = true;
+  if (ledgerBtn) ledgerBtn.hidden = true;
   if (miniJourney) miniJourney.innerHTML = '';
 }
 
@@ -60,5 +60,5 @@ export function chapterIntro(ctx, index, next) {
   const chapter = ctx.chapters[index];
   const task = STAGE_TASKS[chapter.key];
   ctx.html(`<div class="learning-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="scene-subtitle">تعرف على المكان والدور والمهمة، ثم ابدأ. التفاصيل الإضافية اختيارية.</p></div>${taskPanel(task, { status: 'active', progress: 'تبدأ المهمة بعد الضغط على الزر أدناه' })}${terminology(index)}<div class="learning-grid learning-grid--essential">${learningCard('أين نحن؟', ctx.h(chapter.where))}${learningCard('ما علاقتها بالإجابة؟', ctx.h(chapter.link))}${learningCard('من يعمل هنا؟', ctx.h(chapter.workers))}</div><details class="learning-more"><summary>اعرف أكثر عن هذه المرحلة</summary>${learningCard('ماذا يحدث هنا؟', ctx.h(chapter.what))}<div class="stage-output"><strong>ما الذي سنخرج به؟</strong>${ctx.h(chapter.output)}</div><details class="journey-map-details"><summary>عرض خريطة المراحل التسع</summary>${journeyMap(ctx, index)}</details></details><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ المهمة</button></div></div>`);
-  ctx.$('#chapterNext').addEventListener('click', () => ctx.go(next));
+  ctx.$('#chapterNext')?.addEventListener('click', () => ctx.go(next));
 }
