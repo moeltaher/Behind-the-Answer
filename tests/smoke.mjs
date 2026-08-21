@@ -122,7 +122,7 @@ async function runJourney(viewport, label) {
   await page.getByText('7/8').waitFor({ state: 'visible' });
   if (await page.getByText('97%', { exact: false }).count()) throw new Error(`${label}: fabricated 97% load still appears.`);
   await click(page, '#trainContinue'); await click(page, '#sendHuman');
-  await page.getByText('نسخة مطورة من النموذج').waitFor({ state: 'visible' });
+  await page.locator('#systemOutput').getByText('نسخة مطورة من النموذج', { exact: true }).waitFor({ state: 'visible' });
   await click(page, '#abstractNext');
 
   await click(page, '#chapterNext');
