@@ -226,7 +226,7 @@ async function runPrecisionChecks() {
   await click(page, '#appeal');
   state = await savedState(page);
   if (state.flags.annotationUnpaidMinutes !== 4) throw new Error('Appeal must add four unpaid minutes to the economic outcome.');
-  await page.getByText('4 دقيقة').waitFor({ state: 'visible' });
+  await page.getByText('4 دقيقة', { exact: true }).waitFor({ state: 'visible' });
 
   await loadState(page, { scene: 'trainingSetup', flags: { annotationResults: [
     { index:0, choice:'آمن', acceptedAsReasonable:true, pending:false },
