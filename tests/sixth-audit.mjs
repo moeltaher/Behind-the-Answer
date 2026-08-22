@@ -52,7 +52,7 @@ await page.getByText(/ظهر هذا الفحص لأنك خصصت 8 مجموعا�
 console.log('SIXTH_AUDIT:n1-gap-needs-explicit-decision');
 await load(page,{scene:'deployLoad',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
-await page.getByText(/أفضل مرونة ممكنة/).waitFor({state:'visible'});
+await page.getByText('وصلت إلى أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});
 await page.getByText('اقبل فجوة المرونة وسجلها قبل المتابعة',{exact:true}).waitFor({state:'visible'});
 await click(page,'#finishFailover');
 state=await saved(page);
