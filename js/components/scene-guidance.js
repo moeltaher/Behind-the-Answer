@@ -3,91 +3,55 @@ import { stageForScene } from '../data/stage-backgrounds.js';
 import { STAGE_TASKS } from '../data/stage-tasks.js';
 import { taskPanel } from './task-flow.js';
 
+const T=(title,how,done,constraint)=>({title,how,done,constraint});
 const SPECIAL_TASKS = {
-  intro: { title:'ابدأ من الطلب الذي يبدو بسيطًا', how:'أرسل الطلب التجريبي ثم اتبع ما تكشفه اللعبة خلف الواجهة.', done:'عندما تبدأ الرحلة وتنتقل من شاشة المستخدم إلى السلسلة التي تقف خلف الإجابة.', constraint:'الطلب ثابت حتى يمكن مقارنة ما يراه المستخدم بما يتطلبه النظام خلفه.' },
-  zoomOut: { title:'اخرج من الواجهة إلى سلسلة العمل والبنية', how:'تابع الانتقال الذي يكشف أن الإجابة لا تبدأ لحظة الضغط على إرسال.', done:'عندما تظهر أول مرحلة من مراحل الرحلة.', constraint:'هذا انتقال تعليمي، وليس ادعاءً بأن كل عناصر السلسلة تحدث عند كل طلب.' },
-  pipelineAssemble: { title:'أعد تركيب ما لعبته في ثلاثة أزمنة مختلفة', how:'ميّز بين ما بُني تاريخيًا، ودورة التطوير المتكررة، والتشغيل المستمر.', done:'عندما تصبح مستعدًا لتطبيق الفكرة على منتج مختلف.', constraint:'ترتيب اللعب ليس مخططًا هندسيًا زمنيًا للنظام.' },
-  transferChallenge: { title:'انقل الفكرة إلى خدمة RAG مختلفة', how:'صنّف كل عنصر إلى: بُني قبل الطلب، يحدث مع الطلب الحالي، أو تشغيل مستمر.', done:'عندما تصنف العناصر الخمسة وفق زمنها الصحيح.', constraint:'لا تحفظ ترتيب اللعبة؛ طبّق المعيار السببي على منتج آخر.' },
-  finalAnswer: { title:'قارن الإجابة النهائية بما أصبح مرئيًا خلفها', how:'راجع الفرق بين الطلب الحالي وبين العمل والبنية اللذين سبقا الطلب أو يستمران أثناء التشغيل.', done:'عندما تنتقل إلى نتائج رحلتك وسجل القرارات.', constraint:'الإجابة المعروضة لا تزعم أن كل العمل السابق يتكرر مع كل ضغطة إرسال.' },
-  results: { title:'راجع آثار قراراتك وسجل العمل الكامل', how:'اقرأ النتائج حسب محاورها، وراجع lineage البيانات وسجل القرارات بدل اختزالها في درجة واحدة.', done:'عندما تنتهي من مراجعة ما حدث عبر الرحلة والنسخ المرشحة.', constraint:'لا تجمع اللعبة الحقوق والجودة والعمل والموثوقية في رقم كلي واحد.' },
-  finalMessage: { title:'أغلق الرحلة مع الاحتفاظ بالفكرة الأساسية', how:'راجع الرسالة الختامية أو ابدأ رحلة جديدة إذا أردت اختبار مسار مختلف.', done:'عندما تقرر إنهاء الجلسة أو إعادة اللعب.', constraint:'الهدف هو فهم البنية والعمل والقرارات خلف الواجهة، لا الوصول إلى نتيجة مثالية واحدة.' }
+  intro:T('ابدأ من الطلب الذي يبدو بسيطًا','أرسل الطلب التجريبي ثم اتبع ما تكشفه اللعبة خلف الواجهة.','عندما تبدأ الرحلة وتنتقل من شاشة المستخدم إلى السلسلة التي تقف خلف الإجابة.','الطلب ثابت حتى يمكن مقارنة ما يراه المستخدم بما يتطلبه النظام خلفه.'),
+  zoomOut:T('اخرج من الواجهة إلى سلسلة العمل والبنية','تابع الانتقال الذي يكشف أن الإجابة لا تبدأ لحظة الضغط على إرسال.','عندما تظهر أول مرحلة من مراحل الرحلة.','هذا انتقال تعليمي، وليس ادعاءً بأن كل عناصر السلسلة تحدث عند كل طلب.'),
+  factoryOrientation:T('افهم دورك قبل مراقبة الدفعة','راجع خطوات التصنيع المبسطة ثم ابدأ المراقبة.','عندما تدخل شاشة مؤشرات الدفعة.','المشهد يختصر تصنيعًا معقدًا ولا يحوله إلى ثلاث خطوات فعلية فقط.'),
+  factoryMonitor:T('راقب المؤشرات قبل ظهور قرار الجودة','اقرأ مؤشر الجسيمات وباقي القياسات ثم انتقل للدفعة التالية.','عندما يظهر التنبيه الذي يتطلب قرارًا.','تجاوز المؤشر لا يحدد وحده سبب المشكلة أو عدد القطع المعيبة.'),
+  factoryIncident:T('احسم كيف تتعامل مع تجاوز حد الجسيمات','اختر بين إيقاف الخط للتحقيق أو مواصلة الدفعة مع فحص أشد.','عندما تسجل اللعبة أثر القرار على الوقت والجودة ودين الصيانة.','الاستمرار لا يغلق سبب التنبيه نفسه.'),
+  factoryOutcome:T('أغلق نتيجة الدفعة وحدد مصير دين الصيانة','راجع نتيجة الفحص، وإذا واصلت الإنتاج فقرر هل تغلق الصيانة الآن أم تحمل الدين إلى ما بعد الدفعة.','عندما يصبح وضع دين الصيانة صريحًا قبل الانتقال.','اجتياز الفحص النهائي لا يعني أن سبب ارتفاع الجسيمات اختفى.'),
+  dcInstall:T('ركّب الخادم بالترتيب التشغيلي المطلوب','ثبّت الرف والطاقة والشبكة والتسجيل وفق القيود الظاهرة.','عندما تكتمل خطوات التركيب الأربع.','التسجيل لا يسبق الطاقة والشبكة في سيناريو اللعبة.'),
+  dcCooling:T('احسم عطل التبريد دون الخلط بين الاستمرار والإصلاح','اختر إصلاح المجموعة المتأثرة أو نقل الاختبار مؤقتًا إلى سعة سليمة.','عندما يظهر أثر القرار وخطة إغلاق العطل.','نقل الاختبار لا يجعل مجموعة التبريد المعطلة سليمة.'),
+  dcCoolingOutcome:T('أغلق عطل التبريد وأعد التحقق','راجع نتيجة الإصلاح أو النقل ثم أكمل الإجراء المطلوب حتى تصبح المجموعة الأصلية سليمة.','عندما تصبح حالة التبريد مغلقة.','السعة البديلة حل تشغيل مؤقت وليست إصلاحًا للأصل.'),
+  dcWorkers:T('اكشف الأدوار التي تجعل مركز البيانات قابلًا للعمل','راجع العمال والفرق الداعمة بصريًا قبل الانتقال.','عندما تنتهي من مراجعة الأدوار وتغلق المرحلة.','الخادم وحده لا يمثل البنية التشغيلية كاملة.'),
+  dataOrigins:T('ابدأ مراجعة الدفعة أو استكشف مصادرها اختياريًا','يمكنك فتح أمثلة المصادر ثم بدء المراجعة الأساسية.','عندما تبدأ العنصر الأول من الدفعة.','استكشاف المصادر ليس درجة ولا شرطًا للمتابعة.'),
+  dataClean:T('احسم حالة المادة الحالية','اختر المرور أو التنقيح أو المراجعة أو الاستبعاد وفق الحقوق والخصوصية والملاءمة.','عندما تسجل حالة العنصر وتنتقل للعنصر التالي أو متابعة لازمة.','مرور المادة لا يعني أن كل مشكلاتها حُسمت.'),
+  dataFollowup:T('احسم مشكلة الخصوصية التي بقيت بعد مراجعة الحقوق','اختر تنقيح بيانات الاتصال أو إبقاء المادة مع تسجيل المشكلة غير المحسومة.','عندما تصبح نتيجة هذه المادة مكتملة ويستأنف فرز الدفعة.','المراجعة السابقة حسمت الحقوق فقط؛ لا تفترض أنها حسمت الخصوصية.'),
+  dataCleanSummary:T('راجع ما خرج من مرحلة البيانات','افصل بين المواد المارة والمعلقة والمستبعدة وبين الحواجز التي ما زالت غير محسومة.','عندما تنتقل إلى ما تفعله هذه المواد في التطوير.','حالة المسار وحالة الحوكمة شيئان مختلفان.'),
+  annotationIntro:T('افهم دليل التصنيف وشروط العمل قبل بدء الوردية','راجع الفئات والدفع والوقت غير المدفوع ثم ابدأ.','عندما تبدأ المهمة الأولى.','الفئات تعليمات مشروع وليست حقائق طبيعية ثابتة.'),
+  annotationTask:T('صنّف المثال الحالي وفق دليل المشروع','اقرأ النص واختر الفئة الأنسب، مع استخدام «غير واضح» عندما لا يكفي السياق.','عندما تسجل اختيارك وينتقل العداد للمثال التالي.','الدقة تقاس مقابل الدليل المعروض، لا التخمين خارج النص.'),
+  annotationReview:T('راجع قرار المنصة واحسم أي رفض أو نزاع','قارن اختيارك بالدليل ثم استخدم مسار الاعتراض إذا ظهر رفض قابل للنزاع.','عندما تصبح الحالات المقبولة والمعلقة والمرفوضة واضحة ويغلق قرار المراجعة.','رفض المراجع لا يثبت تلقائيًا أن العامل أخطأ.'),
+  annotationEnd:T('راجع أثر الوقت والدفع على العمل البشري','اقرأ الدخل المؤكد والوقت المدفوع وغير المدفوع قبل إغلاق المرحلة.','عندما تنتقل إلى جولة التطوير.','المعدل الظاهر خاص بهذا السيناريو الافتراضي.'),
+  trainingSetup:T('احسم أهلية البيانات ثم اضبط جولة post-training','اتخذ قرارًا لكل مادة غير محسومة، ثم اختر الحوسبة ونقطة الحفظ وابدأ الجولة.','عندما تبدأ revision جديدة بمدخلات محددة.','السماح باستخدام مادة لا يحول حاجب الحوكمة إلى مشكلة محسومة.'),
+  trainingRun:T('احسم عطل الحوسبة أثناء الجولة الحالية','اختر التوقف للتشخيص أو الاستمرار بالسعة المتبقية بعد فقد مجموعة.','عندما تسجل النتيجة للـrevision الحالية.','الحد الأدنى 7 مجموعات افتراض تعليمي خاص بالسيناريو.'),
+  trainingEval:T('راجع ناتج الجولة قبل استخدامه كنسخة مرشحة','تحقق من أثر قرار السعة ومن lineage البيانات ثم أرسل النسخة للتقييم.','عندما تنتقل إلى التقييم البشري.','اكتمال الجولة لا يعني الجاهزية للإطلاق.'),
+  evalTask:T('قيّم المثال الحالي وفق معيار المهمة','قارن الإجابات، ثم راجع التغذية الراجعة وأكمل المعايرة إذا لزم.','عندما تنهي الأمثلة الثلاثة وتثبت معيار المقيّم.','هذه نتيجة لعملية التقييم البشرية وليست درجة جودة للنموذج.'),
+  checkpointEval:T('اختبر فرضية checkpoint على أمثلة فعلية','اختر الناتج الأنسب لكل عينة ثم صحح أي مقارنة غير متسقة.','عندما تكتمل المقارنات الثلاث على revision الحالية.','الحداثة لا تكفي للحكم بأن checkpoint أفضل.'),
+  safetyTest:T('اكتشف خلل السلامة في الاستجابة المعروضة','حدد المشكلة في الرد الافتراضي قبل المرور إلى الإصلاح.','عندما تسجل اللعبة ما التقطته في الاختبار.','المشهد لا يعرض تعليمات ضارة فعلية.'),
+  safetyOutcome:T('أرسل خلل السلامة للإصلاح','راجع سبب إيقاف البوابة ثم ابدأ المعالجة.','عندما تبدأ إعادة الاختبار بعد الإصلاح.','اكتشاف الخلل لا يغلقه من دون إصلاح وإعادة اختبار.'),
+  safetyRetest:T('ثبّت نتيجة إعادة اختبار السلامة','راجع أن السلوك المعيب اختفى ثم سجل نتيجة إعادة الاختبار.','عندما تصبح بوابة السلامة قابلة للاستخدام كدليل للrevision الحالية.','الدليل يخص هذه revision فقط.'),
+  launchDecision:T('راجع بوابات الإصدار واحسم أي عمل إضافي سببه قراراتك','أغلق الحواجز الأساسية، نفذ الفحوص الإضافية أو انقلها صراحة إلى المراقبة، ثم اتخذ قرار الإطلاق.','عندما يكون قرار الإطلاق مرتبطًا بأدلة النسخة الحالية.','لا تستخدم دليل revision قديمة لإطلاق نسخة جديدة.'),
+  launchOutcome:T('راجع ما نُقل إلى التشغيل قبل مغادرة مرحلة الجاهزية','تأكد هل بقيت فحوص مؤجلة للمراقبة ثم انتقل إلى التشغيل.','عندما يبدأ تشغيل الخدمة.','الإطلاق لا يحول العمل المؤجل إلى عمل مكتمل.'),
+  deployLoad:T('وزّع الحمل ثم اختبر حدود المرونة الفعلية','اعتمد توزيعًا صالحًا، نفذ حالات خروج المراكز الثلاثة، ثم أقر فجوة المرونة أو أعد التوزيع.','عندما يصبح أثر N‑1 معروفًا ومسجلًا قبل الحادث.','السعات الحالية لا تسمح بتحمل خروج كل مركز عند حمل إجمالي 100%؛ المطلوب فهم الفجوة لا اختلاق حل مستحيل.'),
+  deployIncident:T('شخّص سبب الحادث قبل اختيار الاستعادة','افحص الشبكة والخوادم وخدمة النموذج ثم اختر إجراء الاستعادة بناء على الأدلة.','عندما تسجل طريقة الاستعادة.','ضعف N‑1 لا يثبت أنه سبب هذا الحادث.'),
+  onCall:T('انقل أثر الحادث من التشغيل إلى تجربة المستخدم','راجع ما حدث بعد الاستعادة ثم انتقل إلى البلاغات المتأثرة.','عندما تبدأ معالجة بلاغات المستخدمين.','عودة الخدمة لا تمحو أثر المحاولات التي فشلت أثناء الحادث.'),
+  supportTask:T('عالج البلاغ الحالي مع موازنة السرعة والأدلة','اختر مسار التحقيق أو الاستعادة الأسرع وسجل أثر الاختيار.','عندما تنتهي بلاغات الحادث كلها.','الخيار الأسرع قد يحتفظ بأدلة تشخيص أقل.'),
+  deployEnd:T('راجع نتيجة التشغيل قبل إغلاق المرحلة','راجع التوزيع وN‑1 والفحوص المؤجلة والبلاغات ثم أغلق مرحلة التشغيل.','عندما تنتقل إلى تركيب الصورة الكاملة.','حالة «الخدمة متاحة» تختزل أعمال تشغيل ودعم مستمرة.'),
+  pipelineAssemble:T('أعد تركيب ما لعبته في ثلاثة أزمنة مختلفة','ميّز بين ما بُني تاريخيًا، ودورة التطوير المتكررة، والتشغيل المستمر.','عندما تصبح مستعدًا لتطبيق الفكرة على منتج مختلف.','ترتيب اللعب ليس مخططًا هندسيًا زمنيًا للنظام.'),
+  transferChallenge:T('انقل الفكرة إلى خدمة RAG مختلفة','صنّف كل عنصر إلى: بُني قبل الطلب، يحدث مع الطلب الحالي، أو تشغيل مستمر.','عندما تصنف العناصر الخمسة وفق زمنها الصحيح.','لا تحفظ ترتيب اللعبة؛ طبّق المعيار السببي على منتج آخر.'),
+  finalAnswer:T('قارن الإجابة النهائية بما أصبح مرئيًا خلفها','راجع الفرق بين الطلب الحالي وبين العمل والبنية اللذين سبقا الطلب أو يستمران أثناء التشغيل.','عندما تنتقل إلى نتائج رحلتك وسجل القرارات.','الإجابة المعروضة لا تزعم أن كل العمل السابق يتكرر مع كل ضغطة إرسال.'),
+  results:T('راجع آثار قراراتك وسجل العمل الكامل','اقرأ النتائج حسب محاورها، وراجع lineage البيانات وسجل القرارات بدل اختزالها في درجة واحدة.','عندما تنتهي من مراجعة ما حدث عبر الرحلة والنسخ المرشحة.','لا تجمع اللعبة الحقوق والجودة والعمل والموثوقية في رقم كلي واحد.'),
+  finalMessage:T('أغلق الرحلة مع الاحتفاظ بالفكرة الأساسية','راجع الرسالة الختامية أو ابدأ رحلة جديدة إذا أردت اختبار مسار مختلف.','عندما تقرر إنهاء الجلسة أو إعادة اللعب.','الهدف هو فهم البنية والعمل والقرارات خلف الواجهة، لا الوصول إلى نتيجة مثالية واحدة.')
 };
 
-const CHAPTER_TASK = /^ch(\d+)Intro$/;
-const ABSTRACT_TASK = /^abstract(\d+)$/;
+const CHAPTER_TASK=/^ch(\d+)Intro$/;
+const ABSTRACT_TASK=/^abstract(\d+)$/;
+const COMPLETE_SCENES=new Set(['mineEnd','factoryOutcome','dcCoolingOutcome','dcWorkers','dataCleanSummary','annotationEnd','trainingEval','launchOutcome','deployEnd','results','finalMessage']);
 
-function stageTaskFromNumber(number) {
-  const keys=['mining','factory','datacenter','data','annotation','training','evaluation','deployment'];
-  return STAGE_TASKS[keys[number-1]] || null;
-}
+function stageTaskFromNumber(number){const keys=['mining','factory','datacenter','data','annotation','training','evaluation','deployment'];return STAGE_TASKS[keys[number-1]]||null;}
+function taskFor(scene){if(SPECIAL_TASKS[scene])return SPECIAL_TASKS[scene];const chapter=scene.match(CHAPTER_TASK);if(chapter)return stageTaskFromNumber(Number(chapter[1]));const abstract=scene.match(ABSTRACT_TASK);if(abstract)return T('راجع ما اختفى خلف ناتج المرحلة','اقرأ الأدوار البشرية والناتج الذي أصبح اختصارًا في النظام ثم انتقل.','عندما تبدأ المرحلة التالية.','هذه شاشة تلخيص وانتقال وليست مهمة تشغيلية جديدة.');const stage=stageForScene(scene);return STAGE_TASKS[stage]||T('أكمل الخطوة الحالية قبل الانتقال','نفّذ الإجراء الظاهر في هذا المشهد وراجع أثره قبل المتابعة.','عندما يظهر أثر الخطوة ويصبح الانتقال التالي متاحًا.','لا تعتبر أي عمل مكتملًا قبل أن تنفذه أو تعرض اللعبة إغلاقه صراحة.');}
+function statusFor(scene,state){if(COMPLETE_SCENES.has(scene)||ABSTRACT_TASK.test(scene))return'complete';if(scene==='mineTask'&&state.flags.miningWarning)return'decision';if(['factoryIncident','dcCooling','trainingRun','launchDecision','safetyOutcome','safetyRetest','dataFollowup','annotationReview','transferChallenge'].includes(scene))return'decision';if(scene==='checkpointEval'&&!state.flags.checkpointEvalComplete)return'decision';if(scene==='deployIncident'&&state.flags.deployTabs.length===3)return'decision';return'active';}
+function progressFor(stage,state,scene){switch(stage){case'mining':return`الحصة: ${state.flags.miningCount}/12 — الوقت: ${state.flags.miningMinutes}/72 دقيقة`;case'factory':return scene==='factoryIncident'?'تجاوز حد الجسيمات: قرار مطلوب':state.flags.factoryChoice?`دين الصيانة: ${state.flags.factoryMaintenanceDebt?'مفتوح':'مغلق'}`:'الدفعة قيد المراقبة';case'datacenter':return scene==='dcCooling'?'اختبار المجموعة: قرار تبريد مطلوب':`تركيب الخادم: ${state.flags.serverSteps.length}/4`;case'data':{const passed=state.flags.dataStatuses.filter(status=>status==='ready').length,pending=state.flags.dataStatuses.filter(status=>status==='pending').length;if(scene==='dataOrigins')return`استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;return`مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — مرّت ${passed} / معلقة ${pending}`;}case'annotation':return`المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length} — وقت غير مدفوع: ${state.flags.annotationUnpaidMinutes} دقيقة`;case'training':{const unresolved=state.flags.dataStatuses.flatMap((status,index)=>status==='ready'&&state.flags.dataChecks[index]&&Object.values(state.flags.dataChecks[index]).includes('unresolved')?[index]:[]),reviewed=new Set([...state.flags.dataTrainingApproved,...state.flags.dataTrainingHeld]),count=unresolved.filter(index=>reviewed.has(index)).length;if(scene==='trainingRun')return`revision ${state.flags.candidateRevision} — العطل عند 35% — ${state.flags.trainingCompute} مجموعات مخصصة`;if(scene==='trainingEval')return`revision ${state.flags.candidateRevision} — جولة post-training مكتملة`;return unresolved.length?`أهلية البيانات: ${count}/${unresolved.length} مواد غير محسومة حُسم قرار دخولها`:'أهلية البيانات مكتملة — اختر الحوسبة ونقطة الحفظ';}case'evaluation':if(scene==='checkpointEval')return state.flags.checkpointEvalComplete?'تقييم checkpoint مكتمل':'تقييم checkpoint: 3 مقارنات مطلوبة';if(['safetyTest','safetyOutcome','safetyRetest'].includes(scene))return`revision ${state.flags.candidateRevision} — اختبار سلامة → إصلاح → إعادة اختبار`;if(['launchDecision','launchOutcome'].includes(scene))return`revision ${state.flags.candidateRevision} — بوابات الإصدار: ${state.flags.releaseGates.length}/4`;return`مهام التقييم: ${Math.min(state.flags.evalIndex,EVAL_TASKS.length)}/${EVAL_TASKS.length}`;case'deployment':if(scene==='deployLoad'&&state.flags.deferredExtraChecks.length&&!state.flags.deployLoad)return`فحوص المراقبة المغلقة: ${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length}`;if(scene==='deployLoad'&&state.flags.deployLoad)return`اختبار N‑1: ${state.flags.deployFailoverChecks.length}/3 حالات خروج`;if(scene==='deployIncident')return`التشخيص: ${state.flags.deployTabs.length}/3 أقسام`;if(scene==='supportTask')return`بلاغات الحادث: ${state.flags.supportIndex}/${SUPPORT_TASKS.length}`;return'وزّع 100% من الحمل ضمن السعات ثم اختبر حالات الخروج';default:return'';}}
 
-function taskFor(scene) {
-  if(SPECIAL_TASKS[scene]) return SPECIAL_TASKS[scene];
-  const chapter=scene.match(CHAPTER_TASK);
-  if(chapter) return stageTaskFromNumber(Number(chapter[1]));
-  const abstract=scene.match(ABSTRACT_TASK);
-  if(abstract) return stageTaskFromNumber(Number(abstract[1]));
-  const stage=stageForScene(scene);
-  return STAGE_TASKS[stage] || {
-    title:'أكمل الخطوة الحالية قبل الانتقال',
-    how:'نفّذ الإجراء الظاهر في هذا المشهد وراجع أثره قبل المتابعة.',
-    done:'عندما يظهر أثر الخطوة ويصبح الانتقال التالي متاحًا.',
-    constraint:'لا تعتبر أي عمل مكتملًا قبل أن تنفذه أو تعرض اللعبة إغلاقه صراحة.'
-  };
-}
-
-function statusFor(scene, state) {
-  if (scene === 'mineTask' && state.flags.miningWarning) return 'decision';
-  if (scene === 'factoryIncident' || scene === 'dcCooling' || scene === 'trainingRun' || scene === 'launchDecision') return 'decision';
-  if (scene === 'checkpointEval' && !state.flags.checkpointEvalComplete) return 'decision';
-  if (scene === 'safetyOutcome' || scene === 'safetyRetest' || scene === 'dataFollowup' || scene === 'annotationReview' || scene === 'transferChallenge') return 'decision';
-  if (scene === 'deployIncident' && state.flags.deployTabs.length === 3) return 'decision';
-  if (scene === 'results' || scene === 'finalMessage') return 'complete';
-  return 'active';
-}
-
-function progressFor(stage, state, scene) {
-  switch (stage) {
-    case 'mining': return `الحصة: ${state.flags.miningCount}/12 — الوقت: ${state.flags.miningMinutes}/72 دقيقة`;
-    case 'factory': return scene === 'factoryIncident' ? 'تجاوز حد الجسيمات: قرار مطلوب' : 'الدفعة قيد المراقبة';
-    case 'datacenter': return scene === 'dcCooling' ? 'اختبار المجموعة: قرار تبريد مطلوب' : `تركيب الخادم: ${state.flags.serverSteps.length}/4`;
-    case 'data': {
-      const passed=state.flags.dataStatuses.filter(status=>status==='ready').length;
-      const pending=state.flags.dataStatuses.filter(status=>status==='pending').length;
-      if(scene==='dataOrigins') return `استكشاف اختياري: فتحت ${state.flags.dataOrigins.length} مصدرًا`;
-      return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — مرّت ${passed} / معلقة ${pending}`;
-    }
-    case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length} — وقت غير مدفوع: ${state.flags.annotationUnpaidMinutes} دقيقة`;
-    case 'training': {
-      const unresolved=state.flags.dataStatuses.flatMap((status,index)=>status==='ready'&&state.flags.dataChecks[index]&&Object.values(state.flags.dataChecks[index]).includes('unresolved')?[index]:[]);
-      const reviewed=new Set([...state.flags.dataTrainingApproved,...state.flags.dataTrainingHeld]);
-      const reviewedUnresolved=unresolved.filter(index=>reviewed.has(index)).length;
-      if(scene==='trainingRun') return `revision ${state.flags.candidateRevision} — العطل عند 35% — ${state.flags.trainingCompute} مجموعات مخصصة`;
-      if(scene==='trainingEval') return `revision ${state.flags.candidateRevision} — جولة post-training مكتملة`;
-      return unresolved.length ? `أهلية البيانات: ${reviewedUnresolved}/${unresolved.length} مواد غير محسومة حُسم قرار دخولها` : 'أهلية البيانات مكتملة — اختر الحوسبة ونقطة الحفظ';
-    }
-    case 'evaluation':
-      if(scene==='checkpointEval') return state.flags.checkpointEvalComplete?'تقييم checkpoint مكتمل':'تقييم checkpoint: 3 مقارنات مطلوبة';
-      if(scene==='safetyTest'||scene==='safetyOutcome'||scene==='safetyRetest') return `revision ${state.flags.candidateRevision} — اختبار سلامة → إصلاح → إعادة اختبار`;
-      if(scene==='launchDecision'||scene==='launchOutcome') return `revision ${state.flags.candidateRevision} — بوابات الإصدار: ${state.flags.releaseGates.length}/4`;
-      return `مهام التقييم: ${Math.min(state.flags.evalIndex,EVAL_TASKS.length)}/${EVAL_TASKS.length}`;
-    case 'deployment':
-      if(scene==='deployLoad'&&state.flags.deferredExtraChecks.length) return `فحوص المراقبة المغلقة: ${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length}`;
-      if(scene==='deployLoad'&&state.flags.deployLoad) return `اختبار N‑1: ${state.flags.deployFailoverChecks.length}/3 حالات خروج`;
-      if(scene==='deployIncident') return `التشخيص: ${state.flags.deployTabs.length}/3 أقسام`;
-      if(scene==='supportTask') return `بلاغات الحادث: ${state.flags.supportIndex}/${SUPPORT_TASKS.length}`;
-      return 'وزّع 100% من الحمل ضمن السعات ثم اختبر حالات الخروج';
-    default: return '';
-  }
-}
-
-export function sceneGuidance(scene, state) {
-  const task=taskFor(scene);
-  const stage=stageForScene(scene);
-  let progress=progressFor(stage,state,scene);
-  if(scene==='transferChallenge') progress=state.flags.transferChoice==='build-use'?'التصنيف مكتمل':'5 عناصر تحتاج تصنيفًا';
-  if(scene==='pipelineAssemble') progress='حوّل ترتيب اللعب إلى: بناء تاريخي / تطوير متكرر / تشغيل مستمر';
-  if(scene==='finalAnswer') progress='عد إلى الطلب الأصلي وافصل ما يحدث الآن عما بُني سابقًا';
-  if(scene==='results') progress=`revision الحالية: ${state.flags.candidateRevision} — قرارات مسجلة: ${state.decisions.length}`;
-  return taskPanel(task,{status:statusFor(scene,state),progress,compact:true});
-}
+export function sceneGuidance(scene,state){const task=taskFor(scene),stage=stageForScene(scene);let progress=progressFor(stage,state,scene);if(scene==='transferChallenge')progress=state.flags.transferChoice==='build-use'?'التصنيف مكتمل':'5 عناصر تحتاج تصنيفًا';if(scene==='pipelineAssemble')progress='حوّل ترتيب اللعب إلى: بناء تاريخي / تطوير متكرر / تشغيل مستمر';if(scene==='finalAnswer')progress='عد إلى الطلب الأصلي وافصل ما يحدث الآن عما بُني سابقًا';if(scene==='results')progress=`revision الحالية: ${state.flags.candidateRevision} — قرارات مسجلة: ${state.decisions.length}`;return taskPanel(task,{status:statusFor(scene,state),progress,compact:true});}
