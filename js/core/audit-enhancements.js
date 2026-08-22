@@ -130,7 +130,8 @@ function enhanceReleaseGates(ctx) {
   });
 
   const blockers = unresolvedIndices(ctx.state);
-  const actionHost = ctx.$('.choice-grid') || ctx.$('.action-row');
+  const launchControl = ctx.$('#criticalOnly') || ctx.$('#delayLaunch') || ctx.$('#launchReady');
+  const actionHost = launchControl?.closest('.choice-grid, .action-row') || null;
   if (blockers.length && actionHost) {
     const panel = document.createElement('section');
     panel.className = 'card';
