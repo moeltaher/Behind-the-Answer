@@ -30,5 +30,7 @@ console.log('THIRD_AUDIT:full-decision-record');
 const decisions=[{id:'mine-stop',label:'mine',effectText:'x'},{id:'checkpoint-evidence-reviewed-r1',label:'checkpoint',effectText:'x'},{id:'release-gate-regression-r1',label:'gate',effectText:'x'},{id:'future-unknown-id',label:'fallback',effectText:'x'}];
 await load(page,{scene:'results',decisions,flags:{...baseAdvanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'})}});
 const fullRecord=page.locator('.full-evidence-details');
+await fullRecord.waitFor({state:'visible'});
+if(!(await fullRecord.getAttribute('open')))await fullRecord.locator('summary').click();
 for(const decision of decisions)await fullRecord.getByText(decision.label,{exact:true}).waitFor({state:'visible'});
 await browser.close();console.log('Third-audit regression checks passed for schema v5.');
