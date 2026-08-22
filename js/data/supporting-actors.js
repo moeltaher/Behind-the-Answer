@@ -10,6 +10,7 @@ const SUPPORTING_ACTORS = {
   cableTech: { name: 'فني كابلات', role: 'يوصل الشبكات والأجهزة', image: './assets/images/characters/cable-tech.svg' },
   networkOperator: { name: 'مشغل شبكة', role: 'يراقب الاتصال بين الأنظمة', image: './assets/images/characters/network-operator.svg' },
   contentCreators: { name: 'منتجو المحتوى', role: 'كتّاب ومبرمجون ومصورون ومستخدمون أنتجوا المواد الأصلية', image: './assets/images/characters/support-worker.svg', group: true },
+  rightsReviewer: { name: 'مراجعة الحقوق والترخيص', role: 'تفحص دليل حق الاستخدام وشروط الترخيص قبل حسم حالة المادة', image: './assets/images/characters/reviewer.svg', group: true },
   dataReviewer: { name: 'مراجع جودة المنصة', role: 'يراجع تصنيفات العمال ويمكنه رفضها', image: './assets/images/characters/reviewer.svg' },
   infraTeam: { name: 'فريق البنية والتشغيل', role: 'يراقب الخوادم أثناء التدريب', image: './assets/images/characters/support-worker.svg', group: true },
   safetyTester: { name: 'مختبر سلامة', role: 'يختبر حدود النموذج ومخاطره', image: './assets/images/characters/reviewer.svg' },
