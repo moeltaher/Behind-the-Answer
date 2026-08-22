@@ -11,7 +11,7 @@ function currentState(patch={}){
   const state=clone(DEFAULT_STATE);
   const merge=(target,source)=>Object.entries(source).forEach(([key,value])=>{
     if(value&&typeof value==='object'&&!Array.isArray(value)){
-      if(!target[key]||typeof target[k] !== 'object'||Array.isArray(target[key])) target[key]={};
+      if(!target[key]||typeof target[key] !== 'object'||Array.isArray(target[key])) target[key]={};
       merge(target[key],value);
     } else target[key]=value;
   });
