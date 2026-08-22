@@ -1,6 +1,3 @@
-import { STAGE_TASKS } from '../data/stage-tasks.js';
-import { taskPanel } from './task-flow.js';
-
 function chapterLabel(chapter) {
   return chapter.shortTitle || chapter.title;
 }
@@ -44,7 +41,10 @@ function terminology(index) {
     0: ['النموذج', 'برنامج رياضي يتعلم أنماطًا من كميات كبيرة من البيانات ثم يستخدم ما تعلمه لإنتاج نتائج جديدة.'],
     1: ['الرقاقة الإلكترونية', 'قطعة تحتوي على دوائر دقيقة تنفذ عمليات حسابية داخل الحواسيب والخوادم.'],
     2: ['الخادم', 'حاسوب مخصص لتشغيل أحمال وخدمات باستمرار داخل بنية أكبر من الطاقة والشبكات والتبريد.'],
-    5: ['التدريب الإضافي', 'جولة تطوير تبدأ هنا من نسخة سابقة للنموذج؛ وهي ليست تدريبًا كاملًا من الصفر.']
+    3: ['مسار العمل', 'الخطوات التي تمر بها المادة داخل العملية. مرور المادة في المسار لا يعني أن كل مشكلاتها القانونية أو الحقوقية حُسمت.'],
+    5: ['التدريب الإضافي', 'جولة تطوير تبدأ هنا من نسخة سابقة للنموذج؛ وهي ليست تدريبًا كاملًا من الصفر.'],
+    6: ['النسخة المرشحة', 'نسخة محددة من النموذج يجري تقييمها قبل الإطلاق. الأدلة التي تُجمع عنها لا تنتقل تلقائيًا إلى نسخة أخرى.'],
+    7: ['تحويل الحمل عند الفشل', 'نقل جزء من الحمل إلى مراكز أخرى عندما يخرج مركز من الخدمة؛ نجاحه يعتمد على السعة وقيود النقل الفعلية.']
   };
   if (!definitions[index]) return '';
   const [title, text] = definitions[index];
@@ -53,7 +53,6 @@ function terminology(index) {
 
 export function chapterIntro(ctx, index, next) {
   const chapter = ctx.chapters[index];
-  const task = STAGE_TASKS[chapter.key];
-  ctx.html(`<div class="learning-intro compact-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="chapter-link-line">${ctx.h(chapter.link)}</p></div>${taskPanel(task,{status:'active',progress:'ابدأ المهمة بالزر أدناه',compact:false})}<details class="learning-more"><summary>المكان، العاملون، والتفاصيل التقنية</summary><p><strong>المكان:</strong> ${ctx.h(chapter.where)}</p><p><strong>من يعمل هنا؟</strong> ${ctx.h(chapter.workers)}</p>${terminology(index)}<p>${ctx.h(chapter.what)}</p><div class="stage-output"><strong>الناتج الذي سينتقل معنا</strong>${ctx.h(chapter.output)}</div><details class="journey-map-details"><summary>عرض ترتيب اللعب في المراحل الثماني</summary>${journeyMap(ctx,index)}<p class="small muted">هذه خريطة تقدمك داخل اللعبة. في الخاتمة ستظهر خريطة مختلفة تفصل المسار المادي عن دورة التطوير وعن التشغيل المستمر.</p></details></details><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ المهمة</button></div></div>`);
+  ctx.html(`<div class="learning-intro compact-intro"><div><span class="chapter-theme">${chapter.icon} المرحلة ${index + 1} من ${ctx.chapters.length}</span><h1 class="display-title">${ctx.h(chapter.title)}</h1><p class="chapter-link-line">${ctx.h(chapter.link)}</p></div><details class="learning-more"><summary>المكان، العاملون، والتفاصيل التقنية</summary><p><strong>المكان:</strong> ${ctx.h(chapter.where)}</p><p><strong>من يعمل هنا؟</strong> ${ctx.h(chapter.workers)}</p>${terminology(index)}<p>${ctx.h(chapter.what)}</p><div class="stage-output"><strong>الناتج الذي سينتقل معنا</strong>${ctx.h(chapter.output)}</div><details class="journey-map-details"><summary>عرض ترتيب اللعب في المراحل الثماني</summary>${journeyMap(ctx,index)}<p class="small muted">هذه خريطة تقدمك داخل اللعبة. في الخاتمة ستظهر خريطة مختلفة تفصل المسار المادي عن دورة التطوير وعن التشغيل المستمر.</p></details></details><div class="action-row"><button id="chapterNext" class="primary-btn">ابدأ المهمة</button></div></div>`);
   ctx.$('#chapterNext')?.addEventListener('click', () => ctx.go(next));
 }
