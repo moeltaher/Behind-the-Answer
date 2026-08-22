@@ -113,17 +113,22 @@ if(await page.locator('[data-gate-pass="capacity"]').count()!==1)throw new Error
 
 console.log('EIGHTH_AUDIT:license-evidence-before-clear');
 await load(page,{scene:'launchDecision',flags:{...candidate({
-  dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'}],
-  dataTrainingApproved:[0],
+  dataIndex:4,
+  dataStatuses:['excluded','excluded','excluded','ready'],
+  dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],
+  dataSort:{keep:1,remove:3,redact:0,review:0},
+  dataTrainingApproved:[3],
+  dataTrainingUsed:[3],
+  dataCurrentTrainingUsed:[3],
   releaseGates:['regression','capacity','rollback']
 })}});
-await click(page,'[data-governance-remediate="0"]');
+await click(page,'[data-governance-remediate="3"]');
 state=await saved(page);
-if(state.flags.dataChecks[0].rights!=='unresolved')throw new Error('Opening license evidence silently cleared rights.');
+if(state.flags.dataChecks[3].rights!=='unresolved')throw new Error('Opening license evidence silently cleared rights.');
 await page.getByText('دليل الترخيص ظاهر الآن',{exact:true}).waitFor({state:'visible'});
-await click(page,'[data-governance-remediate="0"]');
+await click(page,'[data-governance-remediate="3"]');
 state=await saved(page);
-if(state.flags.dataChecks[0].rights!=='clear')throw new Error('Adopting visible license evidence did not clear the rights blocker.');
+if(state.flags.dataChecks[3].rights!=='clear')throw new Error('Adopting visible license evidence did not clear the rights blocker.');
 
 console.log('EIGHTH_AUDIT:failover-ceiling-discovered-after-tests');
 await load(page,{scene:'deployLoad',flags:{...released()}});
