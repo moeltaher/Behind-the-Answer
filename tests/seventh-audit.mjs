@@ -69,7 +69,7 @@ await load(page,{scene:'deployLoad',flags:{...deploymentReady([45,30,25])}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.getByText(/أفضل مرونة ممكنة بهذه الثوابت/).waitFor({state:'visible'});
 if(await page.locator('#retryLoad').count())throw new Error('Retry is still offered after reaching the mathematical maximum 1/3.');
-await page.getByText(/الحد الأقصى الممكن بهذه الثوابت هو 1\/3/).first().waitFor({state:'visible'});
+await page.getByText(/الحد الأقصى بهذه الثوابت هو 1\/3/).first().waitFor({state:'visible'});
 await load(page,{scene:'deployLoad',flags:{...deploymentReady([60,5,35])}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.locator('#retryLoad').waitFor({state:'visible'});
