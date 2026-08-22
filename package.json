@@ -17,6 +17,7 @@
     "audit:ci": "npm audit --audit-level=high",
     "test:browser": "node tests/smoke.mjs",
     "test:third-audit": "node tests/third-audit.mjs",
-    "test:fourth-audit": "node tests/fourth-audit.mjs"
+    "test:fourth-audit": "node tests/fourth-audit.mjs",
+    "test:fifth-audit": "node tests/fifth-audit.mjs"
   }
 }
