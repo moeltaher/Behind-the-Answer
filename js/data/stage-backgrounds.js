@@ -10,7 +10,18 @@ export const SCENES_BY_STAGE = {
   ending: ['intro','zoomOut','pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage']
 };
 
-export const ALL_SCENES = Object.values(SCENES_BY_STAGE).flat();
+export const SCENE_ORDER = [
+  'intro','zoomOut',
+  ...SCENES_BY_STAGE.mining,
+  ...SCENES_BY_STAGE.factory,
+  ...SCENES_BY_STAGE.datacenter,
+  ...SCENES_BY_STAGE.data,
+  ...SCENES_BY_STAGE.annotation,
+  ...SCENES_BY_STAGE.training,
+  ...SCENES_BY_STAGE.evaluation,
+  ...SCENES_BY_STAGE.deployment,
+  'pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage'
+];
 
 const STAGE_BACKDROPS = {
   mining: './assets/images/scenes/01-mining.svg',
