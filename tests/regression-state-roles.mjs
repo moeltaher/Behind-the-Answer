@@ -15,13 +15,13 @@ await load(page,{scene:'launchDecision',flags:{...advanced({trainingCompute:'8',
 await click(page,'[data-governance-remediate="0"]');
 let state=await saved(page);
 if(state.scene!=='trainingSetup'||state.flags.candidateRevision!==1)throw new Error('Governance remediation created a revision before training started.');
-if(state.flags.trainingCompute!=='12'||state.flags.trainingCheckpoint!=='validated')throw new Error('Next revision silently inherited previous training settings.');
+if(state.flags.trainingCompute!=='8'||state.flags.trainingCheckpoint!=='validated')throw new Error('Next revision did not reset to the fixed project allocation and validated checkpoint.');
 if(state.flags.dataCurrentTrainingUsed.length)throw new Error('Old current lineage survived retraining setup.');
 if(!state.decisions.some(d=>d.id==='data-retrain-plan-without-0-after-r1'))throw new Error('Retraining plan was not recorded.');
 await click(page,'#trainStart');
 state=await saved(page);
 if(state.flags.candidateRevision!==2||state.scene!=='trainingRun')throw new Error('Revision 2 was not created at the start of the actual round.');
-if(!state.decisions.some(d=>d.id==='training-compute-12-r2')||!state.decisions.some(d=>d.id==='training-checkpoint-validated-r2'))throw new Error('Revision 2 did not receive explicit configuration evidence.');
+if(!state.decisions.some(d=>d.id==='training-compute-8-r2')||!state.decisions.some(d=>d.id==='training-checkpoint-validated-r2'))throw new Error('Revision 2 did not receive explicit configuration evidence.');
 
 console.log('STATE_ROLES:task-status-matches-unresolved-work');
 await load(page,{scene:'factoryOutcome',decisions:[{id:'factory-continue',label:'واصلت',effectText:'fixture'}],flags:{factoryChoice:'continue',factoryMaintenanceDebt:true}});
@@ -53,7 +53,7 @@ await load(page,{scene:'deployLoad',flags:{...deploymentReady([45,30,25])}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.getByText(/أفضل مرونة ممكنة بهذه الثوابت/).waitFor({state:'visible'});
 if(await page.locator('#retryLoad').count())throw new Error('Retry is still offered after reaching the mathematical maximum 1/3.');
-await page.getByText(/الحد الأقصى بهذه الثوابت هو 1\/3/).first().waitFor({state:'visible'});
+await page.getByText(/السقف بهذه السعات وحدود الاستقبال هو 1\/3/).first().waitFor({state:'visible'});
 await load(page,{scene:'deployLoad',flags:{...deploymentReady([60,5,35])}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.locator('#retryLoad').waitFor({state:'visible'});

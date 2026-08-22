@@ -34,20 +34,20 @@ if(!state.decisions.some(d=>d.id==='factory-debt-carried')||state.scene!=='abstr
 
 console.log('CAUSALITY_RESULTS:contextual-task-guidance');
 await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0,reason:'rights-evidence-found'},dataSort:{keep:0,remove:0,redact:0,review:1}}});
-await page.getByRole('heading',{name:'احسم مشكلة الخصوصية التي بقيت بعد مراجعة الحقوق',exact:true}).waitFor({state:'visible'});
+await page.getByRole('heading',{name:'افصل حق الاستخدام عن الخصوصية',exact:true}).waitFor({state:'visible'});
 await load(page,{scene:'trainingEval',flags:{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause'}});
 if(await page.locator('[data-task-panel][data-task-status="complete"]').count()!==1)throw new Error('Completed scene does not expose complete task status.');
 
 console.log('CAUSALITY_RESULTS:extra-checks-explain-cause');
 await load(page,{scene:'launchDecision',flags:{...advanced({trainingCheckpoint:'recent',trainingCompute:'8',trainingIncidentChoice:'continue',dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1})}});
-await page.getByText(/ظهر هذا الفحص لأنك اخترت نقطة الحفظ الأحدث/).waitFor({state:'visible'});
-await page.getByText(/ظهر هذا الفحص لأنك خصصت 8 مجموعات/).waitFor({state:'visible'});
+await page.getByText(/ظهر لأن نقطة الحفظ الأحدث حسنت النبرة/).waitFor({state:'visible'});
+await page.getByText(/ظهر لأنك واصلت جولة التدريب بعد العطل عند الحد الأدنى/).waitFor({state:'visible'});
 
 console.log('CAUSALITY_RESULTS:n1-gap-needs-explicit-decision');
 await load(page,{scene:'deployLoad',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
-await page.getByText('كشفت الاختبارات أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});
-await page.getByText('اقبل فجوة المرونة وسجلها قبل المتابعة',{exact:true}).waitFor({state:'visible'});
+await page.getByText('وصلت إلى أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});
+await page.getByText('اقبل فجوة المرونة وسجلها',{exact:true}).waitFor({state:'visible'});
 await click(page,'#finishFailover');
 state=await saved(page);
 if(state.scene!=='deployIncident'||!state.decisions.some(d=>d.id==='deploy-resilience-risk-45-30-25'))throw new Error('Explicit resilience-risk acceptance did not gate incident progression.');

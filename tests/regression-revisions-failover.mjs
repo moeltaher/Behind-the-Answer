@@ -40,14 +40,14 @@ let retrained=await saved(page);
 if(retrained.flags.candidateRevision!==1||retrained.scene!=='trainingSetup')throw new Error('Governance remediation created a phantom revision before training started.');
 if(retrained.flags.releaseGates.length||retrained.flags.checkpointEvalComplete||retrained.flags.safetyRetested||retrained.flags.evalIndex!==0)throw new Error('Evidence from revision 1 remained active after planning retraining.');
 if(!retrained.flags.dataTrainingUsed.includes(0)||retrained.flags.dataCurrentTrainingUsed.length)throw new Error('Historical lineage was erased or current lineage was not cleared.');
-if(retrained.flags.trainingCompute!=='12'||retrained.flags.trainingCheckpoint!=='validated')throw new Error('Next revision inherited old training settings silently.');
+if(retrained.flags.trainingCompute!=='8'||retrained.flags.trainingCheckpoint!=='validated')throw new Error('Next revision did not reset to the fixed project allocation and validated checkpoint.');
 await click(page,'#trainStart');
 retrained=await saved(page);
 if(retrained.flags.candidateRevision!==2||retrained.scene!=='trainingRun')throw new Error('Revision 2 was not created exactly when the new training round started.');
-if(!retrained.decisions.some(d=>d.id==='training-compute-12-r2')||!retrained.decisions.some(d=>d.id==='training-checkpoint-validated-r2'))throw new Error('New revision configuration was not recorded.');
+if(!retrained.decisions.some(d=>d.id==='training-compute-8-r2')||!retrained.decisions.some(d=>d.id==='training-checkpoint-validated-r2'))throw new Error('New revision configuration was not recorded.');
 
 console.log('REVISIONS_FAILOVER:distribution-sensitive-failover');
-for(const [values,expected] of [[[45,30,25],'1 من 3 حالات خروج كاملة يمكن امتصاصها'],[[60,5,35],'0 من 3 حالات خروج كاملة يمكن امتصاصها']]){
+for(const [values,expected] of [[[45,30,25],'1/3 حالات يمكن امتصاصها'],[[60,5,35],'0/3 حالات يمكن امتصاصها']]){
   await load(page,{scene:'deployLoad',flags:{...baseAdvanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:values})}});
   for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
   await page.getByText(expected,{exact:true}).waitFor({state:'visible'});

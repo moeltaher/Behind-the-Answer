@@ -1,164 +1,99 @@
 import { SUPPORT_TASKS } from '../data/content-tasks.js';
 import { supportingRoleStrip } from '../components/supporting-role-strip.js';
+import { DEPLOY_CAPACITY_LIMITS, FAILOVER_INGRESS_LIMITS, MAX_SURVIVABLE_FAILURES, loadMargins, failoverCase, survivableFailures, resilienceRiskDecisionId } from '../domain/game-rules.js';
 
-const STARTING_LOAD = [70, 20, 10];
-const CAPACITY_LIMITS = [60, 45, 35];
-const FAILOVER_INGRESS_LIMITS = [20, 20, 20];
-const MAX_SURVIVABLE_FAILURES = 1;
+const STARTING_LOAD = [50,30,20];
 const SITE_NAMES = ['أ','ب','ج'];
 const INCIDENT_TABS = [
-  ['network', 'الشبكة', 'الشبكة مستقرة، ولا توجد زيادة واضحة في فقد البيانات.'],
-  ['compute', 'الخوادم', 'السعة متاحة، لكن بعض العمليات يعاد تشغيلها.'],
-  ['model', 'خدمة النموذج', 'استهلاك الذاكرة يرتفع تدريجيًا في الإصدار الجديد.']
+  ['network','الشبكة','الشبكة مستقرة، ولا توجد زيادة واضحة في فقد البيانات.'],
+  ['compute','الخوادم','السعة متاحة، لكن بعض العمليات يعاد تشغيلها.'],
+  ['model','خدمة النموذج','استهلاك الذاكرة يرتفع تدريجيًا في الإصدار الجديد.']
 ];
 const MONITORING_CHECKS = {
-  checkpoint:{ title:'تحقق موسع لنقطة الحفظ الحديثة', evidence:'شُغلت 12 عينة إضافية بعد الإطلاق على أساليب وصيغ لم تدخل المقارنة الثلاثية.', result:'لم يظهر انحدار جديد يمنع استمرار النسخة الحالية في سيناريو اللعبة.' },
-  stability:{ title:'فحص الاستقرار', evidence:'شُغلت ثلاث جولات مراقبة قصيرة بعد الإطلاق مع تتبع إعادة تشغيل مجموعات الحوسبة.', result:'لم يتكرر عطل الحوسبة في نافذة المراقبة الافتراضية.' }
+  checkpoint:{title:'تحقق موسع لنقطة الحفظ الحديثة',evidence:'شُغلت 12 عينة إضافية أثناء نافذة المراقبة بعد فتح الخدمة.',result:'لم يظهر انحدار جديد يمنع استمرار النسخة الحالية.'},
+  stability:{title:'فحص الاستقرار',evidence:'شُغلت ثلاث جولات مراقبة قصيرة مع تتبع إعادة تشغيل مجموعات الحوسبة.',result:'لم يتكرر عطل الحوسبة في نافذة المراقبة الافتراضية.'}
 };
 
 export function createDeploymentRoutes(ctx) {
-  const $ = ctx.$;
-  const state = ctx.state;
-  const { chapterIntro, html, go, bind, tone, saveState, addDecision, addLedger } = ctx;
-  const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line, next);
+  const $=ctx.$,state=ctx.state;
+  const {chapterIntro,html,go,bind,tone,saveState,addDecision,addLedger}=ctx;
+  const abstraction=(humans,word,line,next)=>ctx.abstraction(humans,word,line,next);
+  function ch8Intro(){chapterIntro(7,'deployLoad');}
+  function loadValues(){return [0,1,2].map(index=>Number($(`#range${index}`)?.value??0));}
+  function savedLoad(){return Array.isArray(state.flags.deployLoad)?state.flags.deployLoad:STARTING_LOAD;}
+  function riskAccepted(values=savedLoad()){return state.decisions.some(decision=>decision.id===resilienceRiskDecisionId(values));}
+  function pendingMonitoringChecks(){return state.flags.deferredExtraChecks.filter(id=>!state.flags.monitoringChecksCompleted.includes(id));}
+  function monitoringWindowOpened(){return state.decisions.some(d=>d.id===`deploy-monitoring-window-r${state.flags.candidateRevision}`);}
+  function recoveryVerified(){return state.decisions.some(d=>d.id==='deploy-recovery-verified');}
+  function supportFeedbackMarkup(){return state.flags.supportFeedbackLabel?`<div class="decision-feedback-inline" role="status"><strong>${ctx.h(state.flags.supportFeedbackLabel)}</strong><span>${ctx.h(state.flags.supportFeedbackDetail)}</span></div>`:'';}
 
-  function ch8Intro() { chapterIntro(7, 'deployLoad'); }
-  function loadValues() { return [0,1,2].map(index=>Number($(`#range${index}`)?.value ?? 0)); }
-  function savedLoad() { return Array.isArray(state.flags.deployLoad) ? state.flags.deployLoad : STARTING_LOAD; }
-  function loadMargins(values=savedLoad()) { return values.map((value,index)=>CAPACITY_LIMITS[index]-value); }
-  function failoverCase(failedIndex, values=savedLoad()) {
-    const margins=loadMargins(values);
-    const perSiteReceivable=margins.map((margin,index)=>index===failedIndex?0:Math.min(Math.max(0,margin),FAILOVER_INGRESS_LIMITS[index]));
-    const spareElsewhere=perSiteReceivable.reduce((sum,value)=>sum+value,0);
-    const displaced=values[failedIndex];
-    return { displaced, spareElsewhere, perSiteReceivable, survivable:spareElsewhere>=displaced };
-  }
-  function survivableFailures(values=savedLoad()) { return [0,1,2].filter(index=>failoverCase(index,values).survivable).length; }
-  function riskDecisionId(values=savedLoad()){ return `deploy-resilience-risk-${values.join('-')}`; }
-  function riskAccepted(values=savedLoad()){ return state.decisions.some(decision=>decision.id===riskDecisionId(values)); }
-  function pendingMonitoringChecks(){ return state.flags.deferredExtraChecks.filter(id=>!state.flags.monitoringChecksCompleted.includes(id)); }
-  function supportFeedbackMarkup() {
-    if(!state.flags.supportFeedbackLabel) return '';
-    return `<div class="decision-feedback-inline" role="status"><strong>${ctx.h(state.flags.supportFeedbackLabel)}</strong><span>${ctx.h(state.flags.supportFeedbackDetail)}</span></div>`;
-  }
-
-  function monitoringMarkup() {
-    const pending=pendingMonitoringChecks();
-    return `<div><span class="eyebrow">مراقبة بعد الإطلاق — النسخة المرشحة ${state.flags.candidateRevision}</span><h1 class="scene-title">نفّذ الفحوص التي قررت تأجيلها بدل اعتبارها مكتملة.</h1><p class="scene-subtitle">الإطلاق حدث بالفعل، لكن هذه الأعمال بقيت مسجلة كدين تحقق. كل فحص يعرض الدليل والنتيجة قبل إغلاقه.</p><div class="evidence-results">${state.flags.deferredExtraChecks.map(id=>{const def=MONITORING_CHECKS[id];const done=state.flags.monitoringChecksCompleted.includes(id);return `<article class="card flat"><strong>${ctx.h(def.title)}</strong><p><b>الإجراء:</b> ${ctx.h(def.evidence)}</p>${done?`<div class="alert goodish" role="status"><strong>اكتمل في المراقبة</strong><span>${ctx.h(def.result)}</span></div>`:`<button class="secondary-btn" data-monitoring-check="${id}" type="button">نفّذ الفحص وسجل النتيجة</button>`}</article>`;}).join('')}</div>${pending.length?'<div class="alert"><strong>العمل ما زال مفتوحًا</strong><span>لا تنتقل اللعبة إلى توزيع الحمل قبل تنفيذ كل ما نقلته أنت إلى المراقبة.</span></div>':'<div class="action-row"><button id="continueAfterMonitoring" class="primary-btn">أغلق دين التحقق وابدأ توزيع الحمل</button></div>'}</div>`;
-  }
-
-  function failoverMarkup(values) {
-    const margins=loadMargins(values);
-    const checked=state.flags.deployFailoverChecks;
-    const resilient=survivableFailures(values);
+  function failoverMarkup(values){
+    const margins=loadMargins(values),checked=state.flags.deployFailoverChecks,resilient=survivableFailures(values);
     let resolution='';
     if(checked.length===3){
-      if(resilient<3){
-        const accepted=riskAccepted(values);
-        const atMaximum=resilient>=MAX_SURVIVABLE_FAILURES;
-        const explanation=`بعد اختبار الحالات الثلاث يمكن تفسير السقف نفسه: عند حمل إجمالي 100%، خروج أ يترك سعة اسمية قصوى 80% فقط، وخروج ب يترك 95% فقط؛ لذلك لا يمكن لأي توزيع صالح الوصول إلى أكثر من ${MAX_SURVIVABLE_FAILURES}/3 بهذه السعات وحدود الاستقبال.`;
-        const retry=atMaximum?'':`<button id="retryLoad" class="choice-btn"><strong>أعد توزيع الحمل وحاول تحسين النتيجة</strong><small>نتيجتك الحالية ${resilient}/3، وتبين الحسابات بعد الاختبار أن هناك تحسنًا ممكنًا داخل النموذج.</small></button>`;
-        resolution=`<div class="alert dangerish"><strong>${atMaximum?'كشفت الاختبارات أفضل مرونة ممكنة بهذه الثوابت.':'كشفت الاختبارات فجوة مرونة وما زال تحسين التوزيع ممكنًا.'}</strong><span>${explanation} ${atMaximum?'إعادة التوزيع لن ترفع النتيجة أكثر؛ تحسينها بعد ذلك يتطلب تغيير السعة أو خفض الحمل الكلي.':'يمكنك إعادة التوزيع، أو تسجيل القيد ومتابعة السيناريو.'}</span></div>${accepted?'<div class="action-row"><button id="finishFailover" class="primary-btn">تابع بعد تسجيل قبول فجوة المرونة</button></div>':`<div class="choice-grid">${retry}<button id="finishFailover" class="choice-btn"><strong>اقبل فجوة المرونة وسجلها قبل المتابعة</strong><small>لا تعتبرها نجاحًا؛ يسجل السجل أنك واصلت مع قيد معروف في البنية.</small></button></div>`}`;
-      } else resolution='<div class="action-row"><button id="finishFailover" class="primary-btn">انتقل إلى الحادث التشغيلي</button></div>';
+      const accepted=riskAccepted(values),atMaximum=resilient>=MAX_SURVIVABLE_FAILURES;
+      const explanation=`بعد الحالات الثلاث يظهر أن السقف بهذه السعات وحدود الاستقبال هو ${MAX_SURVIVABLE_FAILURES}/3. خروج أ يترك سعة اسمية قصوى 80% فقط، وخروج ب يترك 95% فقط.`;
+      const retry=atMaximum?'':`<button id="retryLoad" class="choice-btn"><strong>أعد توزيع الحمل وحاول تحسين النتيجة</strong><small>النتيجة الحالية ${resilient}/3، وما زال التحسن ممكنًا.</small></button>`;
+      resolution=`<div class="alert dangerish"><strong>${atMaximum?'وصلت إلى أفضل مرونة ممكنة بهذه الثوابت.':'ما زالت فجوة المرونة قابلة للتحسين.'}</strong><span>${explanation}</span></div>${accepted?'<div class="action-row"><button id="finishFailover" class="primary-btn">افتح حركة الخدمة بعد تسجيل القيد</button></div>':`<div class="choice-grid">${retry}<button id="finishFailover" class="choice-btn"><strong>اقبل فجوة المرونة وسجلها</strong><small>تظل قيدًا معروفًا، لا نجاحًا كاملًا.</small></button></div>`}`;
     }
-    return `<div><span class="eyebrow">اختبار المرونة بعد اعتماد التوزيع</span><h1 class="scene-title">اختبر خروج كل مركز مع قيود نقل الطوارئ.</h1><div class="reality-note"><strong>قاعدة الاختبار</strong> كل مركز باقٍ يستطيع استقبال بحد أقصى ${FAILOVER_INGRESS_LIMITS[0]} نقطة حمل إضافية لحظيًا عند تحويل الحمل بعد الفشل. المتاح فعليًا هو الأصغر بين هامش السعة وحد النقل. لا تفترض النتيجة قبل اختبار الحالات الثلاث.</div><div class="hud-grid">${margins.map((margin,index)=>`<div class="hud-item"><span>مركز ${SITE_NAMES[index]}: هامش / حد استقبال طوارئ</span><strong>${margin} / ${FAILOVER_INGRESS_LIMITS[index]}</strong></div>`).join('')}</div><div class="evidence-results">${[0,1,2].map(index=>{const result=failoverCase(index,values);const done=checked.includes(index);const receivers=result.perSiteReceivable.map((value,i)=>i===index?null:`${SITE_NAMES[i]}: ${value}`).filter(Boolean).join('، ');return `<article class="card flat"><strong>إذا خرج مركز ${SITE_NAMES[index]}</strong><p>الحمل المزاح: ${result.displaced}. ما يمكن للمركزين الآخرين استقباله فورًا بعد تطبيق السعة وحدود النقل: ${result.spareElsewhere} (${receivers}).</p>${done?`<div class="alert ${result.survivable?'goodish':'dangerish'}" role="status"><strong>${result.survivable?'يمكن امتصاص الحمل ضمن القيود':'لا يمكن امتصاص الحمل ضمن القيود'}</strong><span>${result.survivable?'التوزيع ينجو من هذه الحالة في نموذج الطوارئ المبسط.':'يلزم خفض حمل أو رفع سعة/مسار نقل؛ صلاحية الحالة العادية لا تكفي.'}</span></div>`:`<button class="secondary-btn" data-failover-check="${index}" type="button">اختبر خروج مركز ${SITE_NAMES[index]}</button>`}</article>`;}).join('')}</div>${checked.length===3?`<div class="stage-output"><strong>${resilient} من 3 حالات خروج كاملة يمكن امتصاصها</strong>بعد تنفيذ الاختبارات أصبح من الممكن استنتاج أن الحد الأقصى بهذه الثوابت هو ${MAX_SURVIVABLE_FAILURES}/3؛ النتيجة تصف المرونة ولا تتحول إلى درجة جودة عامة.</div>${resolution}`:'<div class="alert"><strong>أكمل الحالات الثلاث</strong><span>اختبار حالة واحدة لا يكفي لوصف المرونة أو معرفة السقف الممكن.</span></div>'}</div>`;
+    return `<div><span class="eyebrow">اختبار المرونة قبل فتح حركة المستخدمين</span><h1 class="scene-title">اختبر خروج كل مركز بعد اعتماد توزيع التشغيل.</h1><div class="reality-note"><strong>قاعدة الاختبار</strong> كل مركز باقٍ يستطيع استقبال بحد أقصى ${FAILOVER_INGRESS_LIMITS[0]} نقطة حمل إضافية لحظيًا. المتاح فعليًا هو الأصغر بين هامش السعة وحد النقل.</div><div class="hud-grid">${margins.map((margin,index)=>`<div class="hud-item"><span>مركز ${SITE_NAMES[index]}: هامش / استقبال طوارئ</span><strong>${margin} / ${FAILOVER_INGRESS_LIMITS[index]}</strong></div>`).join('')}</div><div class="evidence-results">${[0,1,2].map(index=>{const result=failoverCase(index,values),done=checked.includes(index),receivers=result.perSiteReceivable.map((value,i)=>i===index?null:`${SITE_NAMES[i]}: ${value}`).filter(Boolean).join('، ');return `<article class="card flat"><strong>إذا خرج مركز ${SITE_NAMES[index]}</strong><p>الحمل المزاح: ${result.displaced}. القابل للاستقبال: ${result.spareElsewhere} (${receivers}).</p>${done?`<div class="alert ${result.survivable?'goodish':'dangerish'}"><strong>${result.survivable?'يمكن امتصاص الحمل':'لا يمكن امتصاص الحمل'}</strong></div>`:`<button class="secondary-btn" data-failover-check="${index}">اختبر خروج مركز ${SITE_NAMES[index]}</button>`}</article>`;}).join('')}</div>${checked.length===3?`<div class="stage-output"><strong>${resilient}/3 حالات يمكن امتصاصها</strong>بعد الاختبار فقط أصبح السقف الحسابي ظاهرًا.</div>${resolution}`:'<div class="alert"><strong>أكمل الحالات الثلاث</strong><span>لا يمكن وصف المرونة من حالة واحدة.</span></div>'}</div>`;
   }
 
-  function deployLoad() {
-    if(pendingMonitoringChecks().length || (state.flags.deferredExtraChecks.length && state.flags.monitoringChecksCompleted.length===state.flags.deferredExtraChecks.length && !state.flags.deployLoad)) {
-      html(monitoringMarkup());
-      bind('[data-monitoring-check]','click',event=>{
-        const id=event.currentTarget.dataset.monitoringCheck;
-        if(!state.flags.monitoringChecksCompleted.includes(id)) state.flags.monitoringChecksCompleted.push(id);
-        const def=MONITORING_CHECKS[id];
-        addDecision(`monitoring-check-${id}-r${state.flags.candidateRevision}`,`أغلقت ${def.title} بعد الإطلاق`,def.result);
-        saveState(); deployLoad();
-      });
-      $('#continueAfterMonitoring')?.addEventListener('click',()=>deployLoadAfterMonitoring());
-      return;
-    }
-    deployLoadAfterMonitoring();
+  function monitoringMarkup(){
+    const pending=pendingMonitoringChecks();
+    if(!monitoringWindowOpened()) return `<div><span class="eyebrow">الخدمة أصبحت متاحة</span><h1 class="scene-title">فُتحت حركة المستخدمين مع دين تحقق مسجل.</h1><div class="alert dangerish"><strong>${pending.length} فحص إضافي ما زال مفتوحًا</strong><span>هذا هو الأثر الحقيقي لقرار الإصدار المبكر: الخدمة تعمل بينما يوجد عمل تحقق يجب إغلاقه في المراقبة.</span></div><div class="action-row"><button id="openMonitoringWindow" class="primary-btn">ابدأ نافذة المراقبة مع الدين المفتوح</button></div></div>`;
+    return `<div><span class="eyebrow">نافذة المراقبة بعد الإطلاق</span><h1 class="scene-title">أغلق دين التحقق بينما الخدمة تعمل.</h1><div class="evidence-results">${state.flags.deferredExtraChecks.map(id=>{const def=MONITORING_CHECKS[id],done=state.flags.monitoringChecksCompleted.includes(id);return `<article class="card flat"><strong>${ctx.h(def.title)}</strong><p>${ctx.h(def.evidence)}</p>${done?`<div class="alert goodish"><strong>اكتمل</strong><span>${ctx.h(def.result)}</span></div>`:`<button class="secondary-btn" data-monitoring-check="${id}">نفّذ الفحص وسجل النتيجة</button>`}</article>`;}).join('')}</div>${pending.length?'<div class="alert"><strong>الدين ما زال مفتوحًا</strong><span>استمرار الخدمة لا يحول الفحص إلى مكتمل.</span></div>':'<div class="action-row"><button id="finishMonitoring" class="primary-btn">أغلق نافذة المراقبة وتابع التشغيل</button></div>'}</div>`;
   }
 
-  function deployLoadAfterMonitoring() {
-    if(Array.isArray(state.flags.deployLoad)) {
+  function deployLoad(){
+    if(Array.isArray(state.flags.deployLoad)){
       const values=savedLoad();
-      html(failoverMarkup(values));
-      bind('[data-failover-check]','click',event=>{
-        const index=Number(event.currentTarget.dataset.failoverCheck);
-        if(!state.flags.deployFailoverChecks.includes(index)) state.flags.deployFailoverChecks.push(index);
-        saveState(); deployLoadAfterMonitoring();
-      });
-      $('#retryLoad')?.addEventListener('click',()=>{const resilient=survivableFailures(values);if(resilient>=MAX_SURVIVABLE_FAILURES)return;addDecision(`deploy-failover-retry-${values.join('-')}`,'أعدت توزيع الحمل لأن المرونة ما زالت قابلة للتحسين',`التوزيع ${values.join(' / ')} حقق ${resilient}/3. بعد إكمال الحالات الثلاث ظهر أن الحد الأقصى الممكن هو ${MAX_SURVIVABLE_FAILURES}/3، لذلك أعدت التوزيع بدل اعتبار النتيجة أفضل ما تسمح به البنية.`);state.flags.deployLoad=null;state.flags.deployFailoverChecks=[];saveState();deployLoadAfterMonitoring();});
-      $('#finishFailover')?.addEventListener('click',()=>{
-        const resilient=survivableFailures(values);
-        if(resilient<3&&!riskAccepted(values)) addDecision(riskDecisionId(values),'قبلت فجوة المرونة صراحة قبل التشغيل',`التوزيع ${values.join(' / ')} يتحمل ${resilient}/3 حالات خروج فقط، وبعد الاختبار ظهر أن الحد الأقصى الممكن بهذه الثوابت ${MAX_SURVIVABLE_FAILURES}/3. القيد البنيوي مسجل ولم يُعرض كنجاح كامل.`);
-        addDecision(`deploy-failover-review-${values.join('-')}`,'اختبرت التوزيع ضد خروج كل مركز مع حدود نقل الطوارئ',`تحمل التوزيع ${resilient} من 3 حالات كاملة؛ النتيجة تصف المرونة ولا تفسر سبب الحادث اللاحق.`);
-        saveState(); go('deployIncident');
-      });
-      return;
+      if(state.flags.deployFailoverChecks.length<3||!riskAccepted(values)){
+        html(failoverMarkup(values));
+        bind('[data-failover-check]','click',event=>{const index=Number(event.currentTarget.dataset.failoverCheck);if(!state.flags.deployFailoverChecks.includes(index))state.flags.deployFailoverChecks.push(index);saveState();deployLoad();});
+        $('#retryLoad')?.addEventListener('click',()=>{state.flags.deployLoad=null;state.flags.deployFailoverChecks=[];saveState();deployLoad();});
+        $('#finishFailover')?.addEventListener('click',()=>{const resilient=survivableFailures(values);if(!riskAccepted(values))addDecision(resilienceRiskDecisionId(values),'قبلت فجوة المرونة صراحة قبل فتح الخدمة',`التوزيع ${values.join(' / ')} يتحمل ${resilient}/3 حالات؛ القيد مسجل.`);addDecision(`deploy-failover-review-${values.join('-')}`,'اختبرت التوزيع ضد خروج كل مركز',`تحمل ${resilient}/3 حالات كاملة.`);saveState();deployLoad();});
+        return;
+      }
+      if(state.flags.deferredExtraChecks.length){
+        html(monitoringMarkup());
+        $('#openMonitoringWindow')?.addEventListener('click',()=>{addDecision(`deploy-monitoring-window-r${state.flags.candidateRevision}`,'فتحت الخدمة مع دين تحقق ظاهر','بدأت نافذة تشغيل فعلية قبل إغلاق الفحوص الإضافية المؤجلة.');saveState();deployLoad();});
+        bind('[data-monitoring-check]','click',event=>{const id=event.currentTarget.dataset.monitoringCheck;if(!state.flags.monitoringChecksCompleted.includes(id))state.flags.monitoringChecksCompleted.push(id);const def=MONITORING_CHECKS[id];addDecision(`monitoring-check-${id}-r${state.flags.candidateRevision}`,`أغلقت ${def.title} أثناء التشغيل`,def.result);saveState();deployLoad();});
+        $('#finishMonitoring')?.addEventListener('click',()=>go('deployIncident'));
+        return;
+      }
+      go('deployIncident');return;
     }
     const initial=STARTING_LOAD;
-    html(`<div><span class="eyebrow">هانا — مهندسة تشغيل الخدمة</span><h1 class="scene-title">أصبحت الخدمة متاحة للمستخدمين.</h1><div class="reality-note"><strong>المهمة</strong> وزّع 100% من الحمل من دون تجاوز السعة التشغيلية: أ 60%، ب 45%، ج 35%. بعد اعتماد توزيع صالح ستختبر أثره تحت قيود نقل الطوارئ بدل افتراض أن التوزيع الصحيح مرن تلقائيًا.</div><div class="load-grid">${SITE_NAMES.map((name,index)=>`<div class="load-card"><span>مركز البيانات ${name}</span><strong id="load${index}">${initial[index]}%</strong><small>السعة: ${CAPACITY_LIMITS[index]}% — استقبال الطوارئ الأقصى: ${FAILOVER_INGRESS_LIMITS[index]} نقطة</small><input id="range${index}" type="range" min="0" max="100" step="1" value="${initial[index]}" aria-label="حصة مركز البيانات ${name}" /></div>`).join('')}</div><div id="loadFeedback" class="alert" role="status"><strong>المجموع: <span id="loadTotal">${initial.reduce((sum,value)=>sum+value,0)}</span>%</strong><span>المطلوب أولًا توزيع صالح؛ تقييم المرونة يأتي بعده.</span></div><div class="action-row"><button id="testLoad" class="primary-btn">اعتمد التوزيع واختبر المرونة</button></div></div>`);
-    const updateTotal=()=>{ const values=loadValues(); values.forEach((value,index)=>{ const output=$(`#load${index}`); if(output)output.textContent=`${value}%`; }); const totalOutput=$('#loadTotal'); if(totalOutput)totalOutput.textContent=values.reduce((sum,value)=>sum+value,0); };
-    [0,1,2].forEach(index=>$(`#range${index}`)?.addEventListener('input',updateTotal));
-    $('#testLoad')?.addEventListener('click',()=>{
-      const values=loadValues();
-      const total=values.reduce((sum,value)=>sum+value,0);
-      const feedback=$('#loadFeedback');
-      if(total!==100){ feedback.innerHTML=`<strong>المجموع الآن ${total}%</strong><span>يجب أن يساوي 100%.</span>`; tone(170,.08,'square'); return; }
-      const overloaded=values.findIndex((value,index)=>value>CAPACITY_LIMITS[index]);
-      if(overloaded>=0){ feedback.innerHTML=`<strong>مركز ${SITE_NAMES[overloaded]} تجاوز سعته.</strong><span>حملته ${values[overloaded]}% بينما سعته ${CAPACITY_LIMITS[overloaded]}%.</span>`; tone(170,.08,'square'); return; }
-      state.flags.deployLoad=values;
-      state.flags.deployFailoverChecks=[];
-      addDecision(`deploy-capacity-load-${values.join('-')}`,'وزعت الحمل ضمن سعات المراكز',`التوزيع ${values.join(' / ')} صالح للحالة العادية؛ المرونة ستختبر مع حدود نقل الطوارئ.`);
-      saveState(); deployLoadAfterMonitoring();
-    });
+    html(`<div><span class="eyebrow">هانا — مهندسة تشغيل الخدمة</span><h1 class="scene-title">قرار الإصدار معتمد؛ جهّز توزيع التشغيل قبل فتح حركة المستخدمين.</h1><div class="reality-note"><strong>المهمة</strong> وزّع 100% من الحمل ضمن السعات: أ 60%، ب 45%، ج 35%. القيم الابتدائية ${initial.join(' / ')}% صالحة للحالة العادية، لكنها لم تُختبر بعد تحت الفشل.</div><div class="load-grid">${SITE_NAMES.map((name,index)=>`<div class="load-card"><span>مركز البيانات ${name}</span><strong id="load${index}">${initial[index]}%</strong><small>السعة: ${DEPLOY_CAPACITY_LIMITS[index]}% — استقبال الطوارئ: ${FAILOVER_INGRESS_LIMITS[index]} نقطة</small><input id="range${index}" type="range" min="0" max="100" step="1" value="${initial[index]}" aria-label="حصة مركز البيانات ${name}" /></div>`).join('')}</div><div id="loadFeedback" class="alert" role="status"><strong>المجموع: <span id="loadTotal">100</span>%</strong><span>اعتماد التوزيع لا يعني أنه مرن؛ الاختبار يأتي بعده.</span></div><div class="action-row"><button id="testLoad" class="primary-btn">اعتمد التوزيع واختبر المرونة</button></div></div>`);
+    const updateTotal=()=>{const values=loadValues();values.forEach((value,index)=>{$(`#load${index}`).textContent=`${value}%`;});$('#loadTotal').textContent=values.reduce((sum,value)=>sum+value,0);};[0,1,2].forEach(index=>$(`#range${index}`)?.addEventListener('input',updateTotal));
+    $('#testLoad')?.addEventListener('click',()=>{const values=loadValues(),total=values.reduce((sum,value)=>sum+value,0),feedback=$('#loadFeedback');if(total!==100){feedback.innerHTML=`<strong>المجموع ${total}%</strong><span>يجب أن يساوي 100%.</span>`;tone(170,.08,'square');return;}const overloaded=values.findIndex((value,index)=>value>DEPLOY_CAPACITY_LIMITS[index]);if(overloaded>=0){feedback.innerHTML=`<strong>مركز ${SITE_NAMES[overloaded]} تجاوز سعته.</strong><span>${values[overloaded]}% مقابل ${DEPLOY_CAPACITY_LIMITS[overloaded]}%.</span>`;tone(170,.08,'square');return;}state.flags.deployLoad=values;state.flags.deployFailoverChecks=[];addDecision(`deploy-capacity-load-${values.join('-')}`,'اعتمدت توزيع التشغيل ضمن السعات',`التوزيع ${values.join(' / ')} صالح للحالة العادية؛ لم تفتح الخدمة قبل اختباره.`);saveState();deployLoad();});
   }
 
-  function diagnosisSummary(){ return INCIDENT_TABS.filter(([id])=>state.flags.deployTabs.includes(id)).map(([id,label,text])=>`<div class="diagnosis-row diagnosis-row--${id}"><strong>${label}</strong><span>${text}</span></div>`).join(''); }
-
-  function deployIncident() {
-    if(state.flags.deployFailoverChecks.length!==3){ go('deployLoad'); return; }
-    const values=savedLoad();
-    const resilient=survivableFailures(values);
-    if(resilient<3&&!riskAccepted(values)){ go('deployLoad'); return; }
+  function diagnosisSummary(){return INCIDENT_TABS.filter(([id])=>state.flags.deployTabs.includes(id)).map(([id,label,text])=>`<div class="diagnosis-row diagnosis-row--${id}"><strong>${label}</strong><span>${text}</span></div>`).join('');}
+  function deployIncident(){
+    const values=savedLoad(),resilient=survivableFailures(values);
+    if(state.flags.deployFailoverChecks.length!==3||!riskAccepted(values)||pendingMonitoringChecks().length){go('deployLoad');return;}
     const complete=state.flags.deployTabs.length===INCIDENT_TABS.length;
-    const monitoringNote=state.flags.deferredExtraChecks.length?`الفحوص التي نُقلت إلى المراقبة أُغلقت ${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length} قبل هذه الخطوة؛ لا تفترض اللعبة أنها سبب الحادث.`:'لم يكن هناك دين تحقق مؤجل من قرار الإطلاق.';
-    const tabs=INCIDENT_TABS.map(([id,label])=>state.flags.deployTabs.includes(id)?`<span class="incident-tab incident-tab--done" aria-label="${label} فُحص">✓ ${label}</span>`:`<button data-tab="${id}">${label}</button>`).join('');
-    html(`<div><span class="eyebrow">عطل جديد بعد اختبار التوزيع والمرونة</span><h1 class="scene-title">ارتفعت الأخطاء بعد إصدار جديد.</h1>${supportingRoleStrip(['operationsTeam'],'من يعمل مع هانا أثناء التشخيص؟')}<div class="alert dangerish"><strong>تأثر عدد كبير من المستخدمين في سيناريو اللعب</strong><span>${monitoringNote}</span></div><div class="reality-note"><strong>أثر التوزيع المحفوظ</strong>توزيعك ${values.join(' / ')}% تحمل ${resilient}/3 من حالات الخروج تحت القيود. ${resilient<3?'واصلت بعد تسجيل فجوة المرونة صراحة. ':''}هذه معلومة عن المرونة وليست تفسيرًا لسبب الحادث.</div><div class="incident-tabs">${tabs}</div><div id="tabReadout" class="diagnosis-stack">${state.flags.deployTabs.length?diagnosisSummary():'<div class="card flat">ابدأ بفحص الشبكة أو الخوادم أو خدمة النموذج.</div>'}</div>${complete?'<div class="alert"><strong>الاستنتاج الحالي</strong><span>الشبكة مستقرة والسعة متاحة، بينما يرتفع استهلاك الذاكرة تدريجيًا في الإصدار الجديد؛ لذلك يصبح الإصدار المشتبه الرئيسي في هذا السيناريو.</span></div><div class="choice-grid"><button id="restartInst" class="choice-btn"><strong>أعد تشغيل الوحدات المتأثرة</strong><small>عودة أسرع مع احتمال تكرار المشكلة.</small></button><button id="rollback" class="choice-btn"><strong>ارجع إلى الإصدار السابق</strong><small>استعادة تستهدف المشتبه الرئيسي.</small></button></div>':''}</div>`);
-    bind('[data-tab]','click',event=>{ if(!state.flags.deployTabs.includes(event.currentTarget.dataset.tab)) state.flags.deployTabs.push(event.currentTarget.dataset.tab); saveState(); deployIncident(); });
-    $('#restartInst')?.addEventListener('click',()=>{ state.flags.deployRecovery='restart'; addDecision('deploy-restart','أعدت تشغيل الوحدات المتأثرة','عادت الخدمة أسرع، لكن السبب المشتبه به بقي في الإصدار الحالي وقد يتكرر.'); saveState(); go('onCall'); });
-    $('#rollback')?.addEventListener('click',()=>{ state.flags.deployRecovery='rollback'; addDecision('deploy-rollback','رجعت إلى الإصدار السابق','استهدفت المشتبه الرئيسي بإزالة الإصدار الجديد من الخدمة ضمن سيناريو الاستعادة.'); saveState(); go('onCall'); });
+    html(`<div><span class="eyebrow">عطل جديد أثناء التشغيل</span><h1 class="scene-title">ارتفعت الأخطاء بعد إصدار جديد.</h1>${supportingRoleStrip(['operationsTeam'],'من يعمل مع هانا أثناء التشخيص؟')}<div class="reality-note"><strong>سياق المرونة</strong>توزيعك ${values.join(' / ')}% تحمل ${resilient}/3 حالات خروج. هذا لا يثبت سبب الحادث.</div><div class="incident-tabs">${INCIDENT_TABS.map(([id,label])=>state.flags.deployTabs.includes(id)?`<span class="incident-tab incident-tab--done">✓ ${label}</span>`:`<button data-tab="${id}">${label}</button>`).join('')}</div><div class="diagnosis-stack">${state.flags.deployTabs.length?diagnosisSummary():'<div class="card flat">ابدأ بفحص الشبكة أو الخوادم أو خدمة النموذج.</div>'}</div>${complete?'<div class="alert"><strong>الاستنتاج الحالي</strong><span>الشبكة مستقرة والسعة متاحة، بينما يرتفع استهلاك الذاكرة في الإصدار الجديد؛ لذلك يصبح الإصدار المشتبه الرئيسي.</span></div><div class="choice-grid"><button id="restartInst" class="choice-btn"><strong>أعد تشغيل الوحدات المتأثرة</strong><small>عودة أسرع مع احتمال التكرار.</small></button><button id="rollback" class="choice-btn"><strong>ارجع إلى الإصدار السابق</strong><small>استعادة تستهدف المشتبه الرئيسي.</small></button></div>':''}</div>`);
+    bind('[data-tab]','click',event=>{if(!state.flags.deployTabs.includes(event.currentTarget.dataset.tab))state.flags.deployTabs.push(event.currentTarget.dataset.tab);saveState();deployIncident();});
+    $('#restartInst')?.addEventListener('click',()=>{state.flags.deployRecovery='restart';addDecision('deploy-restart','أعدت تشغيل الوحدات المتأثرة','نفذت إجراء استعادة سريعًا، لكن نجاحه ما زال يحتاج تحققًا صحيًا.');saveState();go('onCall');});
+    $('#rollback')?.addEventListener('click',()=>{state.flags.deployRecovery='rollback';addDecision('deploy-rollback','رجعت إلى الإصدار السابق','أزلت الإصدار المشتبه به من الخدمة، لكن الاستعادة ما زالت تحتاج تحققًا صحيًا.');saveState();go('onCall');});
   }
 
-  function onCall() {
-    if(state.flags.deployRecovery===null){ go('deployIncident'); return; }
+  function onCall(){
+    if(state.flags.deployRecovery===null){go('deployIncident');return;}
     const restarted=state.flags.deployRecovery==='restart';
-    const values=savedLoad();
-    html(`<div><span class="eyebrow">بعد استعادة الخدمة</span><h1 class="scene-title">الخدمة عادت، لكن أثر الحادث ما زال يصل إلى المستخدمين.</h1>${supportingRoleStrip(['affectedUser'],'من يظهر في الواجهة الآن؟')}<div class="card"><p>تعاملت هانا مع العطل ${restarted?'بإعادة تشغيل الوحدات':'بالعودة إلى الإصدار السابق'}. بقي توزيع الحمل (${values.join(' / ')}%) واختبار تحويل الحمل جزءًا من سجل التشغيل، لا سببًا مفترضًا للحادث.</p></div><div class="action-row"><button id="toSupport" class="primary-btn">انتقل إلى بلاغات الحادث</button></div></div>`);
+    if(!recoveryVerified()){
+      html(`<div><span class="eyebrow">تحقق الاستعادة</span><h1 class="scene-title">إجراء الاستعادة نُفذ، لكن لا تعلن عودة الخدمة قبل القياس.</h1>${supportingRoleStrip(['operationsTeam'],'من يتحقق من الاستعادة؟')}<div class="hud-grid"><div class="hud-item"><span>معدل الأخطاء</span><strong>عاد للنطاق</strong></div><div class="hud-item"><span>الذاكرة</span><strong>${restarted?'مستقرة الآن مع بقاء الإصدار الحالي':'مستقرة بعد العودة للإصدار السابق'}</strong></div><div class="hud-item"><span>اختبار طلب تجريبي</span><strong>نجح</strong></div></div><div class="action-row"><button id="verifyRecovery" class="primary-btn">ثبّت نتيجة التحقق</button></div></div>`);
+      $('#verifyRecovery').addEventListener('click',()=>{addDecision('deploy-recovery-verified','تحققت من عودة الخدمة بعد إجراء الاستعادة',restarted?'عاد معدل الأخطاء للنطاق ونجح طلب تجريبي، مع بقاء الإصدار المشتبه به تحت المراقبة.':'عاد معدل الأخطاء للنطاق ونجح طلب تجريبي على الإصدار السابق.');saveState();onCall();});return;
+    }
+    html(`<div><span class="eyebrow">بعد التحقق من الاستعادة</span><h1 class="scene-title">الخدمة عادت، لكن أثر الحادث ما زال يصل إلى المستخدمين.</h1>${supportingRoleStrip(['affectedUser'],'من يظهر في الواجهة الآن؟')}<div class="card"><p>تعاملت هانا مع العطل ${restarted?'بإعادة التشغيل':'بالعودة إلى الإصدار السابق'} ثم تحققت من معدل الأخطاء والذاكرة وطلب تجريبي قبل إعلان العودة.</p></div><div class="action-row"><button id="toSupport" class="primary-btn">انتقل إلى بلاغات الحادث</button></div></div>`);
     $('#toSupport').addEventListener('click',()=>go('supportTask'));
   }
 
-  function supportTask() {
-    const index=state.flags.supportIndex;
-    if(index>=SUPPORT_TASKS.length){ go('deployEnd'); return; }
-    const task=SUPPORT_TASKS[index];
-    const values=savedLoad();
-    html(`<div><span class="eyebrow">سامر — دعم المستخدمين</span><h1 class="scene-title">بلاغ مرتبط بالحادث ${index+1}/${SUPPORT_TASKS.length}</h1>${supportingRoleStrip(['affectedUser'],'صاحب البلاغ')}${supportFeedbackMarkup()}<div class="reality-note"><strong>سياق الحادث المحفوظ</strong>التوزيع أثناء الحادث: ${values.join(' / ')}%. يبقى ظاهرًا دون اعتباره سببًا تلقائيًا.</div><p class="scene-subtitle">الخياران قد يساعدان المستخدم، لكنهما يختلفان في السرعة وفي الأدلة المحفوظة للتحقيق.</p><div class="card"><div class="message user">${ctx.h(task.q)}</div><div class="choice-grid"><button id="supportInvestigate" class="choice-btn"><strong>${ctx.h(task.aTitle)}</strong><small>${ctx.h(task.aDetail)}</small></button><button id="supportFast" class="choice-btn"><strong>${ctx.h(task.bTitle)}</strong><small>${ctx.h(task.bDetail)}</small></button></div></div></div>`);
-    $('#supportInvestigate')?.addEventListener('click',()=>{ addDecision(`support-evidence-${index}`,`حافظت على أدلة البلاغ ${index+1}`,'ربطت تجربة المستخدم ببيانات الحادث والتحقيق.'); state.flags.supportFeedbackLabel='احتفظ الفريق بسياق تشخيصي أفضل'; state.flags.supportFeedbackDetail='استغرقت المعالجة وقتًا أطول قليلًا، لكن البلاغ بقي مرتبطًا بالحادث.'; state.flags.supportIndex+=1; saveState(); supportTask(); });
-    $('#supportFast')?.addEventListener('click',()=>{ addDecision(`support-fast-${index}`,`قدمت استعادة أسرع للبلاغ ${index+1}`,'الإجراء أسرع للمستخدم، لكنه يحفظ معلومات أقل للتحقيق.'); state.flags.supportFeedbackLabel='حصل المستخدم على مسار استعادة أسرع'; state.flags.supportFeedbackDetail='تحسنت السرعة المباشرة، لكن الفريق احتفظ بأدلة أقل.'; state.flags.supportIndex+=1; saveState(); supportTask(); });
-  }
-
-  function deployEnd() {
-    const values=savedLoad();
-    const resilient=survivableFailures(values);
-    addLedger(7,'هانا وسامر وفرق العمليات','مراقبة مؤجلة، توزيع حمل، اختبار خروج المراكز، تشخيص، استعادة ودعم','الخدمة متاحة للمستخدمين',`أُغلقت الفحوص المؤجلة ${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length}، واختبر التوزيع ضد قيود نقل الطوارئ؛ تحمل ${resilient}/3 حالات${resilient<3?' مع تسجيل فجوة المرونة وقبولها صراحة قبل المتابعة':''}.`);
-    html(`<div><span class="eyebrow">نهاية مرحلة التشغيل</span><h1 class="scene-title">اكتملت مراحل اللعب الثماني.</h1>${supportFeedbackMarkup()}<div class="stage-output"><strong>الخدمة عادت إلى حالة متاحة بعد عطل</strong>خلف كلمة «متاحة» توجد مراقبة وسعات وقيود نقل وتشخيص واستعادة ودعم.</div><div class="hud-grid"><div class="hud-item"><span>توزيع الحمل</span><strong>${values.join(' / ')}%</strong></div><div class="hud-item"><span>حالات الخروج</span><strong>${resilient}/3 (السقف المكتشف ${MAX_SURVIVABLE_FAILURES}/3)</strong></div><div class="hud-item"><span>الفحوص المؤجلة المغلقة</span><strong>${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length}</strong></div><div class="hud-item"><span>بلاغات الحادث</span><strong>${state.flags.supportIndex}</strong></div></div><div class="action-row"><button id="uptimeAbstract" class="primary-btn">أغلق مرحلة التشغيل وركّب الصورة الكاملة</button></div></div>`);
-    $('#uptimeAbstract')?.addEventListener('click',()=>go('abstract8'));
-  }
-
-  function abstract8(){ abstraction([['هانا','مهندسة تشغيل','◉'],['سامر','دعم المستخدمين','◌'],['فرق المناوبة والصيانة','','◇']],'الخدمة متاحة','الفحوص المؤجلة والتوزيع والمرونة والتشخيص والاستعادة والدعم أصبحت للمستخدم حالة بسيطة: «الخدمة متاحة».','pipelineAssemble'); }
-
-  return { ch8Intro,deployLoad,deployIncident,onCall,supportTask,deployEnd,abstract8 };
+  function supportTask(){const index=state.flags.supportIndex;if(index>=SUPPORT_TASKS.length){go('deployEnd');return;}const task=SUPPORT_TASKS[index],values=savedLoad();html(`<div><span class="eyebrow">سامر — دعم المستخدمين</span><h1 class="scene-title">بلاغ مرتبط بالحادث ${index+1}/${SUPPORT_TASKS.length}</h1>${supportingRoleStrip(['affectedUser'],'صاحب البلاغ')}${supportFeedbackMarkup()}<div class="reality-note"><strong>سياق التشغيل</strong>التوزيع أثناء الحادث: ${values.join(' / ')}%.</div><div class="card"><div class="message user">${ctx.h(task.q)}</div><div class="choice-grid"><button id="supportInvestigate" class="choice-btn"><strong>${ctx.h(task.aTitle)}</strong><small>${ctx.h(task.aDetail)}</small></button><button id="supportFast" class="choice-btn"><strong>${ctx.h(task.bTitle)}</strong><small>${ctx.h(task.bDetail)}</small></button></div></div></div>`);$('#supportInvestigate')?.addEventListener('click',()=>{addDecision(`support-evidence-${index}`,`حافظت على أدلة البلاغ ${index+1}`,'ربطت تجربة المستخدم ببيانات الحادث.');state.flags.supportFeedbackLabel='احتفظ الفريق بسياق تشخيصي أفضل';state.flags.supportFeedbackDetail='استغرقت المعالجة وقتًا أطول قليلًا.';state.flags.supportIndex+=1;saveState();supportTask();});$('#supportFast')?.addEventListener('click',()=>{addDecision(`support-fast-${index}`,`قدمت استعادة أسرع للبلاغ ${index+1}`,'الإجراء أسرع لكنه يحفظ معلومات أقل للتحقيق.');state.flags.supportFeedbackLabel='حصل المستخدم على مسار استعادة أسرع';state.flags.supportFeedbackDetail='تحسنت السرعة المباشرة مع أدلة أقل.';state.flags.supportIndex+=1;saveState();supportTask();});}
+  function deployEnd(){const values=savedLoad(),resilient=survivableFailures(values);addLedger(7,'هانا وسامر وفرق العمليات','توزيع حمل، اختبار مرونة، مراقبة، تشخيص، استعادة، تحقق ودعم','الخدمة متاحة للمستخدمين',`تحمل التوزيع ${resilient}/3 حالات؛ أُغلقت الفحوص المؤجلة ${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length}.`);html(`<div><span class="eyebrow">نهاية مرحلة التشغيل</span><h1 class="scene-title">اكتملت مراحل اللعب الثماني.</h1>${supportFeedbackMarkup()}<div class="stage-output"><strong>الخدمة متاحة بعد استعادة تحققت منها الفرق</strong>خلف كلمة «متاحة» توجد سعات واختبارات ومراقبة وتشخيص واستعادة ودعم.</div><div class="hud-grid"><div class="hud-item"><span>توزيع الحمل</span><strong>${values.join(' / ')}%</strong></div><div class="hud-item"><span>حالات الخروج</span><strong>${resilient}/3</strong></div><div class="hud-item"><span>الفحوص المؤجلة المغلقة</span><strong>${state.flags.monitoringChecksCompleted.length}/${state.flags.deferredExtraChecks.length}</strong></div></div><div class="action-row"><button id="uptimeAbstract" class="primary-btn">ركّب الصورة الكاملة</button></div></div>`);$('#uptimeAbstract')?.addEventListener('click',()=>go('abstract8'));}
+  function abstract8(){abstraction([['هانا','مهندسة تشغيل','◉'],['سامر','دعم المستخدمين','◌'],['فرق المناوبة والصيانة','','◇']],'الخدمة متاحة','يختصر النظام التوزيع والمرونة والمراقبة والتشخيص والاستعادة والتحقق والدعم في حالة بسيطة يراها المستخدم: «الخدمة متاحة».','pipelineAssemble');}
+  return {ch8Intro,deployLoad,deployIncident,onCall,supportTask,deployEnd,abstract8};
 }

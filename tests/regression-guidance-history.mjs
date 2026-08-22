@@ -20,7 +20,9 @@ if(state.flags.candidateRevision!==1||state.scene!=='trainingSetup')throw new Er
 
 console.log('GUIDANCE_HISTORY:eligibility-progress');
 await load(page,{scene:'trainingSetup',flags:{dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingApproved:[0],dataTrainingHeld:[1]}});
-await page.getByText('أهلية البيانات: 2/2 مواد غير محسومة حُسم قرار دخولها',{exact:true}).waitFor({state:'visible'});
+await page.getByText('مسموح بها رغم الحاجب — المشكلة باقية',{exact:true}).waitFor({state:'visible'});
+await page.getByText('موقوفة قبل التدريب الإضافي',{exact:true}).waitFor({state:'visible'});
+if(await page.locator('#trainStart').isDisabled())throw new Error('Completed eligibility decisions did not unlock a valid training round.');
 
 console.log('GUIDANCE_HISTORY:calibration-proof-after-errors');
 await load(page,{scene:'evalTask',flags:{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:1}});

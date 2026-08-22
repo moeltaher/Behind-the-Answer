@@ -15,3 +15,4 @@ body.high-contrast {
 }
 body.large-text { --font-scale:1.13; }
 body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration:.001ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.001ms!important; }
+.training-config-summary { max-height:none; overflow:visible; }
