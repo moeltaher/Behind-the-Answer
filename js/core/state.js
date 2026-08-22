@@ -1,4 +1,4 @@
-export const STATE_SCHEMA_VERSION = 4;
+export const STATE_SCHEMA_VERSION = 5;
 
 export const DEFAULT_STATE = {
   schemaVersion: STATE_SCHEMA_VERSION,
@@ -102,6 +102,6 @@ export function resetCandidateEvidence(state) {
   f.supportFeedbackLabel='';
   f.supportFeedbackDetail='';
   f.transferChoice=null;
-  // لا نحذف decisions أو ledger: ما حدث في revision سابقة يظل تاريخًا صحيحًا،
-  // لكن الحقول النشطة أعلاه تُصفّر حتى لا تُستخدم الأدلة القديمة لإطلاق revision جديدة.
+  // decisions وledger تاريخ لما حدث فعلًا؛ تصفير هذه الحقول يمنع إعادة استخدام
+  // أدلة revision سابقة في نسخة جديدة. إنشاء revision نفسها يحدث فقط عند بدء trainingRun.
 }
