@@ -7,7 +7,7 @@ const SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
 function stateWith(patch={}){
   const state=clone(DEFAULT_STATE);
   const merge=(target,source)=>Object.entries(source).forEach(([key,value])=>{
-    if(value&&typeof value==='object'&&!Array.isArray(value)){if(!target[key]||typeof target[key]!=='object'||Array.isArray(target[key]))target[key]={};merge(target[key],value);}else target[key]=value;
+    if(value&&typeof value==='object'&&!Array.isArray(value)){if(!target[key]||typeof target[key]!=='object'||Array.isArray(target[k]))target[key]={};merge(target[key],value);}else target[key]=value;
   });
   merge(state,patch);
   const r=state.flags.candidateRevision;
@@ -76,13 +76,21 @@ await page.locator('#retryLoad').waitFor({state:'visible'});
 
 console.log('SEVENTH_AUDIT:results-show-visual-encountered-support-roles');
 await load(page,{scene:'results',flags:released({safetyChoice:'details'})});
-const roles=page.locator('.secondary-labor-details .person-card');
+let supportDetails=page.locator('.secondary-labor-details');
+await supportDetails.waitFor({state:'visible'});
+if(!(await supportDetails.getAttribute('open')))await supportDetails.locator('summary').click();
+let roles=supportDetails.locator('.person-card');
 if(await roles.count()<10)throw new Error('Supporting roles are not rendered as visual person cards.');
-await page.getByText('مها',{exact:true}).waitFor({state:'visible'});
-await page.getByText('مستخدم متأثر',{exact:true}).waitFor({state:'visible'});
-if(await page.getByText('مراجع لغة',{exact:true}).count())throw new Error('Language reviewer appears despite not being encountered on this path.');
+await supportDetails.getByText('مها',{exact:true}).waitFor({state:'visible'});
+await supportDetails.getByText('مستخدم متأثر',{exact:true}).waitFor({state:'visible'});
+if(await supportDetails.getByText('مراجع لغة',{exact:true}).count())throw new Error('Language reviewer appears despite not being encountered on this path.');
 await load(page,{scene:'results',flags:released({safetyChoice:'strict'})});
-await page.getByText('مراجع لغة',{exact:true}).waitFor({state:'visible'});
+supportDetails=page.locator('.secondary-labor-details');
+await supportDetails.waitFor({state:'visible'});
+if(!(await supportDetails.getAttribute('open')))await supportDetails.locator('summary').click();
+roles=supportDetails.locator('.person-card');
+if(await roles.count()<10)throw new Error('Supporting roles disappeared on the remediation path.');
+await supportDetails.getByText('مراجع لغة',{exact:true}).waitFor({state:'visible'});
 
 await browser.close();
 console.log('Seventh-audit regression checks passed.');
