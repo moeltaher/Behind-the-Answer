@@ -23,6 +23,7 @@ const NO_GUIDANCE_SCENES = new Set([
 function statusFor(scene, state) {
   if (scene === 'mineTask' && state.flags.miningWarning) return 'decision';
   if (scene === 'factoryIncident' || scene === 'dcCooling' || scene === 'trainingRun' || scene === 'launchDecision') return 'decision';
+  if (scene === 'checkpointEval' && !state.flags.checkpointEvalComplete) return 'decision';
   if (scene === 'deployIncident' && state.flags.deployTabs.length === 3) return 'decision';
   return 'active';
 }
@@ -41,15 +42,21 @@ function progressFor(stage, state, scene) {
       return `مراجعة الدفعة: ${state.flags.dataIndex}/${DATA_ITEMS.length} — مرّت ${passed} / معلقة ${pending}`;
     }
     case 'annotation': return `المهام: ${state.flags.annotationResults.length}/${ANNOTATION_TASKS.length} — وقت غير مدفوع: ${state.flags.annotationUnpaidMinutes} دقيقة`;
-    case 'training': return scene === 'trainingRun' ? `العطل عند 35% — ${state.flags.trainingCompute} مجموعات حوسبة مخصصة` : 'إعداد تكلفة الحوسبة ونقطة الحفظ';
+    case 'training': {
+      const unresolved=state.flags.dataStatuses.filter((status,index)=>status==='ready'&&state.flags.dataChecks[index]&&Object.values(state.flags.dataChecks[index]).includes('unresolved')).length;
+      if (scene === 'trainingRun') return `العطل عند 35% — ${state.flags.trainingCompute} مجموعات حوسبة مخصصة`;
+      return unresolved ? `أهلية البيانات: ${state.flags.dataTrainingUsed.length + state.flags.dataTrainingHeld.length}/${unresolved} مواد غير محسومة راجعتها` : 'إعداد تكلفة الحوسبة ونقطة الحفظ';
+    }
     case 'evaluation':
+      if (scene === 'checkpointEval') return state.flags.checkpointEvalComplete ? 'تقييم checkpoint مكتمل' : 'تقييم checkpoint: 3 مقارنات مطلوبة';
       if (scene === 'safetyTest') return 'اختبار سلامة → إصلاح → إعادة اختبار إلزامية';
-      if (scene === 'launchDecision') return 'بوابات إصدار أساسية + أعمال إضافية سببية إن وجدت';
+      if (scene === 'launchDecision') return `بوابات الإصدار المعتمدة: ${state.flags.releaseGates.length}/4`;
       return `مهام التقييم: ${Math.min(state.flags.evalIndex, EVAL_TASKS.length)}/${EVAL_TASKS.length}`;
     case 'deployment':
+      if (scene === 'deployLoad' && state.flags.deployLoad) return `اختبار N‑1: ${state.flags.deployFailoverChecks.length}/3 حالات خروج`;
       if (scene === 'deployIncident') return `التشخيص: ${state.flags.deployTabs.length}/3 أقسام`;
       if (scene === 'supportTask') return `بلاغات الحادث: ${state.flags.supportIndex}/${SUPPORT_TASKS.length}`;
-      return 'وزّع 100% من الحمل مع احترام السعات وترك هامش تشغيل';
+      return 'وزّع 100% من الحمل ضمن السعات ثم اختبر حالات خروج المراكز';
     default: return '';
   }
 }
