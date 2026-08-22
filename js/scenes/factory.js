@@ -2,7 +2,7 @@ export function createFactoryRoutes(ctx) {
   const $ = ctx.$;
   const state = ctx.state;
   const { chapterIntro, html, go, saveState, addDecision, addLedger } = ctx;
-  const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line, next);
+  const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line,next);
   const monitorTile = ctx.monitorTile;
 
   function ch2Intro() { chapterIntro(1, 'factoryOrientation'); }
@@ -18,21 +18,39 @@ export function createFactoryRoutes(ctx) {
   }
 
   function factoryIncident() {
-    html(`<div><span class="eyebrow">تنبيه جودة</span><h1 class="scene-title">مؤشر الجسيمات تجاوز الحد التحذيري.</h1><div class="monitor">${monitorTile('درجة الحرارة','21.6° م',57)}<div class="monitor-tile"><span>مؤشر الجسيمات</span><strong class="numeric-value" dir="auto">49 / 40 ↑</strong><div class="bar"><i class="meter-fill meter-fill--warning" style="width:86%"></i></div></div>${monitorTile('فرق الضغط إلى المنطقة المجاورة','+12 Pa',58)}${monitorTile('نتيجة الفحص النهائي','لم تُحسم',10)}</div><div class="alert dangerish"><strong>الدفعة مطلوبة للشحن اليوم.</strong><span>إيقاف الخط يضيف وقتًا وتكلفة. الاستمرار يسمح بإكمال الدفعة لكنه ينقل مخاطرة أكبر إلى الفحص النهائي.</span></div><div class="choice-grid"><button id="fabStop" class="choice-btn"><strong>أوقف الخط وابحث عن مصدر الجسيمات</strong><small>افحص الترشيح ومصادر أخرى محتملة قبل استكمال الدفعة.</small></button><button id="fabContinue" class="choice-btn"><strong>أكمل الدفعة ثم شدد الفحص النهائي</strong><small>يحافظ على زمن الإنتاج، لكنه يترك احتمالًا أكبر لرفض وحدات لاحقًا.</small></button></div></div>`);
-    $('#fabStop').addEventListener('click', () => { state.flags.factoryChoice='stop'; addDecision('factory-stop','أوقفت خط المكونات للتحقيق','تحملت الشركة توقفًا وبحثت عن مصدر ارتفاع الجسيمات قبل إكمال الدفعة.'); saveState(); go('factoryOutcome'); });
-    $('#fabContinue').addEventListener('click', () => { state.flags.factoryChoice='continue'; addDecision('factory-continue','أكملت الدفعة ثم شددت الفحص','حافظت على زمن الإنتاج وانتقلت مخاطرة أكبر إلى الفحص النهائي والرفض.'); saveState(); go('factoryOutcome'); });
+    html(`<div><span class="eyebrow">تنبيه جودة</span><h1 class="scene-title">مؤشر الجسيمات تجاوز الحد التحذيري.</h1><div class="monitor">${monitorTile('درجة الحرارة','21.6° م',57)}<div class="monitor-tile"><span>مؤشر الجسيمات</span><strong class="numeric-value" dir="auto">49 / 40 ↑</strong><div class="bar"><i class="meter-fill meter-fill--warning" style="width:86%"></i></div></div>${monitorTile('فرق الضغط إلى المنطقة المجاورة','+12 Pa',58)}${monitorTile('نتيجة الفحص النهائي','لم تُحسم',10)}</div><div class="alert dangerish"><strong>الدفعة مطلوبة للشحن اليوم.</strong><span>إيقاف الخط يضيف وقتًا وتكلفة. الاستمرار يسمح بإكمال الدفعة لكنه ينقل مخاطرة أكبر إلى الفحص النهائي ويترك سبب ارتفاع الجسيمات دين صيانة مفتوحًا.</span></div><div class="choice-grid"><button id="fabStop" class="choice-btn"><strong>أوقف الخط وابحث عن مصدر الجسيمات</strong><small>افحص الترشيح ومصادر أخرى محتملة قبل استكمال الدفعة.</small></button><button id="fabContinue" class="choice-btn"><strong>أكمل الدفعة ثم شدد الفحص النهائي</strong><small>يحافظ على زمن الإنتاج، لكنه لا يغلق سبب التنبيه نفسه.</small></button></div></div>`);
+    $('#fabStop').addEventListener('click', () => {
+      state.flags.factoryChoice='stop';
+      state.flags.factoryMaintenanceDebt=false;
+      addDecision('factory-stop','أوقفت خط المكونات للتحقيق','تحملت الشركة توقفًا وبحثت عن مصدر ارتفاع الجسيمات قبل إكمال الدفعة.');
+      saveState(); go('factoryOutcome');
+    });
+    $('#fabContinue').addEventListener('click', () => {
+      state.flags.factoryChoice='continue';
+      state.flags.factoryMaintenanceDebt=true;
+      addDecision('factory-continue','أكملت الدفعة ثم شددت الفحص','حافظت على زمن الإنتاج وانتقلت مخاطرة أكبر إلى الفحص النهائي، وبقي سبب ارتفاع الجسيمات دين صيانة مفتوحًا.');
+      saveState(); go('factoryOutcome');
+    });
   }
 
   function factoryOutcome() {
     const stopped = state.flags.factoryChoice === 'stop';
     const investigation = stopped
-      ? '<div class="alert goodish"><strong>نتيجة التحقيق في سيناريو الدفعة</strong><span>فحص الفريق أكثر من مصدر محتمل، وحدد تسربًا عند وصلة في مسار الترشيح، أصلحه ثم تحقق من عودة المؤشر إلى النطاق. هذه نتيجة افتراضية للسيناريو وليست قاعدة بأن كل ارتفاع للجسيمات سببه المرشح.</span></div>'
-      : '<div class="alert"><strong>ما بقي بعد قرار الاستمرار</strong><span>شدّد الفحص النهائي ورفض وحدات أكثر، لكن سبب ارتفاع الجسيمات نفسه ما زال يحتاج تحقيق صيانة مستقلًا بعد الدفعة.</span></div>';
-    html(`<div><span class="eyebrow">الفحص النهائي</span><h1 class="scene-title">${stopped ? 'عاد مؤشر الجسيمات إلى النطاق بعد التحقيق والمعالجة.' : 'اكتملت الدفعة، لكن الفحص رفض وحدات أكثر.'}</h1><div class="stage-output"><strong>ناتج المرحلة</strong>مكونات إلكترونية اجتازت الفحص ويمكن أن تدخل مع أجزاء أخرى في تجميع الخوادم.</div><div class="hud-grid"><div class="hud-item"><span>نتيجة الجودة في السيناريو</span><strong>${stopped ? 'رفض محدود' : 'رفض أعلى'}</strong></div><div class="hud-item"><span>توقف الخط</span><strong>${stopped ? '20 دقيقة افتراضية' : '0'}</strong></div><div class="hud-item"><span>الشحن</span><strong>${stopped ? 'متأخر' : 'في الموعد'}</strong></div></div>${investigation}<p class="muted">لا تفترض اللعبة نسبة عيوب يمكن حسابها من قراءة الجسيمات وحدها؛ النتيجة النوعية هنا توضح اتجاه المفاضلة فقط.</p><details class="transition-details" open><summary>كيف تصبح المكونات خادمًا؟</summary><p>الخادم ليس «رقاقة كبيرة»؛ يدخل في تجميعه المعالج والمسرع والذاكرة والتخزين والطاقة والشبكات والتبريد، ثم يمر باختبارات قبل النقل.</p><div class="montage"><div class="montage-card"><span class="icon">▤</span><strong>معالجة وذاكرة</strong><span>شرائح ووحدات ذاكرة</span></div><div class="montage-card"><span class="icon">ϟ</span><strong>طاقة</strong><span>مزودات ووحدات احتياطية</span></div><div class="montage-card"><span class="icon">≋</span><strong>شبكات</strong><span>اتصال بين الأجهزة</span></div><div class="montage-card"><span class="icon">◫</span><strong>تبريد</strong><span>إدارة الحرارة داخل الجهاز</span></div></div></details><div class="action-row"><button id="toFactoryAbstract" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
-    $('#toFactoryAbstract').addEventListener('click', () => { addLedger(1,'ليلى وفرق التصنيع والفحص','تشغيل وفحص وصيانة تصنيع المكونات','مكونات إلكترونية اجتازت الفحص','اختصرت المرحلة سلسلة تصنيع معقدة في مراقبة دفعة وجودتها قبل التجميع.'); go('abstract2'); });
+      ? '<div class="alert goodish"><strong>أُغلق سبب التنبيه داخل المرحلة</strong><span>فحص الفريق أكثر من مصدر محتمل، وحدد تسربًا عند وصلة في مسار الترشيح، أصلحه ثم تحقق من عودة المؤشر إلى النطاق. هذه نتيجة افتراضية للسيناريو وليست قاعدة بأن كل ارتفاع للجسيمات سببه المرشح.</span></div>'
+      : '<div class="alert dangerish"><strong>دين صيانة باقٍ بعد الدفعة</strong><span>شدّد الفحص النهائي ورفض وحدات أكثر، لكن سبب ارتفاع الجسيمات نفسه لم يُغلق. مرور المكونات بالفحص لا يمحو تحقيق الصيانة المطلوب.</span></div>';
+    html(`<div><span class="eyebrow">الفحص النهائي</span><h1 class="scene-title">${stopped ? 'عاد مؤشر الجسيمات إلى النطاق بعد التحقيق والمعالجة.' : 'اكتملت الدفعة، لكن الفحص رفض وحدات أكثر.'}</h1><div class="stage-output"><strong>ناتج المرحلة</strong>مكونات إلكترونية اجتازت الفحص ويمكن أن تدخل مع أجزاء أخرى في تجميع الخوادم.</div><div class="hud-grid"><div class="hud-item"><span>نتيجة الجودة في السيناريو</span><strong>${stopped ? 'رفض محدود' : 'رفض أعلى'}</strong></div><div class="hud-item"><span>توقف الخط</span><strong>${stopped ? '20 دقيقة افتراضية' : '0'}</strong></div><div class="hud-item"><span>الشحن</span><strong>${stopped ? 'متأخر' : 'في الموعد'}</strong></div><div class="hud-item"><span>دين الصيانة</span><strong>${state.flags.factoryMaintenanceDebt?'مفتوح':'مغلق'}</strong></div></div>${investigation}<p class="muted">لا تفترض اللعبة نسبة عيوب يمكن حسابها من قراءة الجسيمات وحدها؛ النتيجة النوعية هنا توضح اتجاه المفاضلة فقط.</p><details class="transition-details" open><summary>كيف تصبح المكونات خادمًا؟</summary><p>الخادم ليس «رقاقة كبيرة»؛ يدخل في تجميعه المعالج والمسرع والذاكرة والتخزين والطاقة والشبكات والتبريد، ثم يمر باختبارات قبل النقل.</p><div class="montage"><div class="montage-card"><span class="icon">▤</span><strong>معالجة وذاكرة</strong><span>شرائح ووحدات ذاكرة</span></div><div class="montage-card"><span class="icon">ϟ</span><strong>طاقة</strong><span>مزودات ووحدات احتياطية</span></div><div class="montage-card"><span class="icon">≋</span><strong>شبكات</strong><span>اتصال بين الأجهزة</span></div><div class="montage-card"><span class="icon">◫</span><strong>تبريد</strong><span>إدارة الحرارة داخل الجهاز</span></div></div></details><div class="action-row"><button id="toFactoryAbstract" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
+    $('#toFactoryAbstract').addEventListener('click', () => {
+      addDecision(
+        stopped?'factory-maintenance-closed':'factory-maintenance-open',
+        stopped?'أغلقت تحقيق الصيانة قبل انتقال الدفعة':'انتقلت الدفعة مع تحقيق صيانة مفتوح',
+        stopped?'دفع القرار تكلفة تأخير لكنه أغلق سبب التنبيه وأعاد المؤشر إلى النطاق قبل الانتقال.':'نجح الفحص في استبعاد وحدات أكثر، لكن سبب ارتفاع الجسيمات بقي عمل صيانة مطلوبًا بعد الدفعة.'
+      );
+      addLedger(1,'ليلى وفرق التصنيع والفحص','تشغيل وفحص وصيانة تصنيع المكونات','مكونات إلكترونية اجتازت الفحص',stopped?'اختصرت المرحلة سلسلة تصنيع معقدة في مراقبة دفعة وجودتها وأغلقت سبب التنبيه قبل الانتقال.':'اجتازت المكونات الفحص مع بقاء تحقيق صيانة مفتوحًا؛ جودة المنتج ودين الصيانة حالتان منفصلتان.');
+      go('abstract2');
+    });
   }
 
-  function abstract2() { abstraction([['ليلى','فنية تشغيل','▤'],['فريق الصيانة','','◇'],['فريق الفحص','','⌕']],'مكونات اجتازت الفحص','التصنيع والصيانة والفحص أصبحت مكونات مقبولة تنتقل إلى التجميع.','ch3Intro'); }
+  function abstract2() { abstraction([['ليلى','فنية تشغيل','▤'],['فريق الصيانة','','◇'],['فريق الفحص','','⌕']],'مكونات اجتازت الفحص','التصنيع والصيانة والفحص أصبحت مكونات مقبولة تنتقل إلى التجميع، مع بقاء دين الصيانة ظاهرًا إذا لم يُغلق سببه.','ch3Intro'); }
 
   return { ch2Intro,factoryOrientation,factoryMonitor,factoryIncident,factoryOutcome,abstract2 };
 }

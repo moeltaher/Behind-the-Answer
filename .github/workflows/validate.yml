@@ -58,11 +58,11 @@ jobs:
           cat /tmp/behind-answer-server.log
           exit 1
 
-      - name: Run complete browser, causality, accessibility and cross-browser suite
+      - name: Run complete browser, causality, migration, accessibility and cross-browser suite
         run: npm run test:browser
 
-      - name: Run second-audit regression suite
-        run: npm run test:second-audit
+      - name: Run third-audit regression suite
+        run: npm run test:third-audit
 
       - name: Stop static server
         if: always()

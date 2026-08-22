@@ -48,6 +48,30 @@ body[data-stage] .scene-character { border-inline-start: 3px solid rgba(var(--st
 .result-core { margin-top: 18px; }
 .full-evidence-details .evidence-results { margin-bottom: 0; }
 
+/* Annotation is intentionally a light task UI. Components shared with the dark
+   game shell must receive a matching light-surface palette when nested here. */
+.annotation-shell .transition-details {
+  background: #f7f8fa;
+  border-color: #b8c1cc;
+  color: #18212d;
+}
+.annotation-shell .transition-details > summary { color: #18212d; }
+.annotation-shell .transition-details .card.flat,
+.annotation-shell .supporting-role-card {
+  background: #ffffff;
+  border-color: #c2c9d2;
+  color: #18212d;
+}
+.annotation-shell .muted,
+.annotation-shell .small.muted,
+.annotation-shell .supporting-role-label,
+.annotation-shell .supporting-role-card small,
+.annotation-shell .reality-note,
+.annotation-shell .reality-note span {
+  color: #46515f;
+}
+.annotation-shell .reality-note { border-color: #aeb8c4; }
+
 @media (max-width:700px) {
   .optional-source-details { padding: 10px 12px; }
   .journey-highlights { grid-template-columns: 1fr; }

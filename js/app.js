@@ -5,7 +5,6 @@ import { tone as playTone } from './core/audio.js';
 import { applySettings } from './core/accessibility.js';
 import { addLedger as recordLedger, renderLedger as drawLedger } from './core/ledger.js';
 import { createRouter } from './core/router.js';
-import { enhanceAuditScene } from './core/audit-enhancements.js';
 import { CHAPTERS } from './data/chapters.js';
 import { DEMO_PROMPT } from './data/story.js';
 import { characterForScene } from './data/characters.js';
@@ -90,7 +89,6 @@ function sceneHtml(content){
   const savedNotice=state.systemNotice?`<div class="alert" role="status"><strong>تحديث الحفظ المحلي</strong><span>${h(state.systemNotice)}</span></div>`:'';
   const failureNotice=storageWarning?`<div class="alert dangerish" role="status"><strong>تنبيه الحفظ المحلي</strong><span>${h(storageWarning)}</span></div>`:'';
   router.html(`${savedNotice}${failureNotice}${characterCard(character)}${guidance}${content}`);
-  enhanceAuditScene(ctx);
   if(state.systemNotice){ state.systemNotice=''; saveState(); }
 }
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});

@@ -16,6 +16,6 @@
     "check:css": "node tests/css-integrity.mjs",
     "audit:ci": "npm audit --audit-level=high",
     "test:browser": "node tests/smoke.mjs",
-    "test:second-audit": "node tests/second-audit.mjs"
+    "test:third-audit": "node tests/third-audit.mjs"
   }
 }

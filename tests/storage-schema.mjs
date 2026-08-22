@@ -32,40 +32,46 @@ function expectReset(value) {
 }
 
 const validState=clone(DEFAULT_STATE);
-validState.scene='safetyRetest';
+validState.scene='finalMessage';
 validState.flags.miningMinutes=35;
 validState.flags.miningBUses=2;
-validState.flags.miningIncidentChoice='continue';
-validState.flags.miningRiskLevel=1;
+validState.flags.miningIncidentChoice='stop';
+validState.flags.miningInspectionCount=1;
 validState.flags.factoryChoice='stop';
+validState.flags.factoryMaintenanceDebt=false;
 validState.flags.serverSteps=['rack','network','power','register'];
 validState.flags.dcCoolingChoice='move';
 validState.flags.dcCoolingRestored=true;
 validState.flags.dataIndex=5;
-validState.flags.dataReviewMinutes=8;
-validState.flags.dataStatuses=['excluded','ready','ready','pending','pending'];
+validState.flags.dataReviewMinutes=4;
+validState.flags.dataStatuses=['excluded','ready','excluded','ready','excluded'];
 validState.flags.dataChecks=[
   { rights:'na',privacy:'na',fitness:'na' },
   { rights:'clear',privacy:'clear',fitness:'clear' },
+  { rights:'na',privacy:'na',fitness:'na' },
   { rights:'clear',privacy:'clear',fitness:'clear' },
-  { rights:'unresolved',privacy:'clear',fitness:'clear' },
-  { rights:'unresolved',privacy:'unresolved',fitness:'clear' }
+  { rights:'na',privacy:'na',fitness:'na' }
 ];
-validState.flags.dataSort={ keep:1,remove:1,redact:1,review:2 };
+validState.flags.dataSort={ keep:2,remove:3,redact:0,review:0 };
+validState.flags.dataTrainingUsed=[1,3];
+validState.flags.dataTrainingHeld=[];
 validState.flags.annotationUnpaidMinutes=9;
 validState.flags.tookBreak=true;
 validState.flags.breakDecisionMade=true;
 validState.flags.trainingIncidentChoice='pause';
-validState.flags.evalIndex=2;
-validState.flags.evalCorrectCount=2;
-validState.flags.evalFeedback={ choice:'a',correct:true };
+validState.flags.checkpointEvalComplete=true;
+validState.flags.evalIndex=3;
+validState.flags.evalCorrectCount=3;
 validState.flags.safetyChoice='details';
 validState.flags.safetyRemediated=true;
 validState.flags.safetyRetested=true;
-validState.flags.launchChoice='delay';
+validState.flags.releaseGates=['regression','capacity','risk','rollback'];
+validState.flags.launchChoice='ready';
 validState.flags.deployLoad=[45,30,25];
+validState.flags.deployFailoverChecks=[0,1,2];
 validState.flags.deployTabs=['network','compute','model'];
 validState.flags.deployRecovery='rollback';
+validState.flags.supportIndex=2;
 validState.flags.supportFeedbackLabel='احتفظ الفريق بسياق تشخيصي أفضل';
 validState.flags.supportFeedbackDetail='بقي البلاغ مرتبطًا بالحادث.';
 validState.flags.transferChoice='build-use';
@@ -84,30 +90,36 @@ const badChecks=clone(validState);
 badChecks.flags.dataChecks.pop();
 expectReset(badChecks);
 
-const badCheckEnum=clone(validState);
-badCheckEnum.flags.dataChecks[1].rights='probably';
-expectReset(badCheckEnum);
-
 const inconsistentDataIndex=clone(validState);
 inconsistentDataIndex.flags.dataIndex=4;
 expectReset(inconsistentDataIndex);
 
-const badLoad=clone(validState);
-badLoad.flags.deployLoad=[61,20,19];
-expectReset(badLoad);
+const factoryDebtMismatch=clone(validState);
+factoryDebtMismatch.flags.factoryMaintenanceDebt=true;
+expectReset(factoryDebtMismatch);
 
-const recoveryWithoutDiagnosis=clone(validState);
-recoveryWithoutDiagnosis.flags.deployTabs=['network','compute'];
-expectReset(recoveryWithoutDiagnosis);
+const unresolvedWithoutEligibility=clone(validState);
+unresolvedWithoutEligibility.flags.dataStatuses[3]='ready';
+unresolvedWithoutEligibility.flags.dataChecks[3]={rights:'unresolved',privacy:'clear',fitness:'clear'};
+unresolvedWithoutEligibility.flags.dataTrainingUsed=[];
+unresolvedWithoutEligibility.flags.dataTrainingHeld=[];
+expectReset(unresolvedWithoutEligibility);
 
-const retestWithoutRemediation=clone(validState);
-retestWithoutRemediation.flags.safetyRemediated=false;
-expectReset(retestWithoutRemediation);
+const launchWithoutGates=clone(validState);
+launchWithoutGates.flags.releaseGates=['regression','capacity'];
+expectReset(launchWithoutGates);
 
-const launchWithoutRetest=clone(validState);
-launchWithoutRetest.flags.safetyRetested=false;
-launchWithoutRetest.flags.launchChoice='fast';
-expectReset(launchWithoutRetest);
+const launchWithUnresolvedExposure=clone(validState);
+launchWithUnresolvedExposure.flags.dataChecks[3]={rights:'unresolved',privacy:'clear',fitness:'clear'};
+expectReset(launchWithUnresolvedExposure);
+
+const recoveryWithoutFailover=clone(validState);
+recoveryWithoutFailover.flags.deployFailoverChecks=[0,1];
+expectReset(recoveryWithoutFailover);
+
+const transferBeforeSupport=clone(validState);
+transferBeforeSupport.flags.supportIndex=1;
+expectReset(transferBeforeSupport);
 
 const duplicateAnnotation=clone(validState);
 duplicateAnnotation.flags.annotationResults=[
@@ -116,28 +128,40 @@ duplicateAnnotation.flags.annotationResults=[
 ];
 expectReset(duplicateAnnotation);
 
-const badCompute=clone(validState);
-badCompute.flags.trainingCompute='10';
-expectReset(badCompute);
+const badOrigin=clone(validState);
+badOrigin.flags.dataOrigins=['mystery-source'];
+expectReset(badOrigin);
 
-const extraStateField=clone(validState);
-extraStateField.legacyCompatibility=true;
-expectReset(extraStateField);
+const v2=clone(validState);
+v2.schemaVersion=2;
+for(const key of ['factoryMaintenanceDebt','dataTrainingUsed','dataTrainingHeld','checkpointEvalComplete','releaseGates','extraChecks','deployFailoverChecks']) delete v2.flags[key];
+v2.scene='finalAnswer';
+v2.flags.launchChoice='delay';
+v2.flags.deployRecovery='rollback';
+v2.flags.transferChoice='build-use';
+saveRaw(STORAGE_KEY,v2);
+const migratedV2=loadState(DEFAULT_STATE);
+assert.equal(migratedV2.schemaVersion,3);
+assert.equal(migratedV2.scene,'trainingSetup');
+assert.equal(migratedV2.flags.factoryMaintenanceDebt,false);
+assert.equal(migratedV2.flags.trainingIncidentChoice,null);
+assert.deepEqual(migratedV2.flags.releaseGates,[]);
+assert.equal(migratedV2.flags.deployLoad,null);
+assert.equal(migratedV2.flags.transferChoice,null);
+assert.match(migratedV2.systemNotice,/الإصدار 2 إلى الإصدار 3/);
 
-const legacy=clone(validState);
+const legacy=clone(v2);
 delete legacy.schemaVersion;
 delete legacy.systemNotice;
-for (const key of ['miningRiskLevel','miningForcedInspection','miningInspectionCount','dcCoolingRestored','dataChecks','deployLoad','transferChoice']) delete legacy.flags[key];
+for(const key of ['miningRiskLevel','miningForcedInspection','miningInspectionCount','dcCoolingRestored','dataChecks','deployLoad','transferChoice']) delete legacy.flags[key];
 legacy.scene='trainingSetup';
-legacy.flags.dataStatuses=['excluded','ready','ready','pending','pending'];
+legacy.flags.dataStatuses=['excluded','ready'];
 saveRaw(STORAGE_KEY,legacy);
-const migrated=loadState(DEFAULT_STATE);
-assert.equal(migrated.schemaVersion,STATE_SCHEMA_VERSION);
-assert.equal(migrated.scene,'trainingSetup');
-assert.equal(migrated.flags.dataIndex,5);
-assert.equal(migrated.flags.dataChecks.length,5);
-assert.equal(migrated.flags.dataChecks[1].rights,'unresolved');
-assert.match(migrated.systemNotice,/تم تحديث الحفظ السابق/);
+const migratedLegacy=loadState(DEFAULT_STATE);
+assert.equal(migratedLegacy.schemaVersion,3);
+assert.equal(migratedLegacy.flags.dataIndex,2);
+assert.equal(migratedLegacy.flags.dataChecks.length,2);
+assert.match(migratedLegacy.systemNotice,/الإصدار 3/);
 
 saveRaw(SETTINGS_KEY,DEFAULT_SETTINGS);
 assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);
@@ -153,4 +177,4 @@ assert.equal(saveState(validState),false);
 assert.equal(saveSettings(DEFAULT_SETTINGS),false);
 
 delete globalThis.matchMedia;
-console.log('Storage schema validates semantic values, cross-field invariants, migration, system motion defaults, and explicit save failures.');
+console.log('Storage v3 validates causal invariants, v2 migration, legacy migration, system motion defaults, and explicit save failures.');

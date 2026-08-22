@@ -15,14 +15,31 @@ const SECONDARY_LABOR = [
   'مراجعو اللغة'
 ];
 const FIXED_ANSWER = 'أعتذر عن التأخر في تسليم العمل. واجهت ظرفًا أدى إلى تأخير الإنجاز، وأعمل حاليًا على استكماله في أقرب وقت. أشكرك على تفهمك.';
-
-function selectedDecisions(state, matcher) {
-  return state.decisions.filter(decision => matcher(decision.id));
-}
+const TRANSFER_TASKS = [
+  ['weights','أوزان النموذج التي دُرّبت وراجعتها الفرق قبل إطلاق الخدمة','build'],
+  ['retrieval','في خدمة RAG: استرجاع مستندات مرتبطة بسؤال المستخدم الحالي','request'],
+  ['inference','تنفيذ inference لإنتاج نتيجة الطلب الحالي','request'],
+  ['monitoring','مراقبة الأخطاء والسعة والحوادث أثناء تشغيل الخدمة','continuous'],
+  ['maintenance','صيانة الخوادم والتبريد والشبكات التي تبقي البنية متاحة','continuous']
+];
 
 function decisionRows(decisions, h) {
   if (!decisions.length) return '<p class="muted">لا توجد قرارات مسجلة في هذا المحور.</p>';
   return decisions.map(decision => `<div class="decision-row"><strong>${h(decision.label)}</strong><div class="small muted">${h(decision.effectText)}</div></div>`).join('');
+}
+
+function decisionCategory(id) {
+  if(id.startsWith('mine-')||id.startsWith('annotation-')) return 'labor';
+  if(id.startsWith('factory-')||id.startsWith('data-')||id.startsWith('dc-')) return 'materials';
+  if(id.startsWith('training-')||id.startsWith('train-')||id.startsWith('checkpoint-')||id.startsWith('safety-')||id.startsWith('release-')||id.startsWith('extra-check-')||id.startsWith('launch-')) return 'development';
+  if(id.startsWith('deploy-')||id.startsWith('support-')) return 'operations';
+  return 'other';
+}
+
+function categorizedDecisions(state) {
+  const groups={labor:[],materials:[],development:[],operations:[],other:[]};
+  state.decisions.forEach(decision=>groups[decisionCategory(decision.id)].push(decision));
+  return groups;
 }
 
 function priorityDecision(decisions, priorities) {
@@ -56,13 +73,13 @@ function dataSummary(state) {
 function deliveryState(state) {
   if (state.flags.deployRecovery === 'restart') {
     return {
-      label: 'وصل بعد إعادة محاولة واحدة',
-      status: 'إعادة التشغيل أعادت الخدمة بسرعة، لكن الإصدار المشتبه به بقي موجودًا؛ يفترض سيناريو النهاية أن المحاولة الأولى بعد الحادث احتاجت إلى إعادة إرسال.'
+      label: 'وصل بعد استعادة الخدمة',
+      status: 'إعادة التشغيل أعادت الوحدات سريعًا، لكن الإصدار المشتبه به بقي موجودًا. لا تفترض اللعبة عدد محاولات أو إعادة إرسال لم تقع داخل اللعب.'
     };
   }
   return {
     label: 'وصل بعد استعادة الإصدار السابق',
-    status: 'عاد التشغيل إلى الإصدار السابق المشتبه بأنه أكثر استقرارًا في السيناريو، لذلك لا تفترض اللعبة إعادة محاولة لهذا الطلب.'
+    status: 'عاد التشغيل إلى الإصدار السابق في سيناريو الاستعادة؛ لا تضيف اللعبة زمنًا أو عدد محاولات لم تتم محاكاتها.'
   };
 }
 
@@ -80,39 +97,50 @@ export function createEndingRoutes(ctx) {
   }
 
   function transferChallenge() {
-    const choice=state.flags.transferChoice;
-    if(choice){
-      const correct=choice==='build-use';
-      html(`<div><span class="eyebrow">تحدي انتقال التعلم</span><h1 class="scene-title">${correct?'طبّقت الفكرة على نظام مختلف.':'المثال الجديد يكشف أين بقي الخلط.'}</h1><div class="alert ${correct?'goodish':'dangerish'}"><strong>${correct?'التمييز الأساسي محفوظ':'راجع الفرق بين البناء والاستخدام'}</strong><span>${correct?'حتى في مولد صور مختلف، معظم سلسلة المواد والأجهزة وبناء النموذج تسبق طلب المستخدم، بينما لحظة الاستخدام تعتمد على نموذج وبنية قائمين وتشغيل بشري وتقني مستمر.':'لا تبدأ سلسلة المواد أو بناء النموذج من الصفر مع كل طلب، ولا تختصر البنية في الواجهة وحدها. المطلوب فصل ما بُني سابقًا عما يحدث لحظة الاستخدام، مع إبقاء التشغيل والصيانة جزءًا مستمرًا.'}</span></div><p class="muted">لا توجد درجة لهذا التحدي. الغرض هو اختبار ما إذا كان النموذج التحليلي ينتقل إلى منتج آخر بدل حفظ مراحل اللعبة نفسها.</p><div class="action-row"><button id="transferContinue" class="primary-btn">ارجع إلى إجابتك</button></div></div>`);
+    if(state.flags.transferChoice==='build-use'){
+      html(`<div><span class="eyebrow">تحدي انتقال التعلم</span><h1 class="scene-title">طبّقت الفكرة على نظام RAG مختلف.</h1><div class="alert goodish"><strong>التمييز الأساسي محفوظ</strong><span>فصلت بين ما بُني تاريخيًا، وما يحدث بسبب الطلب الحالي، وما يستمر أثناء التشغيل حتى خارج لحظة الطلب. هذا هو النموذج الذي تريد اللعبة نقله، لا ترتيب المراحل نفسه.</span></div><p class="muted">لا توجد درجة لهذا التحدي. الغرض هو اختبار الانتقال إلى منتج آخر.</p><div class="action-row"><button id="transferContinue" class="primary-btn">ارجع إلى إجابتك</button></div></div>`);
       $('#transferContinue').addEventListener('click',()=>go('finalAnswer'));
       return;
     }
-    html(`<div><span class="eyebrow">تحدي انتقال التعلم</span><h1 class="scene-title">غيّر المنتج: ماذا يبقى صحيحًا في مولد صور؟</h1><p class="scene-subtitle">اختر التفسير الذي ينقل الفكرة الأساسية من اللعبة إلى خدمة مختلفة، لا الذي يكرر ترتيب المراحل حرفيًا.</p><div class="choice-grid"><button class="choice-btn" data-transfer="history-each-time"><strong>كل طلب صورة يبدأ السلسلة كلها من جديد</strong><small>يبدأ استخراج المواد وتصنيع الخوادم والتدريب عند الضغط على «إرسال».</small></button><button class="choice-btn" data-transfer="build-use"><strong>البناء يسبق الطلب، والاستخدام يعتمد على بنية قائمة</strong><small>المواد والأجهزة ودورات التطوير سبقت الطلب غالبًا؛ لحظة الاستخدام تشغّل نموذجًا وبنية قائمين وتظل مرتبطة بالتشغيل والدعم.</small></button><button class="choice-btn" data-transfer="interface-only"><strong>ما يهم هو الواجهة لأنها تنفذ العمل الفعلي</strong><small>المواد والعمال والبنية مجرد خلفية تاريخية لا تؤثر في الخدمة الحالية.</small></button></div></div>`);
-    ctx.bind('[data-transfer]','click',event=>{ state.flags.transferChoice=event.currentTarget.dataset.transfer; saveState(); transferChallenge(); });
+    html(`<div><span class="eyebrow">تحدي انتقال التعلم</span><h1 class="scene-title">غيّر المنتج: صنّف العمل في خدمة توليد تستخدم RAG.</h1><p class="scene-subtitle">ضع كل عنصر في زمنه الأساسي. بعض العمل كوّن النظام قبل الطلب، وبعضه ينفذ بسبب الطلب الحالي، وبعضه تشغيل مستمر.</p><div class="card">${TRANSFER_TASKS.map(([id,label])=>`<label class="form-row"><span>${h(label)}</span><select data-transfer-item="${id}"><option value="">اختر…</option><option value="build">بُني قبل الطلب</option><option value="request">يحدث مع الطلب الحالي</option><option value="continuous">تشغيل مستمر</option></select></label>`).join('')}<div class="decision-feedback-inline" id="transferFeedback" hidden role="status"></div><div class="action-row"><button id="transferSubmit" class="primary-btn">تحقق من التصنيف</button></div></div></div>`);
+    $('#transferSubmit').addEventListener('click',()=>{
+      const answers=Object.fromEntries([...document.querySelectorAll('[data-transfer-item]')].map(select=>[select.dataset.transferItem,select.value]));
+      const wrong=TRANSFER_TASKS.filter(([id,,correct])=>answers[id]!==correct);
+      const feedback=$('#transferFeedback');
+      if(wrong.length){
+        feedback.hidden=false;
+        feedback.innerHTML=`<strong>${wrong.length} عناصر تحتاج إعادة تصنيف.</strong><span>اسأل: هل كان هذا الشيء موجودًا قبل طلب المستخدم؟ هل ينفذ لأن الطلب الحالي وصل؟ أم يستمر حتى في غياب طلب بعينه؟</span>`;
+        return;
+      }
+      state.flags.transferChoice='build-use';
+      saveState(); transferChallenge();
+    });
   }
 
   function finalAnswer() {
     const delivery=deliveryState(state);
-    html(`<div class="chat-shell epilogue-chat"><div class="chat-logo">ن</div><div class="message user">${h(DEMO_PROMPT)}</div><div class="message ai"><strong>الإجابة:</strong><br>${h(FIXED_ANSWER)}</div><div class="delivery-state"><strong>${h(delivery.label)}</strong><span>${h(delivery.status)}</span></div><div class="dual-view"><div class="view-panel"><h3>ما بُني قبل طلبك</h3><div class="view-list"><span>الأجهزة</span><span>مراكز البيانات</span><span>مواد البيانات</span><span>التطوير والتقييم</span></div></div><div class="view-panel"><h3>ما يحدث عند الضغط على «إرسال»</h3><div class="view-list"><span>يصل الطلب إلى الخدمة</span><span>تشغله البنية القائمة</span><span>تعود النتيجة أو تفشل المحاولة</span></div></div></div><div class="reality-note"><strong>ما الذي تغير وما الذي لم يتغير؟</strong> صياغة رسالة الاعتذار ثابتة؛ قرارات التعدين والتصنيع لا تجعل النص نفسه أفضل لغويًا. أثر قرار التشغيل يظهر في حالة وصول الطلب ومرونة الاستعادة، بلا أرقام زمن دقيقة لا يبررها السيناريو.</div><div class="action-row"><button id="showResults" class="primary-btn">اعرض الأشخاص ونتيجة رحلتك</button></div></div>`);
+    html(`<div class="chat-shell epilogue-chat"><div class="chat-logo">ن</div><div class="message user">${h(DEMO_PROMPT)}</div><div class="message ai"><strong>الإجابة:</strong><br>${h(FIXED_ANSWER)}</div><div class="delivery-state"><strong>${h(delivery.label)}</strong><span>${h(delivery.status)}</span></div><div class="dual-view"><div class="view-panel"><h3>ما بُني قبل طلبك</h3><div class="view-list"><span>الأجهزة</span><span>مراكز البيانات</span><span>مواد البيانات</span><span>التطوير والتقييم</span></div></div><div class="view-panel"><h3>ما يحدث عند الضغط على «إرسال»</h3><div class="view-list"><span>يصل الطلب إلى الخدمة</span><span>تشغله البنية القائمة</span><span>تعود النتيجة أو تفشل المحاولة</span></div></div></div><div class="reality-note"><strong>وقد يحدث وقت الطلب بحسب تصميم المنتج</strong><span>توجيه الطلب، استرجاع مستندات في أنظمة RAG، فحوص moderation، استدعاء أدوات، caching أو تسجيل تشغيلي. هذه أمثلة شرطية وليست ادعاءً بأن كل خدمة تنفذها.</span></div><div class="reality-note"><strong>ما الذي تغير وما الذي لم يتغير؟</strong> صياغة رسالة الاعتذار ثابتة؛ قرارات التعدين والتصنيع لا تجعل النص نفسه أفضل لغويًا. أثر قرار التشغيل يظهر في حالة وصول الطلب ومرونة الاستعادة، بلا أرقام زمن دقيقة لا يبررها السيناريو.</div><div class="action-row"><button id="showResults" class="primary-btn">اعرض الأشخاص ونتيجة رحلتك</button></div></div>`);
     $('#showResults').addEventListener('click', () => go('results'));
   }
 
   function results() {
-    const labor = selectedDecisions(state, id => id.startsWith('mine-') || id.startsWith('annotation-'));
-    const materialAndData = selectedDecisions(state, id => id.startsWith('factory-') || id.startsWith('data-') || id.startsWith('dc-'));
-    const trainingAndLaunch = selectedDecisions(state, id => id.startsWith('training-') || id.startsWith('train-') || id.startsWith('safety-') || id.startsWith('launch-'));
-    const operations = selectedDecisions(state, id => id.startsWith('deploy-') || id.startsWith('support-'));
+    const groups=categorizedDecisions(state);
+    const labor=groups.labor;
+    const materialAndData=groups.materials;
+    const trainingAndLaunch=groups.development;
+    const operations=groups.operations;
     const data=dataSummary(state);
     const safety = state.flags.safetyChoice === 'details'
       ? 'اكتشفت الخلل في اختبار السلامة، ثم أُصلح واجتاز إعادة الاختبار الإلزامية قبل قرار الجاهزية.'
       : 'لم تلتقط الخلل أولًا؛ أوقفته مراجعة ثانية ثم أُصلح واجتاز إعادة اختبار أوسع قبل قرار الجاهزية.';
     const evaluation = `طابقت معيار السيناريو في ${state.flags.evalCorrectCount} من ${EVAL_TASKS.length} مهام تقييم. هذه نتيجة لأداء المقيّم، وليست درجة جودة للنموذج.`;
     const laborHighlight=priorityDecision(labor,['mine-forced-inspection','mine-stop','mine-continue','annotation-appeal','annotation-noappeal','annotation-break','annotation-no-break']);
-    const materialHighlight=priorityDecision(materialAndData,['data-pii-keep-after-review','data-code-keep','data-ambiguous-keep','data-pii-redact-after-review','dc-cooling-close','dc-move','dc-stop','factory-stop','factory-continue','data-*']);
-    const trainingHighlight=priorityDecision(trainingAndLaunch,['launch-delay','launch-fast','launch-ready','safety-second-review','safety-caught','train-continue','train-pause','training-checkpoint-recent','training-checkpoint-validated']);
-    const operationsHighlight=priorityDecision(operations,['deploy-rollback','deploy-restart','deploy-capacity-load','support-*']);
+    const materialHighlight=priorityDecision(materialAndData,['data-retrain-without-*','data-license-evidence-*','data-training-override-*','data-pii-keep-after-review','data-pii-redact-after-review','dc-cooling-close','dc-move','dc-stop','factory-maintenance-open','factory-maintenance-closed','factory-stop','factory-continue','data-*']);
+    const trainingHighlight=priorityDecision(trainingAndLaunch,['launch-delay','launch-fast','launch-ready','release-gate-*','checkpoint-evidence-reviewed','safety-second-review','safety-caught','train-continue','train-pause']);
+    const operationsHighlight=priorityDecision(operations,['deploy-rollback','deploy-restart','deploy-failover-review','deploy-capacity-load','support-*']);
+    const otherSection=groups.other.length?`<section class="evidence-card"><h2>قرارات أخرى</h2><div class="decision-list">${decisionRows(groups.other,h)}</div></section>`:'';
 
-    html(`<div><span class="eyebrow">نتيجة رحلتك</span><h1 class="display-title">أعد البشر والقرارات إلى الصورة.</h1><p class="scene-subtitle">لم ينتج هؤلاء الأشخاص إجابتك كلمةً كلمة، لكن أنواع العمل التي يمثلونها ساهمت في بناء وتشغيل البنية التي جعلتها ممكنة. البطاقات الأربع تختار القرارات الأعلى دلالة داخل كل محور، لا آخر نقرة زمنيًا.</p><div class="journey-highlights">${highlightCard('العمل والوقت',laborHighlight,'لا قرار بارز مسجل',h)}${highlightCard('المواد والبيانات',materialHighlight,`${data.clear} مواد محسومة و${data.unresolved} مرّت مع مسائل غير محسومة`,h)}${highlightCard('التدريب والجاهزية',trainingHighlight,'بوابات الجاهزية اكتملت',h)}${highlightCard('التشغيل والدعم',operationsHighlight,'الخدمة عادت بعد الحادث',h)}</div><div class="people-wall">${characterGrid(people)}</div><details class="secondary-labor-details"><summary>أدوار أخرى ظهرت في الرحلة</summary><div class="view-list">${SECONDARY_LABOR.map(role => `<span>${h(role)}</span>`).join('')}</div></details><div class="dual-view result-core"><div class="view-panel"><h3>عملية التقييم البشري</h3><p>${h(evaluation)}</p></div><div class="view-panel"><h3>اختبار السلامة</h3><p>${h(safety)}</p></div></div><details class="full-evidence-details"><summary>عرض السجل الكامل لكل قرارات الرحلة</summary><div class="evidence-results"><section class="evidence-card"><h2>العمل والوقت</h2><div class="decision-list">${decisionRows(labor,h)}</div></section><section class="evidence-card"><h2>المواد والبيانات والبنية</h2><div class="decision-list">${decisionRows(materialAndData,h)}</div></section><section class="evidence-card"><h2>التدريب والتحقق والسلامة</h2><div class="decision-list">${decisionRows(trainingAndLaunch,h)}</div></section><section class="evidence-card"><h2>التشغيل ودعم المستخدم</h2><div class="decision-list">${decisionRows(operations,h)}</div></section><div class="card flat discovery-summary"><h2>استكشاف مصادر البيانات</h2><p>فتحت ${state.flags.dataOrigins.length} من بطاقات المصادر الاختيارية. هذا عداد للاستكشاف، وليس شرطًا للنجاح أو درجةً للعبة.</p></div></div></details><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة رحلتك</span><h1 class="display-title">أعد البشر والقرارات إلى الصورة.</h1><p class="scene-subtitle">لم ينتج هؤلاء الأشخاص إجابتك كلمةً كلمة، لكن أنواع العمل التي يمثلونها ساهمت في بناء وتشغيل البنية التي جعلتها ممكنة. البطاقات الأربع تختار القرارات الأعلى دلالة داخل كل محور، لا آخر نقرة زمنيًا.</p><div class="journey-highlights">${highlightCard('العمل والوقت',laborHighlight,'لا قرار بارز مسجل',h)}${highlightCard('المواد والبيانات',materialHighlight,`${data.clear} مواد محسومة و${data.unresolved} ما زالت غير محسومة`,h)}${highlightCard('التدريب والجاهزية',trainingHighlight,'بوابات الجاهزية اكتملت',h)}${highlightCard('التشغيل والدعم',operationsHighlight,'الخدمة عادت بعد الحادث',h)}</div><div class="people-wall">${characterGrid(people)}</div><details class="secondary-labor-details"><summary>أدوار أخرى ظهرت في الرحلة</summary><div class="view-list">${SECONDARY_LABOR.map(role => `<span>${h(role)}</span>`).join('')}</div></details><div class="dual-view result-core"><div class="view-panel"><h3>عملية التقييم البشري</h3><p>${h(evaluation)}</p></div><div class="view-panel"><h3>اختبار السلامة</h3><p>${h(safety)}</p></div></div><details class="full-evidence-details" data-decision-count="${state.decisions.length}"><summary>عرض السجل الكامل لكل قرارات الرحلة (${state.decisions.length})</summary><div class="evidence-results"><section class="evidence-card"><h2>العمل والوقت</h2><div class="decision-list">${decisionRows(labor,h)}</div></section><section class="evidence-card"><h2>المواد والبيانات والبنية</h2><div class="decision-list">${decisionRows(materialAndData,h)}</div></section><section class="evidence-card"><h2>التدريب والتحقق والسلامة</h2><div class="decision-list">${decisionRows(trainingAndLaunch,h)}</div></section><section class="evidence-card"><h2>التشغيل ودعم المستخدم</h2><div class="decision-list">${decisionRows(operations,h)}</div></section>${otherSection}<div class="card flat discovery-summary"><h2>استكشاف مصادر البيانات</h2><p>فتحت ${state.flags.dataOrigins.length} من بطاقات المصادر الاختيارية. هذا عداد للاستكشاف، وليس شرطًا للنجاح أو درجةً للعبة.</p></div></div></details><div class="action-row"><button id="resultsLedger" class="secondary-btn">عرض دفتر السلسلة</button><button id="toFinalMessage" class="primary-btn">إلى الخاتمة</button></div></div>`);
     $('#resultsLedger').addEventListener('click', () => { renderLedger(); ledgerDialog.showModal(); });
     $('#toFinalMessage').addEventListener('click', () => go('finalMessage'));
   }

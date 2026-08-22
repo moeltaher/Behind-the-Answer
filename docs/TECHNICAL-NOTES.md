@@ -1,19 +1,24 @@
 # Technical Notes
 
-- التطبيق نفسه HTML/CSS/JavaScript فقط ويستخدم ES modules أصلية في المتصفح، من دون bundler أو خطوة build.
-- لا Backend ولا قاعدة بيانات ولا حسابات مستخدمين، ولا توجد تبعيات خارجية مطلوبة وقت تشغيل اللعبة للمستخدم النهائي.
-- `localStorage` يحفظ الحالة والإعدادات محليًا. الحالة تحمل `schemaVersion` وتستخدم تحققًا دلاليًا للقيم المهمة بدل مطابقة الأنواع فقط.
-- يوجد migration محدد من مخطط الحالة السابق إلى المخطط الحالي. الحفظ غير القابل للترحيل يبدأ جلسة جديدة مع `systemNotice` مرئي بدل إعادة الضبط بصمت.
-- إذا لم توجد إعدادات وصول محفوظة، يشتق `reduceMotion` مبدئيًا من `prefers-reduced-motion` في نظام التشغيل.
-- `#scene` ليس live region كاملًا؛ إدارة الانتقال تعتمد على نقل التركيز إلى عنوان المشهد، بينما تستخدم رسائل feedback المحددة `role="status"` عند الحاجة.
-- المرحلة الحالية في مؤشرات التقدم تستخدم `aria-current="step"`.
-- `dataStatuses` يمثل حالة المرور داخل workflow، بينما `dataChecks` يمثل الحقوق والخصوصية والملاءمة بصورة منفصلة.
-- `deployLoad` يحفظ توزيع الحمل المعتمد حتى يمكن استخدام هامشه في حادث التشغيل من دون إسناد سبب العطل إليه.
-- مرحلة التدريب تستخدم حدًا أدنى معلنًا قدره سبع مجموعات لحساب هامش السعة؛ لا تستنتج تحمل أعطال عام من عدد المجموعات وحده.
-- Playwright وESLint وaxe تبعيات تطوير واختبار فقط. الإصدارات المباشرة مثبتة في `package.json`، وشجرة التبعيات الانتقالية مثبتة في `package-lock.json`.
-- GitHub Actions يستخدم `npm ci --ignore-scripts` لضمان إعادة إنتاج شجرة التبعيات المقفلة، ثم يشغّل `npm audit --audit-level=high` قبل بقية الفحوص.
-- اختبارات المتصفح تشغل رحلة كاملة على Chromium لسطح المكتب والهاتف، وفحوص precision للحالات الحدية والمسارات غير الموصى بها، وفحوص axe مستهدفة، وsmoke مختصر على Firefox وWebKit.
-- `tests/static-integrity.mjs` يفحص المراجع والمسارات والملفات والـexports والأصول غير المستخدمة وخريطة المشاهد وحقول الحالة.
-- `tests/css-integrity.mjs` يفحص class selectors وCSS custom properties و`@keyframes` غير المستخدمة.
-- `tests/storage-schema.mjs` يختبر القيم الدلالية، migration، والإعداد الافتراضي للحركة من النظام.
-- GitHub Actions يثبت أدوات التطوير من lockfile ثم متصفحات Chromium وFirefox وWebKit ويشغل جميع طبقات التحقق قبل الدمج.
+- التطبيق HTML/CSS/JavaScript فقط ويستخدم ES modules أصلية في المتصفح، من دون bundler أو خطوة build.
+- لا Backend ولا قاعدة بيانات ولا حسابات مستخدمين، ولا توجد تبعيات خارجية مطلوبة وقت التشغيل.
+- `localStorage` يحفظ الحالة والإعدادات محليًا. الحالة الحالية تستخدم `schemaVersion: 3` وتتحقق من العلاقات السببية بين الحقول، لا الأنواع فقط.
+- يوجد migration صريح من v2 إلى v3، إضافة إلى مهاجر للحفظ الأقدم غير المرقم. إذا كان v2 قد وصل إلى التدريب أو ما بعده يعود إلى `trainingSetup` مع الاحتفاظ بالتقدم السابق الممكن إثباته؛ لأن النسخة القديمة لا تحفظ أهلية البيانات أو تقييم checkpoint أو أدلة الإصدار أو N‑1.
+- `dataStatuses` يمثل المرور داخل workflow، و`dataChecks` يمثل الحقوق/الخصوصية/الملاءمة، و`dataTrainingUsed` يسجل تاريخ المعالجة الفعلي، و`dataTrainingHeld` يسجل ما أوقف قبل post-training.
+- `dataTrainingUsed` تاريخ سببي مقصود: استبعاد المادة لاحقًا لا يمحو أنها عولجت في جولة سابقة.
+- `factoryMaintenanceDebt` يفصل قبول مكونات بالفحص عن إغلاق سبب تنبيه المصنع.
+- `checkpointEvalComplete` يمنع الوصول إلى اختبار السلامة قبل تقييم checkpoint المقارن.
+- `releaseGates` يحفظ البوابات التي اجتازت بناءً على الأدلة. بوابة السعة تحتاج تحقيقًا وإعادة قياس قبل اعتمادها.
+- `extraChecks` يحفظ أعمال التحقق الإضافية المنفذة فعليًا؛ قرار التأجيل وحده لا يكملها.
+- `deployLoad` يحفظ توزيع الحمل، و`deployFailoverChecks` يحفظ حالات N‑1 الثلاث التي فحصها اللاعب. الاستعادة لا تصبح حالة صالحة قبل اكتمال failover والتشخيص.
+- لا يوجد `audit-enhancements.js` أو post-render patch layer؛ كل منطق مرحلة يوجد في ملف `js/scenes/` الأصلي الخاص بها.
+- `#scene` ليس live region كاملًا؛ إدارة الانتقال تعتمد على نقل التركيز إلى عنوان المشهد، بينما تستخدم feedback المحددة `role="status"`.
+- المرحلة الحالية في مؤشرات التقدم تستخدم `aria-current="step"`، والحوارات مسماة، ومناطق التمرير الأفقية قابلة للوصول بلوحة المفاتيح.
+- عند غياب إعداد محفوظ، يشتق `reduceMotion` من `prefers-reduced-motion`.
+- Playwright وESLint وaxe تبعيات تطوير واختبار فقط، مثبتة مباشرة في `package.json` وشجرتها في lockfile.
+- GitHub Actions يستخدم `npm ci --ignore-scripts` ثم `npm audit --audit-level=high` قبل الفحوص الأخرى.
+- `tests/static-integrity.mjs` يفحص المراجع والمسارات والملفات والـexports والأصول وخريطة المشاهد وحقول الحالة.
+- `tests/css-integrity.mjs` يفحص selectors وcustom properties و`@keyframes` غير المستخدمة.
+- `tests/storage-schema.mjs` يغطي v3، العلاقات السببية، migration من v2 والحفظ القديم، وفشل التخزين.
+- `tests/smoke.mjs` يشغل رحلة كاملة على Chromium desktop/mobile، اختبارات سببية وreload، migration داخل متصفح، مصفوفة axe للمشاهد الديناميكية، وFirefox/WebKit smoke.
+- `tests/third-audit.mjs` regression مركز لأهلية البيانات، تاريخ المعالجة، تقييم checkpoint، أدلة الإصدار، N‑1، اكتمال سجل القرارات، وغياب طبقة post-render القديمة.
