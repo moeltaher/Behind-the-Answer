@@ -1,11 +1,11 @@
 import { DEMO_PROMPT } from './story.js';
 
 export const DATA_ITEMS = [
-  { type: 'duplicate', title: 'مقال مكرر', body: 'نسختان متطابقتان من الصفحة نفسها ظهرتا في الدفعة.', source: 'نفس الموقع في رابطين مختلفين', rights: 'حالة الحقوق لا تغير كونه مكررًا', privacy: 'لا تظهر بيانات شخصية', recommended: 'remove' },
-  { type: 'clean', title: 'مقال تقني مرخص', body: 'نص واضح عن بروتوكولات الشبكات، بلا بيانات شخصية ظاهرة.', source: 'موقع توثيق تقني', rights: 'ترخيص يسمح بإعادة الاستخدام في هذا المثال', privacy: 'لا تظهر بيانات شخصية', recommended: 'keep' },
-  { type: 'pii', title: 'مادة مفيدة تتضمن بيانات اتصال', body: 'شرح عملي مفيد يتضمن اسمًا ورقم هاتف وعنوانًا بريديًا لا يحتاجها غرض الدفعة.', source: 'صفحة عامة', rights: 'المصدر معروف لكن حق إعادة الاستخدام لم يُحسم بعد', privacy: 'توجد بيانات شخصية مباشرة لا يحتاجها الغرض', recommended: 'review', followup: 'redact' },
-  { type: 'code', title: 'شفرة برمجية عامة', body: 'مستودع كود عام يضم أمثلة وتعليقات توثيقية.', source: 'مستودع عام', rights: 'الترخيص غير ظاهر في بطاقة الجمع', privacy: 'لا تظهر بيانات شخصية', recommended: 'review' },
-  { type: 'ambiguous', title: 'معلومة شبه معرّفة', body: 'وصف لوظيفة نادرة ومدينة صغيرة وتاريخ حدث؛ لا يظهر اسم الشخص مباشرة.', source: 'صفحة أرشيفية', rights: 'المصدر معروف لكن الاستخدام يحتاج مراجعة', privacy: 'قد تسمح التفاصيل مجتمعة بإعادة التعرف على شخص', recommended: 'review' }
+  { type: 'duplicate', title: 'مقال مكرر', body: 'نسختان متطابقتان من الصفحة نفسها ظهرتا في الدفعة.', source: 'نفس الموقع في رابطين مختلفين', rights: 'حق إعادة الاستخدام غير محسوم في البطاقة، لكنه لا يغير كونه مكررًا', privacy: 'لا تظهر بيانات شخصية', recommended: 'remove', checks: { rights:'unresolved', privacy:'clear', fitness:'unresolved' } },
+  { type: 'clean', title: 'مقال تقني مرخص', body: 'نص واضح عن بروتوكولات الشبكات، بلا بيانات شخصية ظاهرة.', source: 'موقع توثيق تقني', rights: 'ترخيص يسمح بإعادة الاستخدام في هذا المثال', privacy: 'لا تظهر بيانات شخصية', recommended: 'keep', checks: { rights:'clear', privacy:'clear', fitness:'clear' } },
+  { type: 'pii', title: 'مادة مفيدة تتضمن بيانات اتصال', body: 'شرح عملي مفيد يتضمن اسمًا ورقم هاتف وعنوانًا بريديًا لا يحتاجها غرض الدفعة.', source: 'صفحة عامة', rights: 'المصدر معروف لكن حق إعادة الاستخدام لم يُحسم بعد', privacy: 'توجد بيانات شخصية مباشرة لا يحتاجها الغرض', recommended: 'review', followup: 'redact', checks: { rights:'unresolved', privacy:'unresolved', fitness:'clear' } },
+  { type: 'code', title: 'شفرة برمجية عامة', body: 'مستودع كود عام يضم أمثلة وتعليقات توثيقية.', source: 'مستودع عام', rights: 'الترخيص غير ظاهر في بطاقة الجمع', privacy: 'لا تظهر بيانات شخصية', recommended: 'review', checks: { rights:'unresolved', privacy:'clear', fitness:'clear' } },
+  { type: 'ambiguous', title: 'معلومة شبه معرّفة', body: 'وصف لوظيفة نادرة ومدينة صغيرة وتاريخ حدث؛ لا يظهر اسم الشخص مباشرة.', source: 'صفحة أرشيفية', rights: 'المصدر معروف لكن الاستخدام يحتاج مراجعة', privacy: 'قد تسمح التفاصيل مجتمعة بإعادة التعرف على شخص', recommended: 'review', checks: { rights:'unresolved', privacy:'unresolved', fitness:'clear' } }
 ];
 
 export const ANNOTATION_LABELS = ['آمن','عنف','مضايقة أو إساءة','خطاب كراهية','إيذاء النفس','غير واضح'];
