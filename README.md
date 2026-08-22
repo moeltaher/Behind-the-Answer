@@ -41,6 +41,7 @@ js/
   components/
   scenes/
 tests/
+  helpers/
 docs/
 .github/workflows/
 package.json
@@ -118,6 +119,6 @@ Workflow `Validate static game` يشغل:
 - رحلة متصفح كاملة على desktop وmobile.
 - causality وmigration وfocus والوصول.
 - smoke على Firefox وWebKit.
-- regression suites للجولات الثالثة حتى الثامنة.
+- ست مجموعات regression دلالية: حوكمة البيانات، النسخ والمرونة، الإرشاد والتاريخ، السببية والنتائج، الحالة والأدوار، والوضوح والإصلاح.
 
-الجولة الثامنة لها مجموعة `tests/eighth-audit.mjs` مخصصة لمنع عودة مشكلات السببية والوضوح التي عولجت هنا.
+تستخدم مجموعات regression المشتركة `tests/helpers/browser-fixtures.mjs` بدل تكرار fixtures بحسب رقم جولة المراجعة. أزيلت ملفات `third-audit.mjs` حتى `eighth-audit.mjs` بعد نقل تغطيتها إلى suites ذات أسماء وظيفية.
