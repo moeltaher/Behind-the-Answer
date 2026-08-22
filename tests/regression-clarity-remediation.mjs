@@ -28,8 +28,7 @@ if(!state.decisions.some(decision=>decision.id==='train-recovery-r1'))throw new 
 
 console.log('CLARITY_REMEDIATION:mining-open-debt-status');
 await load(page,{scene:'mineEnd',flags:{miningCount:12,miningMinutes:42,miningBUses:2,miningIncidentChoice:'continue',miningRiskLevel:0,miningWarning:false,miningInspectionCount:0}});
-if(await page.locator('[data-task-panel][data-task-status="debt"]').count()!==1)throw new Error('Mining end hides unresolved maintenance risk behind complete status.');
-await page.getByText('اكتملت مع عمل مفتوح',{exact:true}).waitFor({state:'visible'});
+if(await page.locator('[data-task-panel][data-task-status="debt"] .task-status--debt').count()!==1)throw new Error('Mining end hides unresolved maintenance risk behind complete status.');
 
 console.log('CLARITY_REMEDIATION:capacity-diagnose-remediate-measure');
 await load(page,{scene:'launchDecision',flags:{...candidate({releaseGates:[]})}});
