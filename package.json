@@ -18,6 +18,7 @@
     "test:browser": "node tests/smoke.mjs",
     "test:third-audit": "node tests/third-audit.mjs",
     "test:fourth-audit": "node tests/fourth-audit.mjs",
-    "test:fifth-audit": "node tests/fifth-audit.mjs"
+    "test:fifth-audit": "node tests/fifth-audit.mjs",
+    "test:sixth-audit": "node tests/sixth-audit.mjs"
   }
 }
