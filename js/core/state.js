@@ -28,12 +28,7 @@ export const DEFAULT_STATE = {
     dataChecks: [],
     dataFeedbackLabel: '',
     dataFeedbackDetail: '',
-    dataSort: {
-      keep: 0,
-      remove: 0,
-      redact: 0,
-      review: 0
-    },
+    dataSort: { keep: 0, remove: 0, redact: 0, review: 0 },
     dataTrainingApproved: [],
     dataTrainingUsed: [],
     dataCurrentTrainingUsed: [],
@@ -70,18 +65,10 @@ export const DEFAULT_STATE = {
   }
 };
 
-export function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
+export function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 export function escapeHtml(value = '') {
-  const entities = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#39;',
-    '"': '&quot;'
-  };
+  const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
   return String(value).replace(/[&<>'"]/g, character => entities[character]);
 }
 
@@ -115,6 +102,6 @@ export function resetCandidateEvidence(state) {
   f.supportFeedbackLabel='';
   f.supportFeedbackDetail='';
   f.transferChoice=null;
-  state.decisions=state.decisions.filter(decision=>!(/^(checkpoint-|safety-|release-|extra-check-|launch-|deploy-|support-)/.test(decision.id)));
-  state.ledger=state.ledger.filter(entry=>entry.chapter<5);
+  // لا نحذف decisions أو ledger: ما حدث في revision سابقة يظل تاريخًا صحيحًا،
+  // لكن الحقول النشطة أعلاه تُصفّر حتى لا تُستخدم الأدلة القديمة لإطلاق revision جديدة.
 }

@@ -120,7 +120,8 @@ async function runJourney(viewport,label){
 
   await click(page,'#chapterNext');
   for(const choice of ['a','b','bad']){ if(choice==='b') await page.getByText(DEMO_PROMPT,{exact:true}).waitFor({state:'visible'}); await click(page,`[data-eval="${choice}"]`); await click(page,'#nextEval'); }
-  await page.getByRole('heading',{name:/معيار الحكم|أكملت المهام الثلاث/}).waitFor({state:'visible'});
+  await page.getByRole('heading',{name:/تطبيق المعيار|أكملت المهام الثلاث/}).waitFor({state:'visible'});
+  if(await page.locator('#calibrationChoice').count()) await page.selectOption('#calibrationChoice','a');
   await click(page,'#confirmCalibration');
   await completeCheckpoint(page);
   await click(page,'[data-safety="details"]'); await click(page,'#remediateSafety'); await click(page,'#confirmSafetyRetest');
@@ -195,7 +196,14 @@ async function runCausalChecks(){
   await page.getByText('0 من 3 حالات خروج كاملة يمكن امتصاصها',{exact:true}).waitFor({state:'visible'});
 
   await load(page,{scene:'evalTask',flags:{...advancedFlags({evalIndex:3,evalCorrectCount:1,evaluatorCalibrationComplete:false,checkpointEvalComplete:false,safetyChoice:null,safetyRemediated:false,safetyRetested:false,releaseGates:[]})}});
-  await page.getByText('قبل استخدام تقييمك كدليل، راجع معيار الحكم.',{exact:true}).waitFor({state:'visible'});
+  await page.getByText('أثبت أنك تستطيع تطبيق المعيار بعد مراجعته.',{exact:true}).waitFor({state:'visible'});
+  await click(page,'#confirmCalibration');
+  state=await saved(page);
+  if(state.flags.evaluatorCalibrationComplete) throw new Error('Calibration completed without verification evidence.');
+  await page.selectOption('#calibrationChoice','a');
+  await click(page,'#confirmCalibration');
+  state=await saved(page);
+  if(!state.flags.evaluatorCalibrationComplete||state.scene!=='checkpointEval') throw new Error('Correct calibration evidence did not unlock checkpoint evaluation.');
 
   await browser.close();
   console.log('Causal checks passed.');
