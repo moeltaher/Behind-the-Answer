@@ -20,6 +20,7 @@ async function click(page,selector){await page.locator(selector).waitFor({state:
 async function saved(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);}
 function advanced(extra={}){return{dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingApproved:[0],dataTrainingUsed:[0,1],dataCurrentTrainingUsed:[0,1],candidateRevision:1,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra};}
 function released(extra={}){return advanced({dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataTrainingApproved:[],releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use',...extra});}
+function deploymentReady(load=[45,30,25]){return released({deployLoad:load,deployFailoverChecks:[],deployTabs:[],deployRecovery:null,supportIndex:0,transferChoice:null});}
 
 if(STATE_SCHEMA_VERSION!==5)throw new Error(`Expected schema v5, got ${STATE_SCHEMA_VERSION}.`);
 const browser=await chromium.launch();
@@ -64,12 +65,12 @@ await page.getByText('المبلغ قبل مراجعة الجودة: 0.32',{exac
 if(await page.getByText('المبلغ المبدئي:',{exact:false}).count())throw new Error('Old provisional earnings label remains.');
 
 console.log('SEVENTH_AUDIT:n1-maximum-removes-impossible-retry');
-await load(page,{scene:'deployLoad',flags:{...advanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[]})}});
+await load(page,{scene:'deployLoad',flags:{...deploymentReady([45,30,25])}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.getByText(/أفضل مرونة ممكنة بهذه الثوابت/).waitFor({state:'visible'});
 if(await page.locator('#retryLoad').count())throw new Error('Retry is still offered after reaching the mathematical maximum 1/3.');
 await page.getByText(/الحد الأقصى الممكن بهذه الثوابت هو 1\/3/).first().waitFor({state:'visible'});
-await load(page,{scene:'deployLoad',flags:{...advanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[60,5,35],deployFailoverChecks:[]})}});
+await load(page,{scene:'deployLoad',flags:{...deploymentReady([60,5,35])}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.locator('#retryLoad').waitFor({state:'visible'});
 
