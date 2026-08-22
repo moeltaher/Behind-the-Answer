@@ -1,0 +1,79 @@
+/* Stage identity, chapter presentation, and end-of-journey evidence UI. */
+body[data-stage] .eyebrow,
+body[data-stage] .chapter-theme,
+body[data-stage] .task-panel__kicker,
+body[data-stage] .evidence-card h2 { color: rgb(var(--stage-accent)); }
+body[data-stage] .task-panel { border-top: 3px solid rgba(var(--stage-accent), .72); }
+body[data-stage] .mini-node.current,
+body[data-stage] .journey-node.current { border-color: rgba(var(--stage-accent), .78); }
+body[data-stage] .scene-character { border-inline-start: 3px solid rgba(var(--stage-accent), .58); }
+
+.compact-intro{max-width:900px;margin-inline:auto}
+.chapter-link-line{max-width:760px;margin:0;color:var(--muted);font-size:clamp(1rem,2vw,1.15rem);line-height:1.8}
+.chapter-term{margin:12px 0 0;padding:10px 13px;border-right:3px solid var(--accent);background:rgba(10,18,32,.68);border-radius:10px;color:var(--muted)}
+.chapter-term strong{color:var(--accent)}
+.process-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.process-step{display:grid;gap:6px;min-height:150px;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(10,18,32,.78)}
+.process-step>span{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:rgba(124,164,255,.16);color:var(--accent-2);font-weight:900}
+.process-step small{color:var(--muted)}
+.delivery-state{display:grid;gap:3px;margin:14px 0;padding:12px 14px;border:1px solid rgba(104,225,193,.28);border-radius:14px;background:rgba(104,225,193,.07)}
+.delivery-state strong{color:var(--accent)}
+.delivery-state span{color:var(--muted);font-size:.84rem}
+.evidence-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.evidence-card{padding:17px;border:1px solid var(--line);border-radius:18px;background:rgba(10,18,32,.78)}
+.evidence-card h2{font-size:1rem;margin:0 0 10px;color:var(--accent)}
+.monitor-tile strong{text-align:right}
+.monitor-tile strong.numeric-value{direction:ltr;text-align:right}
+body[data-stage="factory"] .process-strip{font-family:inherit}
+body[data-stage="factory"] .process-step>span{border-radius:7px}
+body[data-stage="datacenter"] .connect-step{border-radius:8px}
+body[data-stage="training"] .training-log{border:1px solid rgba(82,220,190,.18)}
+body[data-stage="evaluation"] .compare-card{gap:16px}
+body[data-stage="deployment"] .incident-tabs button{border-radius:8px}
+
+.optional-source-details,
+.secondary-labor-details,
+.methodology-details,
+.full-evidence-details {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(10,18,32,.72);
+  padding: 12px 14px;
+}
+.optional-source-details > summary,
+.secondary-labor-details > summary,
+.methodology-details > summary,
+.full-evidence-details > summary { cursor: pointer; font-weight: 850; color: var(--text); }
+.epilogue-screen .abstraction-summary { justify-content: center; margin-top: 20px; }
+.epilogue-chat .dual-view { margin-top: 18px; }
+.verification-bundles { display: grid; gap: 10px; margin: 16px 0; }
+.journey-highlights {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0 22px}
+.journey-highlight {display:grid;gap:4px;padding:14px 16px;border:1px solid rgba(var(--stage-accent),.28);border-radius:16px;background:rgba(10,18,32,.78)}
+.journey-highlight > span { color: var(--muted); font-size: .72rem; font-weight: 800; }
+.journey-highlight strong { color: rgb(var(--stage-accent)); line-height: 1.45; }
+.journey-highlight small { color: var(--muted); line-height: 1.55; }
+.result-core { margin-top: 18px; }
+.full-evidence-details .evidence-results { margin-bottom: 0; }
+
+/* Annotation deliberately resembles a light task-work interface. */
+.annotation-shell .transition-details {background:#f7f8fa;border-color:#b8c1cc;color:#18212d}
+.annotation-shell .transition-details > summary { color: #18212d; }
+.annotation-shell .transition-details .card.flat,
+.annotation-shell .supporting-role-card {background:#fff;border-color:#c2c9d2;color:#18212d}
+.annotation-shell .muted,
+.annotation-shell .small.muted,
+.annotation-shell .supporting-role-label,
+.annotation-shell .supporting-role-card small,
+.annotation-shell .reality-note,
+.annotation-shell .reality-note span { color: #46515f; }
+.annotation-shell .reality-note { border-color: #aeb8c4; }
+
+@media(max-width:700px){
+  .process-strip,.evidence-results{grid-template-columns:1fr}
+  .process-step{min-height:auto}
+  .compact-intro .display-title{font-size:clamp(1.85rem,9vw,3rem);margin-bottom:12px}
+  .chapter-link-line{font-size:.96rem}
+  .optional-source-details{padding:10px 12px}
+  .journey-highlights{grid-template-columns:1fr}
+}

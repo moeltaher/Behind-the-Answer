@@ -4,11 +4,24 @@ export const SCENES_BY_STAGE = {
   datacenter: ['ch3Intro','dcInstall','dcCooling','dcCoolingOutcome','dcWorkers','abstract3'],
   data: ['ch4Intro','dataOrigins','dataClean','dataFollowup','dataCleanSummary','abstract4'],
   annotation: ['ch5Intro','annotationIntro','annotationTask','annotationReview','annotationEnd','abstract5'],
-  training: ['ch6Intro','trainingSetup','trainingRun','trainingEval','abstract6'],
+  training: ['ch6Intro','trainingSetup','trainingRun','trainingRecovery','trainingEval','abstract6'],
   evaluation: ['ch7Intro','evalTask','checkpointEval','safetyTest','safetyOutcome','safetyRetest','launchDecision','launchOutcome','abstract7'],
   deployment: ['ch8Intro','deployLoad','deployIncident','onCall','supportTask','deployEnd','abstract8'],
-  ending: ['intro','zoomOut','pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage']
+  ending: ['intro','zoomOut','pipelineAssemble','finalAnswer','transferChallenge','results','finalMessage']
 };
+
+export const SCENE_ORDER = [
+  'intro','zoomOut',
+  ...SCENES_BY_STAGE.mining,
+  ...SCENES_BY_STAGE.factory,
+  ...SCENES_BY_STAGE.datacenter,
+  ...SCENES_BY_STAGE.data,
+  ...SCENES_BY_STAGE.annotation,
+  ...SCENES_BY_STAGE.training,
+  ...SCENES_BY_STAGE.evaluation,
+  ...SCENES_BY_STAGE.deployment,
+  'pipelineAssemble','finalAnswer','transferChallenge','results','finalMessage'
+];
 
 const STAGE_BACKDROPS = {
   mining: './assets/images/scenes/01-mining.svg',

@@ -1,4 +1,5 @@
 import { DATA_ITEMS } from '../data/content-tasks.js';
+import { supportingRoleStrip } from '../components/supporting-role-strip.js';
 
 const DATA_ORIGINS = [
   ['writer', 'مقالات ومحتوى مكتوب', 'راجع الترخيص وسياق النشر وحقوق المؤلف.'],
@@ -22,7 +23,7 @@ function choiceEffect(item, choice) {
     if (choice === 'redact') return ['نقحت بيانات لا يحتاجها الغرض', 'احتفظت بالجزء المفيد بعد إزالة معلومات مباشرة لا يحتاجها السيناريو.'];
     return ['أوقفت مادة للمراجعة', 'بقيت المادة خارج المسار الذي ينتقل إلى التطوير حتى تُحسم الحقوق أو الخصوصية أو الملاءمة.'];
   }
-  if (choice === 'keep') return ['مررت مادة قبل اكتمال التحقق', 'سمحت للمادة بالمرور في workflow رغم بقاء مشكلة غير محسومة في الحقوق أو الخصوصية أو الملاءمة. مرورها لا يعني أن المشكلة حُسمت.'];
+  if (choice === 'keep') return ['مررت مادة قبل اكتمال التحقق', 'سمحت للمادة بالمرور في مسار العمل رغم بقاء مشكلة غير محسومة في الحقوق أو الخصوصية أو الملاءمة. مرورها لا يعني أن المشكلة حُسمت.'];
   if (choice === 'remove') return ['استبعدت مادة بدل معالجة المشكلة المحددة', 'اخترت الحذف حتى عندما كان يمكن أن تكون هناك معالجة أو مراجعة أكثر تناسبًا مع المشكلة.'];
   if (choice === 'redact') return ['استخدمت التنقيح كحل جزئي', 'عالجت البيانات المباشرة حيث وُجدت، لكن التنقيح وحده لا يحسم مسائل الحقوق أو إعادة التعرف أو الملاءمة.'];
   return ['أرسلت مادة للمراجعة الاحتياطية', 'أبقيت المادة خارج المسار الذي ينتقل إلى التطوير حتى يأتي قرار لاحق من المراجعة.'];
@@ -100,14 +101,14 @@ export function createDataRoutes(ctx) {
     const followup=state.flags.dataFollowup;
     if(!followup){ go('dataClean'); return; }
     const item=DATA_ITEMS[followup.index];
-    html(`<div><span class="eyebrow">نتيجة المراجعة</span><h1 class="scene-title">حُسم حق الاستخدام، لكن مشكلة الخصوصية ما زالت قائمة.</h1><div class="card flat"><p><strong>المادة:</strong> ${ctx.h(item.title)}</p><p><strong>الحقوق:</strong> يسمح بالاستخدام في سيناريو الدفعة بعد المراجعة.</p><p><strong>الخصوصية:</strong> رقم الهاتف والعنوان لا يحتاجهما الغرض.</p></div><p class="scene-subtitle">المراجعة لم تكن نهاية القرار؛ حلت مشكلة الحقوق فقط. اختر الآن ما تفعله بالمعلومات الشخصية غير اللازمة.</p><div class="choice-grid"><button id="followupRedact" class="choice-btn"><strong>نقّح بيانات الاتصال</strong><small>احتفظ بالمحتوى المفيد بعد إزالة المعلومات التي لا يحتاجها الغرض.</small></button><button id="followupKeep" class="choice-btn"><strong>احتفظ بها كما هي</strong><small>تمر المادة، لكن مشكلة الخصوصية تظل مسجلة باعتبارها غير محسومة.</small></button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة مراجعة الحقوق</span><h1 class="scene-title">ظهر دليل يسمح بالاستخدام، لكن مشكلة الخصوصية ما زالت قائمة.</h1>${supportingRoleStrip(['rightsReviewer'],'من راجع دليل الاستخدام؟')}<div class="card flat"><p><strong>المادة:</strong> ${ctx.h(item.title)}</p><p><strong>الدليل الذي ظهر في السيناريو:</strong> صفحة المصدر تربط المادة بترخيص يسمح بإعادة الاستخدام للغرض الممثل في هذه الدفعة.</p><p><strong>ما حُسم:</strong> حق الاستخدام في هذا المثال فقط.</p><p><strong>ما لم يُحسم:</strong> رقم الهاتف والعنوان لا يحتاجهما غرض الدفعة، ولذلك تبقى مشكلة الخصوصية مستقلة.</p></div><p class="scene-subtitle">المراجعة لم تكن نهاية القرار؛ حسمت جانب الحقوق بناءً على دليل ظاهر، ولم تجعل البيانات الشخصية الضرورية أو غير الضرورية مسألة محسومة تلقائيًا.</p><div class="choice-grid"><button id="followupRedact" class="choice-btn"><strong>نقّح بيانات الاتصال</strong><small>احتفظ بالمحتوى المفيد بعد إزالة المعلومات التي لا يحتاجها الغرض.</small></button><button id="followupKeep" class="choice-btn"><strong>احتفظ بها كما هي</strong><small>تمر المادة، لكن مشكلة الخصوصية تظل مسجلة باعتبارها غير محسومة.</small></button></div></div>`);
     $('#followupRedact').addEventListener('click',()=>{
       state.flags.dataSort.redact+=1;
       state.flags.dataStatuses[followup.index]='ready';
       state.flags.dataChecks[followup.index]={ rights:'clear', privacy:'clear', fitness:'clear' };
       state.flags.dataFeedbackLabel='مرّت المادة بعد حسم المشكلتين';
-      state.flags.dataFeedbackDetail='حسمت المراجعة حق الاستخدام أولًا، ثم أزال التنقيح بيانات الاتصال غير اللازمة.';
-      addDecision('data-pii-redact-after-review','نقحت البيانات بعد حسم الحقوق','استخدمت المراجعة لحسم حق الاستخدام أولًا، ثم أزلت بيانات الاتصال التي لا يحتاجها غرض الدفعة.');
+      state.flags.dataFeedbackDetail='ظهر دليل يسمح بالاستخدام، ثم أزال التنقيح بيانات الاتصال غير اللازمة.';
+      addDecision('data-pii-redact-after-review','نقحت البيانات بعد مراجعة دليل الحقوق','راجع فريق الحقوق دليل الاستخدام أولًا، ثم أزلت بيانات الاتصال التي لا يحتاجها غرض الدفعة.');
       state.flags.dataFollowup=null;
       state.flags.dataIndex+=1;
       saveState(); go('dataClean');
@@ -117,8 +118,8 @@ export function createDataRoutes(ctx) {
       state.flags.dataStatuses[followup.index]='ready';
       state.flags.dataChecks[followup.index]={ rights:'clear', privacy:'unresolved', fitness:'clear' };
       state.flags.dataFeedbackLabel='مرّت المادة، لكن مشكلة الخصوصية بقيت';
-      state.flags.dataFeedbackDetail='حق الاستخدام حُسم، لكن بيانات الاتصال غير اللازمة بقيت. اللعبة تسجل المرور والمشكلة كحالتين منفصلتين.';
-      addDecision('data-pii-keep-after-review','مررت مادة مع مشكلة خصوصية غير محسومة','حُسم حق الاستخدام، لكن رقم الهاتف والعنوان بقيا رغم أن غرض الدفعة لا يحتاجهما. ستبقى هذه المشكلة ظاهرة لاحقًا.');
+      state.flags.dataFeedbackDetail='حق الاستخدام حُسم بدليل ظاهر، لكن بيانات الاتصال غير اللازمة بقيت. اللعبة تسجل المرور والمشكلة كحالتين منفصلتين.';
+      addDecision('data-pii-keep-after-review','مررت مادة مع مشكلة خصوصية غير محسومة','ظهر دليل يسمح بالاستخدام، لكن رقم الهاتف والعنوان بقيا رغم أن غرض الدفعة لا يحتاجهما. ستبقى هذه المشكلة ظاهرة لاحقًا.');
       state.flags.dataFollowup=null;
       state.flags.dataIndex+=1;
       saveState(); go('dataClean');
@@ -132,7 +133,7 @@ export function createDataRoutes(ctx) {
     const item=DATA_ITEMS[index];
     const counts=statusCounts(state);
     const feedback=feedbackMarkup(state,ctx.h);
-    html(`<div><span class="eyebrow">دفعة بيانات رقم 18</span><h1 class="scene-title">أنت الآن نور، متخصصة تجهيز بيانات.</h1>${feedback}<div class="reality-note"><strong>سياسة الدفعة الافتراضية</strong> المشكلة الواحدة قد تحتاج أكثر من إجراء. «المرور» يصف ما حدث داخل workflow؛ أما «محسوم/غير محسوم» فيصف الحقوق والخصوصية والملاءمة ولا يُستنتج من المرور وحده.</div><div class="hud-grid"><div class="hud-item"><span>العنصر</span><strong>${index+1}/${DATA_ITEMS.length}</strong></div><div class="hud-item"><span>وقت المراجعة الإضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div><div class="hud-item"><span>مرّت / معلقة</span><strong>${counts.passed} / ${counts.pending}</strong></div></div><div class="sort-layout"><div class="data-item card"><span class="kicker">${ctx.h(item.title)}</span><div class="data-preview">${ctx.h(item.body)}</div><div class="card flat"><p><strong>المصدر:</strong> ${ctx.h(item.source)}</p><p><strong>حالة الحقوق:</strong> ${ctx.h(item.rights)}</p><p><strong>الخصوصية:</strong> ${ctx.h(item.privacy)}</p></div></div><div class="sort-actions"><button data-sort="keep" class="choice-btn"><strong>مرّر كما هو</strong><small>يمر إلى المسار التالي؛ أي مشكلة غير محسومة ستظل مسجلة.</small></button><button data-sort="redact" class="choice-btn"><strong>نقّح البيانات غير اللازمة</strong><small>يعالج المعلومات المباشرة فقط ولا يحسم الحقوق أو إعادة التعرف تلقائيًا.</small></button><button data-sort="review" class="choice-btn"><strong>أوقفه للمراجعة</strong><small>يضيف 4 دقائق افتراضية ويبقي المادة معلقة خارج المسار التالي.</small></button><button data-sort="remove" class="choice-btn"><strong>استبعد</strong><small>لا يدخل هذه الدفعة.</small></button></div></div></div>`);
+    html(`<div><span class="eyebrow">دفعة بيانات رقم 18</span><h1 class="scene-title">أنت الآن نور، متخصصة تجهيز بيانات.</h1>${feedback}<div class="reality-note"><strong>سياسة الدفعة الافتراضية</strong> المشكلة الواحدة قد تحتاج أكثر من إجراء. «المرور» يصف ما حدث داخل مسار العمل؛ أما «محسوم/غير محسوم» فيصف الحقوق والخصوصية والملاءمة ولا يُستنتج من المرور وحده.</div><div class="hud-grid"><div class="hud-item"><span>العنصر</span><strong>${index+1}/${DATA_ITEMS.length}</strong></div><div class="hud-item"><span>وقت المراجعة الإضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div><div class="hud-item"><span>مرّت / معلقة</span><strong>${counts.passed} / ${counts.pending}</strong></div></div><div class="sort-layout"><div class="data-item card"><span class="kicker">${ctx.h(item.title)}</span><div class="data-preview">${ctx.h(item.body)}</div><div class="card flat"><p><strong>المصدر:</strong> ${ctx.h(item.source)}</p><p><strong>حالة الحقوق:</strong> ${ctx.h(item.rights)}</p><p><strong>الخصوصية:</strong> ${ctx.h(item.privacy)}</p></div></div><div class="sort-actions"><button data-sort="keep" class="choice-btn"><strong>مرّر كما هو</strong><small>يمر إلى المسار التالي؛ أي مشكلة غير محسومة ستظل مسجلة.</small></button><button data-sort="redact" class="choice-btn"><strong>نقّح البيانات غير اللازمة</strong><small>يعالج المعلومات المباشرة فقط ولا يحسم الحقوق أو إعادة التعرف تلقائيًا.</small></button><button data-sort="review" class="choice-btn"><strong>أوقفه للمراجعة</strong><small>يضيف 4 دقائق افتراضية ويبقي المادة معلقة خارج المسار التالي، إلا إذا كانت لها متابعة مخصصة تعرض نتيجة المراجعة.</small></button><button data-sort="remove" class="choice-btn"><strong>استبعد</strong><small>لا يدخل هذه الدفعة.</small></button></div></div></div>`);
     bind('[data-sort]','click',event=>{
       const choice=event.currentTarget.dataset.sort;
       const [label,effectText]=choiceEffect(item,choice);
@@ -140,7 +141,7 @@ export function createDataRoutes(ctx) {
       if(choice==='review') state.flags.dataReviewMinutes+=4;
       addDecision(`data-${item.type}-${choice}`,label,effectText);
       if(item.followup && choice===item.recommended){
-        state.flags.dataFollowup={index,reason:'rights-cleared'};
+        state.flags.dataFollowup={index,reason:'rights-evidence-found'};
         state.flags.dataFeedbackLabel='';
         state.flags.dataFeedbackDetail='';
         saveState(); go('dataFollowup'); return;
@@ -160,14 +161,14 @@ export function createDataRoutes(ctx) {
   function dataCleanSummary() {
     const counts=statusCounts(state);
     const unresolvedNote=counts.passedWithIssues?`${counts.passedWithIssues} من المواد التي مرّت تحمل مسائل غير محسومة؛ مرورها لا يمحو هذه المسائل وستنشئ عمل تحقق لاحقًا.`:'كل المواد التي مرّت في هذا المسار حُسمت مسائلها المعروضة.';
-    addLedger(3,'منتجو المحتوى + نور','إنتاج مواد أصلية ثم جمع وفرز وتنقيح ومراجعة الحقوق والخصوصية والملاءمة',`${counts.passed} مواد مرّت + ${counts.pending} معلقة`,unresolvedNote);
+    addLedger(3,'منتجو المحتوى + نور + مراجعة الحقوق','إنتاج مواد أصلية ثم جمع وفرز وتنقيح ومراجعة الحقوق والخصوصية والملاءمة',`${counts.passed} مواد مرّت + ${counts.pending} معلقة`,unresolvedNote);
     html(`<div><span class="eyebrow">انتهت مراجعة الدفعة</span><h1 class="scene-title">ماذا أنتجت هذه المرحلة؟</h1>${feedbackMarkup(state,ctx.h)}<div class="stage-output"><strong>${counts.passed} مواد مرّت إلى المسار التالي</strong>${counts.pending?`${counts.pending} مواد ما زالت معلقة ولن تمر في هذه الجولة.`:'لا توجد مواد معلقة في نهاية هذه الجولة.'}</div><div class="hud-grid"><div class="hud-item"><span>مرّت وكل مسائلها محسومة</span><strong>${counts.clearPassed}</strong></div><div class="hud-item"><span>مرّت مع مسائل غير محسومة</span><strong>${counts.passedWithIssues}</strong></div><div class="hud-item"><span>معلقة</span><strong>${counts.pending}</strong></div><div class="hud-item"><span>مستبعدة</span><strong>${counts.excluded}</strong></div><div class="hud-item"><span>وقت مراجعة إضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div></div><div class="alert ${counts.passedWithIssues?'dangerish':'goodish'}"><strong>الفصل بين المرور والحسم</strong><span>${unresolvedNote}</span></div><details class="transition-details"><summary>حالة كل مادة</summary>${state.flags.dataStatuses.map((status,index)=>`<div class="card flat"><strong>${ctx.h(DATA_ITEMS[index]?.title||`المادة ${index+1}`)}</strong><p>المسار: ${status==='ready'?'مرّت':status==='pending'?'معلقة':'مستبعدة'}</p>${checksMarkup(state.flags.dataChecks[index])}</div>`).join('')}</details><div class="action-row"><button id="dataAbstract" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
     $('#dataAbstract').addEventListener('click',()=>go('abstract4'));
   }
 
   function abstract4(){
     const counts=statusCounts(state);
-    abstraction([['كتّاب ومستخدمون','إنتاج المحتوى','✎'],['نور','تجهيز مواد البيانات','◫']],`${counts.passed} مرّت + ${counts.pending} معلقة`,'المحتوى وقرارات الجمع والتنقيح والمراجعة أصبحت مواد ذات حالات مختلفة؛ وما مرّ مع مشكلة غير محسومة يحتفظ بهذه المشكلة بدل أن يتحول إلى «جاهز» بلا قيد.','ch5Intro');
+    abstraction([['كتّاب ومستخدمون','إنتاج المحتوى','✎'],['نور','تجهيز مواد البيانات','◫'],['مراجعة الحقوق','فحص دليل الاستخدام','◎']],`${counts.passed} مرّت + ${counts.pending} معلقة`,'المحتوى وقرارات الجمع والتنقيح والمراجعة أصبحت مواد ذات حالات مختلفة؛ وما مرّ مع مشكلة غير محسومة يحتفظ بهذه المشكلة بدل أن يتحول إلى «جاهز» بلا قيد.','ch5Intro');
   }
 
   return { ch4Intro,dataOrigins,dataClean,dataFollowup,dataCleanSummary,abstract4 };

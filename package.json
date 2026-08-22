@@ -16,10 +16,11 @@
     "check:css": "node tests/css-integrity.mjs",
     "audit:ci": "npm audit --audit-level=high",
     "test:browser": "node tests/smoke.mjs",
-    "test:third-audit": "node tests/third-audit.mjs",
-    "test:fourth-audit": "node tests/fourth-audit.mjs",
-    "test:fifth-audit": "node tests/fifth-audit.mjs",
-    "test:sixth-audit": "node tests/sixth-audit.mjs",
-    "test:seventh-audit": "node tests/seventh-audit.mjs"
+    "test:regression:data-governance": "node tests/regression-data-governance.mjs",
+    "test:regression:revisions-failover": "node tests/regression-revisions-failover.mjs",
+    "test:regression:guidance-history": "node tests/regression-guidance-history.mjs",
+    "test:regression:causality-results": "node tests/regression-causality-results.mjs",
+    "test:regression:state-roles": "node tests/regression-state-roles.mjs",
+    "test:regression:clarity-remediation": "node tests/regression-clarity-remediation.mjs"
   }
 }
