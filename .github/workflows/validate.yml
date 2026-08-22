@@ -76,6 +76,9 @@ jobs:
       - name: Run seventh-audit regression suite
         run: npm run test:seventh-audit
 
+      - name: Run eighth-audit regression suite
+        run: npm run test:eighth-audit
+
       - name: Stop static server
         if: always()
         run: |
