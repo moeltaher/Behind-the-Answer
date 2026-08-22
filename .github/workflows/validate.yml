@@ -70,6 +70,9 @@ jobs:
       - name: Run fifth-audit regression suite
         run: npm run test:fifth-audit
 
+      - name: Run sixth-audit regression suite
+        run: npm run test:sixth-audit
+
       - name: Stop static server
         if: always()
         run: |
