@@ -23,7 +23,11 @@ if(await page.locator('[data-checkpoint-sample]').count()!==3)throw new Error('C
 console.log('THIRD_AUDIT:release-evidence');
 await load(page,{scene:'launchDecision',flags:{...baseAdvanced({releaseGates:[]})}});
 if(await page.locator('[data-gate-pass="capacity"]').count())throw new Error('Capacity gate passed before investigation.');
-await click(page,'[data-gate-investigate="capacity"]');await page.getByText('84%',{exact:false}).waitFor({state:'visible'});
+await click(page,'[data-gate-investigate="capacity"]');
+await page.getByText('نتيجة التشخيص',{exact:true}).waitFor({state:'visible'});
+if(await page.getByText('84%',{exact:false}).count())throw new Error('Capacity result appeared before remediation and remeasurement.');
+await click(page,'[data-gate-remediate="capacity"]');
+await page.getByText('84%',{exact:false}).waitFor({state:'visible'});
 console.log('THIRD_AUDIT:no-post-render-patch');
 const scripts=await page.evaluate(()=>[...document.scripts].map(script=>script.src));if(scripts.some(src=>src.includes('audit-enhancements')))throw new Error('Obsolete post-render audit layer returned.');
 console.log('THIRD_AUDIT:full-decision-record');
