@@ -11,7 +11,7 @@ function currentState(patch={}){
   const state=clone(DEFAULT_STATE);
   const merge=(target,source)=>Object.entries(source).forEach(([key,value])=>{
     if(value&&typeof value==='object'&&!Array.isArray(value)){
-      if(!target[key]||typeof target[key]!=='object'||Array.isArray(target[key])) target[key]={};
+      if(!target[key]||typeof target[k] !== 'object'||Array.isArray(target[key])) target[key]={};
       merge(target[key],value);
     } else target[key]=value;
   });
@@ -52,6 +52,7 @@ async function completeCheckpoint(page){
 async function completeRelease(page,{delay=true}={}){
   await click(page,'[data-gate-pass="regression"]');
   await click(page,'[data-gate-investigate="capacity"]');
+  await click(page,'[data-gate-remediate="capacity"]');
   await click(page,'[data-gate-pass="capacity"]');
   await click(page,'[data-gate-pass="risk"]');
   await click(page,'[data-gate-pass="rollback"]');
@@ -142,13 +143,13 @@ async function runJourney(viewport,label){
   for(const tab of ['network','compute','model']) await click(page,`[data-tab="${tab}"]`);
   await click(page,'#rollback'); await click(page,'#toSupport'); await click(page,'#supportInvestigate'); await click(page,'#supportFast'); await click(page,'#uptimeAbstract'); await click(page,'#abstractNext');
 
-  await click(page,'#backPrompt'); await completeTransfer(page); await click(page,'#transferContinue');
+  await click(page,'#backPrompt');
   await page.getByText('وقد يحدث وقت الطلب بحسب تصميم المنتج',{exact:true}).waitFor({state:'visible'});
-  await click(page,'#showResults');
+  await click(page,'#transferFromAnswer'); await completeTransfer(page); await click(page,'#transferContinue');
   const state=await saved(page);
   const displayed=await page.locator('.full-evidence-details .decision-row').count();
   if(displayed!==state.decisions.length) throw new Error(`${label}: full record displays ${displayed}/${state.decisions.length} decisions.`);
-  await page.getByRole('heading',{name:'سلسلة البيانات عبر revisions',exact:true}).waitFor({state:'visible'});
+  await page.getByRole('heading',{name:'سلسلة استخدام البيانات عبر النسخ',exact:true}).waitFor({state:'visible'});
   await click(page,'#toFinalMessage');
   await page.getByRole('heading',{name:'الواجهة هي نهاية السلسلة، وليست بدايتها.',exact:true}).waitFor({state:'visible'});
   if(errors.length) throw new Error(`${label}: page errors: ${errors.join(' | ')}`);
@@ -191,6 +192,7 @@ async function runCausalChecks(){
   await page.waitForTimeout(50);
   const activeTag=await page.evaluate(()=>document.activeElement?.tagName);
   if(activeTag!=='H1') throw new Error(`Same-scene rerender lost keyboard focus; active element is ${activeTag}.`);
+  await page.getByText('نتيجة التشخيص',{exact:true}).waitFor({state:'visible'});
 
   await load(page,{scene:'deployLoad',flags:{...advancedFlags({trainingCheckpoint:'recent',releaseGates:['regression','capacity','risk','rollback'],launchChoice:'fast',deferredExtraChecks:['checkpoint']})}});
   await page.getByText('نفّذ الفحوص التي قررت تأجيلها بدل اعتبارها مكتملة.',{exact:true}).waitFor({state:'visible'});
