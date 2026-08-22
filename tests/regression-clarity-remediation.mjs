@@ -44,7 +44,7 @@ await load(page,{scene:'launchDecision',flags:{...candidate({dataIndex:4,dataSta
 await click(page,'[data-governance-remediate="3"]');
 state=await saved(page);
 if(state.flags.dataChecks[3].rights!=='unresolved')throw new Error('Opening license evidence silently cleared rights.');
-await page.getByText('دليل الترخيص ظاهر الآن',{exact:true}).waitFor({state:'visible'});
+await page.getByText('دليل الترخيص ظاهر',{exact:true}).waitFor({state:'visible'});
 await click(page,'[data-governance-remediate="3"]');
 state=await saved(page);
 if(state.flags.dataChecks[3].rights!=='clear')throw new Error('Adopting visible license evidence did not clear the rights blocker.');
