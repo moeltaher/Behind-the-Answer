@@ -16,6 +16,17 @@ function currentState(patch={}){
     } else target[key]=value;
   });
   merge(state,patch);
+  const revision=state.flags.candidateRevision;
+  if(revision>0){
+    for(const decision of [
+      {id:`training-compute-${state.flags.trainingCompute}-r${revision}`,label:'إعداد حوسبة',effectText:'fixture'},
+      {id:`training-checkpoint-${state.flags.trainingCheckpoint}-r${revision}`,label:'إعداد checkpoint',effectText:'fixture'}
+    ]) if(!state.decisions.some(item=>item.id===decision.id)) state.decisions.push(decision);
+  }
+  if(state.flags.deployRecovery&&state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){
+    const id=`deploy-resilience-risk-${state.flags.deployLoad.join('-')}`;
+    if(!state.decisions.some(decision=>decision.id===id)) state.decisions.push({id,label:'قبول فجوة المرونة',effectText:'fixture'});
+  }
   return state;
 }
 async function load(page,patch=null,settings=TEST_SETTINGS){
@@ -168,9 +179,12 @@ async function runCausalChecks(){
   const oldRevision=(await saved(page)).flags.candidateRevision;
   await click(page,'[data-governance-remediate="0"]');
   let state=await saved(page);
-  if(state.flags.candidateRevision!==oldRevision+1||state.scene!=='trainingRun') throw new Error('Retraining did not create a new candidate revision and return to training.');
-  if(state.flags.releaseGates.length||state.flags.checkpointEvalComplete||state.flags.safetyRetested) throw new Error('Old candidate evidence survived retraining.');
-  if(!state.flags.dataTrainingUsed.includes(0)||state.flags.dataCurrentTrainingUsed.includes(0)) throw new Error('Historical use/current candidate lineage was not preserved correctly.');
+  if(state.flags.candidateRevision!==oldRevision||state.scene!=='trainingSetup') throw new Error('Retraining created a phantom revision before setup.');
+  if(state.flags.releaseGates.length||state.flags.checkpointEvalComplete||state.flags.safetyRetested) throw new Error('Old candidate evidence survived retraining setup.');
+  if(!state.flags.dataTrainingUsed.includes(0)||state.flags.dataCurrentTrainingUsed.length) throw new Error('Historical use/current candidate lineage was not preserved correctly.');
+  await click(page,'#trainStart');
+  state=await saved(page);
+  if(state.flags.candidateRevision!==oldRevision+1||state.scene!=='trainingRun')throw new Error('Next candidate revision was not created exactly when training started.');
 
   await load(page,{scene:'launchDecision',flags:{...advancedFlags({releaseGates:[]})}});
   await click(page,'[data-gate-investigate="capacity"]');
@@ -190,10 +204,12 @@ async function runCausalChecks(){
   await load(page,{scene:'deployLoad',flags:{...advancedFlags({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25]})}});
   for(const index of [0,1,2]) await click(page,`[data-failover-check="${index}"]`);
   await page.getByText('1 من 3 حالات خروج كاملة يمكن امتصاصها',{exact:true}).waitFor({state:'visible'});
+  if(await page.locator('#retryLoad').count())throw new Error('Retry was offered after reaching the mathematical maximum.');
 
   await load(page,{scene:'deployLoad',flags:{...advancedFlags({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[60,5,35]})}});
   for(const index of [0,1,2]) await click(page,`[data-failover-check="${index}"]`);
   await page.getByText('0 من 3 حالات خروج كاملة يمكن امتصاصها',{exact:true}).waitFor({state:'visible'});
+  await page.locator('#retryLoad').waitFor({state:'visible'});
 
   await load(page,{scene:'evalTask',flags:{...advancedFlags({evalIndex:3,evalCorrectCount:1,evaluatorCalibrationComplete:false,checkpointEvalComplete:false,safetyChoice:null,safetyRemediated:false,safetyRetested:false,releaseGates:[]})}});
   await page.getByText('أثبت أنك تستطيع تطبيق المعيار بعد مراجعته.',{exact:true}).waitFor({state:'visible'});
@@ -225,14 +241,14 @@ async function runMigrationBrowserCheck(){
   await page.evaluate(({key,value})=>{localStorage.clear();localStorage.setItem(key,JSON.stringify(value));},{key:STORAGE_KEY,value:v3});
   await page.reload({waitUntil:'networkidle'});
   const migrated=await saved(page);
-  if(migrated.schemaVersion!==4||migrated.scene!=='trainingSetup') throw new Error('Browser v3 migration did not rewind safely to trainingSetup.');
-  await page.getByText('الإصدار 3 إلى الإصدار 4',{exact:false}).waitFor({state:'visible'});
+  if(migrated.schemaVersion!==5||migrated.scene!=='trainingSetup') throw new Error('Browser v3 migration did not rewind safely to trainingSetup under v5.');
+  await page.getByText('الإصدار 3 إلى الإصدار 5',{exact:false}).waitFor({state:'visible'});
 
   const invalid=currentState({scene:'finalMessage'});
   await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:STORAGE_KEY,value:invalid});
   await page.reload({waitUntil:'networkidle'});
   const reset=await saved(page);
-  if(reset.scene!=='intro') throw new Error('Impossible v4 scene/state combination was accepted.');
+  if(reset.scene!=='intro') throw new Error('Impossible v5 scene/state combination was accepted.');
   await browser.close();
   console.log('Browser migration and impossible-state reset passed.');
 }
@@ -278,4 +294,4 @@ await runMigrationBrowserCheck();
 await runA11y();
 await crossBrowser(firefox,'firefox');
 await crossBrowser(webkit,'webkit');
-console.log('Browser v4 journey, causality, migration, focus, accessibility and cross-browser checks passed.');
+console.log('Browser v5 journey, causality, migration, focus, accessibility and cross-browser checks passed.');
