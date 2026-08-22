@@ -3,7 +3,7 @@ import { DEFAULT_STATE, clone } from '../js/core/state.js';
 import { STORAGE_KEY, SETTINGS_KEY, DEFAULT_SETTINGS } from '../js/core/storage.js';
 const BASE_URL='http://127.0.0.1:4173';
 const SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
-function stateWith(patch={}){const state=clone(DEFAULT_STATE);const merge=(t,s)=>Object.entries(s).forEach(([k,v])=>{if(v&&typeof v==='object'&&!Array.isArray(v)){if(!t[k]||typeof t[k]!=='object'||Array.isArray(t[k]))t[k]={};merge(t[k],v);}else t[k]=v;});merge(state,patch);return state;}
+function stateWith(patch={}){const state=clone(DEFAULT_STATE);const merge=(t,s)=>Object.entries(s).forEach(([k,v])=>{if(v&&typeof v==='object'&&!Array.isArray(v)){if(!t[k]||typeof t[k]!=='object'||Array.isArray(t[k]))t[k]={};merge(t[k],v);}else t[k]=v;});merge(state,patch);const r=state.flags.candidateRevision;if(r>0){const cfg=[{id:`training-compute-${state.flags.trainingCompute}-r${r}`,label:'إعداد حوسبة',effectText:'fixture'},{id:`training-checkpoint-${state.flags.trainingCheckpoint}-r${r}`,label:'إعداد checkpoint',effectText:'fixture'}];for(const d of cfg)if(!state.decisions.some(x=>x.id===d.id))state.decisions.push(d);}if(state.flags.deployRecovery&&state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){const id=`deploy-resilience-risk-${state.flags.deployLoad.join('-')}`;if(!state.decisions.some(d=>d.id===id))state.decisions.push({id,label:'قبول فجوة المرونة',effectText:'fixture'});}return state;}
 async function load(page,patch={}){await page.goto(BASE_URL,{waitUntil:'networkidle'});await page.evaluate(({storageKey,settingsKey,state,settings})=>{localStorage.clear();localStorage.setItem(settingsKey,JSON.stringify(settings));localStorage.setItem(storageKey,JSON.stringify(state));},{storageKey:STORAGE_KEY,settingsKey:SETTINGS_KEY,state:stateWith(patch),settings:SETTINGS});await page.reload({waitUntil:'networkidle'});}
 async function click(page,selector){await page.locator(selector).waitFor({state:'visible'});await page.locator(selector).click();}
 async function saved(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);}
@@ -15,10 +15,11 @@ console.log('FIFTH_AUDIT:history-is-preserved-when-revision-changes');
 const historical=[{id:'checkpoint-evidence-reviewed-r1',label:'دليل قديم',effectText:'حدث فعلًا'},{id:'release-gate-regression-r1',label:'بوابة قديمة',effectText:'خاصة بالنسخة 1'}];
 await load(page,{scene:'launchDecision',decisions:historical,ledger:[{chapter:6,human:'ريم',work:'تقييم النسخة 1',system:'جاهزية',details:'تاريخ فعلي'}],flags:{...advanced({releaseGates:['regression','capacity','rollback']})}});
 await click(page,'[data-governance-remediate="0"]');let state=await saved(page);
-if(state.decisions.length<historical.length+2)throw new Error('Revision reset deleted historical decisions instead of preserving them.');
 if(!state.decisions.some(d=>d.id==='revision-superseded-r1'))throw new Error('Superseded revision was not explicitly recorded.');
+if(!state.decisions.some(d=>d.id==='data-retrain-plan-without-0-after-r1'))throw new Error('Retraining plan was not explicitly recorded.');
 if(!state.ledger.some(e=>e.chapter===6))throw new Error('Revision reset deleted historical ledger entries.');
 if(state.flags.releaseGates.length||state.flags.checkpointEvalComplete||state.flags.safetyRetested)throw new Error('Old evidence remained active after revision change.');
+if(state.flags.candidateRevision!==1||state.scene!=='trainingSetup')throw new Error('A revision was created before the next training round actually started.');
 console.log('FIFTH_AUDIT:eligibility-progress-uses-approved-plus-held');
 await load(page,{scene:'trainingSetup',flags:{dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingApproved:[0],dataTrainingHeld:[1]}});
 await page.getByText('أهلية البيانات: 2/2 مواد غير محسومة حُسم قرار دخولها',{exact:true}).waitFor({state:'visible'});
@@ -42,4 +43,4 @@ for(const [scene,flags] of [
   if(await page.locator('[data-task-panel]').count()!==1)throw new Error(`Missing universal task panel in ${scene}.`);
   await page.getByText('مهمتك الآن',{exact:true}).waitFor({state:'visible'});
 }
-await browser.close();console.log('Fifth-audit regression checks passed.');
+await browser.close();console.log('Fifth-audit regression checks passed under schema v5.');
