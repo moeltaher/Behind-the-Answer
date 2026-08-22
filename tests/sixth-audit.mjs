@@ -25,7 +25,7 @@ await click(page,'#resultsLedger');
 await page.getByText('revision 2',{exact:true}).waitFor({state:'visible'});
 await page.getByText('عرض 1 سجل تاريخي سابق',{exact:true}).waitFor({state:'visible'});
 
-console.log('SIXTH_AUDIT:factory-debt-can-close');
+console.log('SIXTH_AUDIT:factory-debt-can-close-or-carry');
 await load(page,{scene:'factoryOutcome',decisions:[{id:'factory-continue',label:'واصلت',effectText:'دين مفتوح'}],flags:{factoryChoice:'continue',factoryMaintenanceDebt:true}});
 await page.getByText('قرار ظهر بسبب اختيارك الاستمرار في الإنتاج',{exact:true}).waitFor({state:'visible'});
 await click(page,'#closeMaintenance');
@@ -33,6 +33,10 @@ let state=await saved(page);
 if(state.flags.factoryMaintenanceDebt)throw new Error('Factory maintenance debt remained open after explicit closure.');
 if(!state.decisions.some(d=>d.id==='factory-debt-closed'))throw new Error('Factory debt closure was not recorded.');
 await page.locator('#toFactoryAbstract').waitFor({state:'visible'});
+await load(page,{scene:'factoryOutcome',decisions:[{id:'factory-continue',label:'واصلت',effectText:'دين مفتوح'}],flags:{factoryChoice:'continue',factoryMaintenanceDebt:true}});
+await click(page,'#toFactoryAbstract');
+state=await saved(page);
+if(!state.decisions.some(d=>d.id==='factory-debt-carried')||state.scene!=='abstract2')throw new Error('Factory continuation did not explicitly record carried maintenance debt.');
 
 console.log('SIXTH_AUDIT:contextual-task-guidance');
 await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0,reason:'rights-cleared'},dataSort:{keep:0,remove:0,redact:0,review:1}}});
@@ -49,8 +53,8 @@ console.log('SIXTH_AUDIT:n1-gap-needs-explicit-decision');
 await load(page,{scene:'deployLoad',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
 await page.getByText(/فجوة مرونة حقيقية/).waitFor({state:'visible'});
-if(await page.locator('#finishFailover').count())throw new Error('Failover gap can still be passed as if the test succeeded.');
-await click(page,'#acceptFailoverRisk');
+await page.getByText('اقبل فجوة المرونة وسجلها قبل المتابعة',{exact:true}).waitFor({state:'visible'});
+await click(page,'#finishFailover');
 state=await saved(page);
 if(state.scene!=='deployIncident'||!state.decisions.some(d=>d.id==='deploy-resilience-risk-45-30-25'))throw new Error('Explicit resilience-risk acceptance did not gate incident progression.');
 
