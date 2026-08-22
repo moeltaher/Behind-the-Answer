@@ -97,6 +97,10 @@ function unresolvedReadyIndices(flags) {
   return indices;
 }
 
+function exposedUnresolvedIndices(flags) {
+  return flags.dataTrainingUsed.filter(index=>flags.dataStatuses[index]==='ready' && flags.dataChecks[index] && Object.values(flags.dataChecks[index]).includes('unresolved'));
+}
+
 function neededExtraChecks(flags) {
   const result=[];
   if(flags.trainingCheckpoint==='recent') result.push('checkpoint');
@@ -132,7 +136,7 @@ function validStateInvariants(state) {
   if(f.safetyChoice !== null && !f.checkpointEvalComplete) return false;
   if(f.launchChoice !== null) {
     if(!f.safetyRetested || f.releaseGates.length !== RELEASE_GATES.size) return false;
-    if(unresolvedReadyIndices(f).length) return false;
+    if(exposedUnresolvedIndices(f).length) return false;
     if(f.launchChoice==='delay' && neededExtraChecks(f).some(id=>!f.extraChecks.includes(id))) return false;
   }
   return true;
