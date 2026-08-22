@@ -1,4 +1,4 @@
-export const STATE_SCHEMA_VERSION = 2;
+export const STATE_SCHEMA_VERSION = 3;
 
 export const DEFAULT_STATE = {
   schemaVersion: STATE_SCHEMA_VERSION,
@@ -16,6 +16,7 @@ export const DEFAULT_STATE = {
     miningForcedInspection: false,
     miningInspectionCount: 0,
     factoryChoice: null,
+    factoryMaintenanceDebt: false,
     serverSteps: [],
     dcCoolingChoice: null,
     dcCoolingRestored: false,
@@ -33,6 +34,8 @@ export const DEFAULT_STATE = {
       redact: 0,
       review: 0
     },
+    dataTrainingUsed: [],
+    dataTrainingHeld: [],
     annotationResults: [],
     annotationUnpaidMinutes: 0,
     tookBreak: false,
@@ -40,14 +43,18 @@ export const DEFAULT_STATE = {
     trainingCompute: '12',
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
+    checkpointEvalComplete: false,
     evalIndex: 0,
     evalCorrectCount: 0,
     evalFeedback: null,
     safetyChoice: null,
     safetyRemediated: false,
     safetyRetested: false,
+    releaseGates: [],
+    extraChecks: [],
     launchChoice: null,
     deployLoad: null,
+    deployFailoverChecks: [],
     deployTabs: [],
     deployRecovery: null,
     supportIndex: 0,
