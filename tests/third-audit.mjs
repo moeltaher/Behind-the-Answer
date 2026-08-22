@@ -18,7 +18,7 @@ console.log('THIRD_AUDIT:held-not-launch-blocker');
 await load(page,{scene:'launchDecision',flags:{...baseAdvanced(),dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],dataTrainingHeld:[1]}});
 if(await page.getByText('حاجب إصدار: بيانات النسخة الحالية',{exact:true}).count())throw new Error('Held material blocked release as if it were in current candidate.');
 console.log('THIRD_AUDIT:checkpoint-evidence');
-await load(page,{scene:'checkpointEval',flags:{...baseAdvanced({checkpointEvalComplete:false})}});
+await load(page,{scene:'checkpointEval',flags:{...baseAdvanced({checkpointEvalComplete:false,safetyChoice:null,safetyRemediated:false,safetyRetested:false,releaseGates:[]})}});
 if(await page.locator('[data-checkpoint-sample]').count()!==3)throw new Error('Checkpoint comparison no longer has three samples.');
 console.log('THIRD_AUDIT:release-evidence');
 await load(page,{scene:'launchDecision',flags:{...baseAdvanced({releaseGates:[]})}});
