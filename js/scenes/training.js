@@ -1,4 +1,5 @@
 import { supportingRoleStrip } from '../components/supporting-role-strip.js';
+import { DATA_ITEMS } from '../data/content-tasks.js';
 
 const MIN_COMPUTE_TO_CONTINUE = 7;
 
@@ -22,21 +23,33 @@ export function createTrainingRoutes(ctx) {
     return { confirmed, pending, rejected };
   }
 
-  function dataInputs() {
+  function unresolvedReadyIndices() {
+    const result=[];
+    state.flags.dataStatuses.forEach((status,index)=>{
+      if(status==='ready'&&hasUnresolved(state.flags.dataChecks[index])) result.push(index);
+    });
+    return result;
+  }
+
+  function dataInputs(forTraining=false) {
     const statuses=state.flags.dataStatuses;
     let unresolved=0;
     let clear=0;
+    let passed=0;
     statuses.forEach((status,index)=>{
       if(status!=='ready') return;
+      if(forTraining && state.flags.dataTrainingHeld.includes(index)) return;
+      passed+=1;
       if(hasUnresolved(state.flags.dataChecks[index])) unresolved+=1;
       else clear+=1;
     });
     return {
-      passed: statuses.filter(status=>status==='ready').length,
+      passed,
       clear,
       unresolved,
       pending: statuses.filter(status=>status==='pending').length,
-      excluded: statuses.filter(status=>status==='excluded').length
+      excluded: statuses.filter(status=>status==='excluded').length,
+      held: state.flags.dataTrainingHeld.length
     };
   }
 
@@ -61,22 +74,62 @@ export function createTrainingRoutes(ctx) {
     return { initialMargin, afterFailure, remainingMargin };
   }
 
+  function trainingEligibilityMarkup() {
+    const unresolved=unresolvedReadyIndices();
+    if(!unresolved.length) return '<div class="alert goodish"><strong>أهلية البيانات لهذه الجولة واضحة</strong><span>لا توجد مادة مارة تحمل مسألة غير محسومة في الحالات المعروضة.</span></div>';
+    return `<section class="card"><span class="kicker">بوابة أهلية البيانات قبل المعالجة</span><h2>المرور في مرحلة البيانات لا يمنح إذنًا تلقائيًا لاستخدام المادة في post-training.</h2><p>اتخذ قرارًا مستقلًا لكل مادة غير محسومة. إذا أدخلتها رغم الحاجب، ستسجل اللعبة أنها عولجت بالفعل ولن يسمح الاستبعاد اللاحق بمحو هذا التاريخ.</p><div class="evidence-results">${unresolved.map(index=>{
+      const item=DATA_ITEMS[index];
+      const used=state.flags.dataTrainingUsed.includes(index);
+      const held=state.flags.dataTrainingHeld.includes(index);
+      const unresolvedLabels=Object.entries(state.flags.dataChecks[index]).filter(([,value])=>value==='unresolved').map(([key])=>({rights:'الحقوق',privacy:'الخصوصية',fitness:'الملاءمة'}[key])).join('، ');
+      return `<article class="card flat"><strong>${ctx.h(item?.title||`المادة ${index+1}`)}</strong><p>غير محسوم: ${ctx.h(unresolvedLabels)}</p>${used?'<span class="task-status task-status--complete">سُمح بإدخالها رغم الحاجب — سيبقى تاريخ الاستخدام</span>':held?'<span class="task-status task-status--complete">موقوفة قبل post-training</span>':`<div class="choice-grid"><button class="secondary-btn" data-training-use="${index}" type="button">تجاوز الحاجب وأدخلها</button><button class="secondary-btn" data-training-hold="${index}" type="button">أوقفها قبل الجولة</button></div>`}</article>`;
+    }).join('')}</div></section>`;
+  }
+
+  function eligibilityComplete() {
+    const reviewed=new Set([...state.flags.dataTrainingUsed,...state.flags.dataTrainingHeld]);
+    return unresolvedReadyIndices().every(index=>reviewed.has(index));
+  }
+
   function trainingSetup() {
     const checkpoint=state.flags.trainingCheckpoint;
     const annotation=annotationInputs();
     const data=dataInputs();
+    const trainingData=dataInputs(true);
     const confirmedLabel=confirmedExamplesLabel(annotation.confirmed);
     const pendingLabel=pendingCasesLabel(annotation.pending);
-    const dataIssueCopy=data.unresolved?`${data.unresolved} من المواد التي مرّت تحمل مسائل حقوق/خصوصية/ملاءمة غير محسومة. ستدخل المسار كما سمحت بها قراراتك، لكن هذه المسائل لا تختفي وستضيف تحققًا قبل الإطلاق.`:'كل المواد التي مرّت في هذا المسار حُسمت مسائلها المعروضة.';
-    html(`<div><span class="eyebrow">مختبر تطوير نموذج افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما الذي نحاكيه تحديدًا؟</strong> هذه ليست عملية تدريب نموذج من الصفر. السيناريو يمثل جولة post-training مبسطة تبدأ من نقطة حفظ سابقة. من الدفعة 18 مرّت ${data.passed} مواد: ${data.clear} محسومة و${data.unresolved} تحمل مسائل غير محسومة، بينما تبقى ${data.pending} معلقة. ومن عمل التصنيف يدخل ${confirmedLabel}، بينما تبقى ${pendingLabel} و${annotation.rejected} مرفوضة خارج المدخل المؤكد.</div>${data.unresolved?`<div class="alert dangerish"><strong>مرور المادة لا يساوي حسمها</strong><span>${dataIssueCopy}</span></div>`:''}<div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد التطوير التي مرّت إلى الجولة</label><select disabled><option>${data.passed} مواد من الدفعة 18 (${data.clear} محسومة / ${data.unresolved} غير محسومة) + ${confirmedLabel}</option></select></div><div class="form-row"><label for="computeSel">مجموعات الحوسبة المخصصة</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute==='12'?'selected':''}>12 مجموعة — 5 فوق الحد الأدنى قبل العطل</option><option value="8" ${state.flags.trainingCompute==='8'?'selected':''}>8 مجموعات — 1 فوق الحد الأدنى قبل العطل</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ</label><select id="checkpointSel"><option value="validated" ${checkpoint==='validated'?'selected':''}>أكثر اختبارًا — تحقق إضافي أقل، من دون تغيير النبرة الأحدث</option><option value="recent" ${checkpoint==='recent'?'selected':''}>أحدث — تتضمن تغييرًا مستهدفًا للنبرة العربية وتحتاج تحققًا إضافيًا</option></select></div><button id="trainStart" class="primary-btn training-start">ابدأ الجولة</button></div><div class="chart-panel"><span class="kicker">المفاضلات قبل البدء</span><div class="training-log training-config-summary"><strong>الحوسبة</strong><br>يفترض السيناريو أن الجولة تحتاج إلى ${MIN_COMPUTE_TO_CONTINUE} مجموعات متاحة على الأقل للاستمرار ضمن نافذة الأداء المبسطة.<br>12 مجموعة: تكلفة 12 وحدة لعب وهامش سعة أولي 5 مجموعات فوق الحد الأدنى.<br>8 مجموعات: تكلفة 8 وحدات لعب وهامش سعة أولي مجموعة واحدة فقط.<br><br><strong>نقطة الحفظ</strong><br>الأكثر اختبارًا: مخاطرة تحقق إضافي أقل، لكنها لا تتضمن التغيير الأحدث المستهدف لنبرة الرسائل العربية القصيرة.<br>الأحدث: تحمل هذا التغيير المقصود، لكن فائدته لا تُفترض مسبقًا ويجب التحقق منه قبل الإطلاق.</div></div></div></div>`);
-    $('#trainStart').addEventListener('click',()=>{
+    const canStart=eligibilityComplete();
+    html(`<div><span class="eyebrow">مختبر تطوير نموذج افتراضي</span><h1 class="scene-title">أنت الآن ديفيد، مهندس تعلم آلي.</h1><div class="reality-note"><strong>ما الذي نحاكيه تحديدًا؟</strong> هذه ليست عملية تدريب نموذج من الصفر. السيناريو يمثل جولة post-training مبسطة تبدأ من نقطة حفظ سابقة. مرّت ${data.passed} مواد في workflow، لكن أهلية استخدامها في هذه الجولة قرار مستقل.</div>${trainingEligibilityMarkup()}<div class="training-board"><div class="config-panel"><div class="form-row"><label>مواد التطوير المؤهلة حاليًا للجولة</label><select disabled><option>${trainingData.passed} مواد (${trainingData.clear} محسومة / ${trainingData.unresolved} دخلت رغم مسائل غير محسومة / ${trainingData.held} موقوفة) + ${confirmedLabel}</option></select></div><div class="form-row"><label for="computeSel">مجموعات الحوسبة المخصصة</label><select id="computeSel"><option value="12" ${state.flags.trainingCompute==='12'?'selected':''}>12 مجموعة — 5 فوق الحد الأدنى قبل العطل</option><option value="8" ${state.flags.trainingCompute==='8'?'selected':''}>8 مجموعات — 1 فوق الحد الأدنى قبل العطل</option></select></div><div class="form-row"><label for="checkpointSel">نقطة الحفظ</label><select id="checkpointSel"><option value="validated" ${checkpoint==='validated'?'selected':''}>أكثر اختبارًا — تحقق إضافي أقل، من دون تغيير النبرة الأحدث</option><option value="recent" ${checkpoint==='recent'?'selected':''}>أحدث — تتضمن تغييرًا مستهدفًا للنبرة العربية وتحتاج تقييمًا مقارنًا</option></select></div><button id="trainStart" class="primary-btn training-start" ${canStart?'':'disabled'}>${canStart?'ابدأ الجولة':'احسم أهلية المواد أولًا'}</button></div><div class="chart-panel"><span class="kicker">المفاضلات قبل البدء</span><div class="training-log training-config-summary"><strong>الحوسبة</strong><br>يفترض السيناريو أن الجولة تحتاج إلى ${MIN_COMPUTE_TO_CONTINUE} مجموعات متاحة على الأقل للاستمرار ضمن نافذة الأداء المبسطة.<br>12 مجموعة: تكلفة 12 وحدة لعب وهامش سعة أولي 5 مجموعات فوق الحد الأدنى.<br>8 مجموعات: تكلفة 8 وحدات لعب وهامش سعة أولي مجموعة واحدة فقط.<br><br><strong>البيانات</strong><br>${pendingLabel} و${annotation.rejected} مرفوضة خارج المدخل المؤكد. المواد التي توقفها هنا لا تُعالج في الجولة. أي مادة تتجاوز بها الحاجب تُسجل ضمن تاريخ المعالجة.<br><br><strong>نقطة الحفظ</strong><br>الأحدث تحمل تغييرًا مقصودًا، لكن فائدته لن تُفترض مسبقًا؛ ستقارن أمثلة فعلية قبل اختبار السلامة.</div></div></div></div>`);
+
+    document.querySelectorAll('[data-training-use]').forEach(button=>button.addEventListener('click',()=>{
+      const index=Number(button.dataset.trainingUse);
+      state.flags.dataTrainingHeld=state.flags.dataTrainingHeld.filter(value=>value!==index);
+      if(!state.flags.dataTrainingUsed.includes(index)) state.flags.dataTrainingUsed.push(index);
+      addDecision(`data-training-override-${index}`,`أدخلت المادة ${index+1} إلى post-training رغم بقاء حاجب حوكمة`,`سجلت اللعبة أن المادة عولجت بالفعل رغم بقاء مسألة غير محسومة؛ أي معالجة لاحقة يجب أن تراعي هذا التاريخ ولا تمحو الاستخدام السابق.`);
+      saveState(); trainingSetup();
+    }));
+    document.querySelectorAll('[data-training-hold]').forEach(button=>button.addEventListener('click',()=>{
+      const index=Number(button.dataset.trainingHold);
+      state.flags.dataTrainingUsed=state.flags.dataTrainingUsed.filter(value=>value!==index);
+      if(!state.flags.dataTrainingHeld.includes(index)) state.flags.dataTrainingHeld.push(index);
+      addDecision(`data-training-hold-${index}`,`أوقفت المادة ${index+1} قبل post-training`,`فصلت بين مرور المادة داخل workflow وبين أهلية معالجتها في جولة التطوير، فلم تدخل المادة غير المحسومة إلى المعالجة.`);
+      saveState(); trainingSetup();
+    }));
+
+    $('#trainStart')?.addEventListener('click',()=>{
+      if(!eligibilityComplete()) return;
       state.flags.trainingCompute=$('#computeSel').value;
       state.flags.trainingCheckpoint=$('#checkpointSel').value;
+      state.flags.checkpointEvalComplete=false;
+      const unresolvedSet=new Set(unresolvedReadyIndices());
+      state.flags.dataStatuses.forEach((status,index)=>{
+        if(status==='ready'&&!state.flags.dataTrainingHeld.includes(index)&&!unresolvedSet.has(index)&&!state.flags.dataTrainingUsed.includes(index)) state.flags.dataTrainingUsed.push(index);
+      });
       const total=Number(state.flags.trainingCompute);
       const margin=computeDescription(total).initialMargin;
       addDecision(`training-compute-${total}`,`خصصت ${total} مجموعة حوسبة لجولة التطوير`,`تكلفة التخصيص ${total} وحدة لعب، مع هامش سعة أولي ${margin} فوق الحد الأدنى المفترض (${MIN_COMPUTE_TO_CONTINUE}) في هذا السيناريو.`);
       if(state.flags.trainingCheckpoint==='validated') addDecision('training-checkpoint-validated','بدأت من نقطة حفظ اختُبرت أكثر','قللت نطاق التحقق الإضافي، لكن الجولة لا تتضمن تغيير النبرة العربية الأحدث.');
-      else addDecision('training-checkpoint-recent','بدأت من نقطة حفظ أحدث','اخترت تغييرًا حديثًا مستهدفًا لتحسين نبرة الرسائل العربية القصيرة، مع حاجة إلى تحقق إضافي قبل الإطلاق بدل افتراض نجاحه.');
+      else addDecision('training-checkpoint-recent','بدأت من نقطة حفظ أحدث','اخترت تغييرًا حديثًا مستهدفًا لتحسين نبرة الرسائل العربية القصيرة، وستقيس أثره على أمثلة مقارنة قبل السلامة.');
       saveState(); go('trainingRun');
     });
   }
@@ -100,18 +153,19 @@ export function createTrainingRoutes(ctx) {
   }
 
   function trainingEval() {
-    const data=dataInputs();
-    addLedger(5,'ديفيد وفرق التطوير','إعداد وتشغيل ومراقبة جولة post-training وحل أعطال الحوسبة','نسخة مطورة من النموذج',data.unresolved?`دخلت ${data.unresolved} مواد مرّت مع مسائل غير محسومة؛ لم تختف هذه المسائل وستولد تحققًا إضافيًا.`:'لم تدخل المواد المعلقة، وكل المواد المارة حُسمت مسائلها المعروضة.');
+    const data=dataInputs(true);
+    const exposedUnresolved=state.flags.dataTrainingUsed.filter(index=>hasUnresolved(state.flags.dataChecks[index])).length;
+    addLedger(5,'ديفيد وفرق التطوير','إعداد وتشغيل ومراقبة جولة post-training وحل أعطال الحوسبة','نسخة مطورة من النموذج',exposedUnresolved?`عولجت ${exposedUnresolved} مواد رغم بقاء مسائل غير محسومة؛ سجل الاستخدام محفوظ ويحتاج معالجة سببية قبل الإصدار.`:`دخلت الجولة ${data.passed} مواد ولم تُعالج المواد التي أوقفت عند بوابة الأهلية.`);
     const paused=state.flags.trainingIncidentChoice==='pause';
     const total=Number(state.flags.trainingCompute);
     const checkpoint=state.flags.trainingCheckpoint;
     const compute=computeDescription(total);
-    html(`<div><span class="eyebrow">نتيجة جولة التطوير</span><h1 class="scene-title">انتهت الجولة، لكن النسخة ما زالت تحتاج إلى تقييم وتحقق.</h1><div class="stage-output"><strong>أثر قرار السعة والعطل</strong>${paused?`توقفت الجولة، عُزلت المجموعة المعطلة، ثم استؤنف العمل بعد الإصلاح مع ${total} مجموعة متاحة. تكلفة التخصيص: ${total} وحدة لعب.`:`اكتملت الجولة بعد خروج مجموعة من الخدمة مع ${compute.afterFailure} متاحة و${compute.remainingMargin} فوق الحد الأدنى المفترض.`}</div><div class="stage-output"><strong>أثر اختيار نقطة الحفظ</strong>${checkpoint==='recent'?'الجولة تضمنت التغيير الأحدث المستهدف لتحسين نبرة الرسائل العربية القصيرة؛ لا تفترض اللعبة نجاحه، ولذلك يضيف حزمة تحقق قبل الإطلاق.':'اخترت نقطة أكثر اختبارًا؛ نطاق التحقق الإضافي أقل، لكن التغيير الأحدث المستهدف للنبرة لم يدخل هذه الجولة.'}</div>${data.unresolved?`<div class="alert dangerish"><strong>دين تحقق من مرحلة البيانات</strong><span>${data.unresolved} مواد دخلت الجولة رغم بقاء مسائل غير محسومة. هذا ليس «تحسنًا» ولا «فشلًا» تلقائيًا؛ إنه قرار حوكمة يجب أن يظهر في الجاهزية بدل أن يمحوه الانتقال التقني.</span></div>`:''}<div class="action-row"><button id="sendHuman" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
+    html(`<div><span class="eyebrow">نتيجة جولة التطوير</span><h1 class="scene-title">انتهت الجولة، لكن النسخة ما زالت تحتاج إلى تقييم وتحقق.</h1><div class="stage-output"><strong>أثر قرار السعة والعطل</strong>${paused?`توقفت الجولة، عُزلت المجموعة المعطلة، ثم استؤنف العمل بعد الإصلاح مع ${total} مجموعة متاحة. تكلفة التخصيص: ${total} وحدة لعب.`:`اكتملت الجولة بعد خروج مجموعة من الخدمة مع ${compute.afterFailure} متاحة و${compute.remainingMargin} فوق الحد الأدنى المفترض.`}</div><div class="stage-output"><strong>أثر اختيار نقطة الحفظ</strong>${checkpoint==='recent'?'الجولة تضمنت التغيير الأحدث المستهدف لتحسين نبرة الرسائل العربية القصيرة؛ ستختبره على أمثلة مقارنة قبل السلامة.':'اخترت نقطة أكثر اختبارًا؛ ستقارنها أيضًا حتى يكون قرار الجاهزية مبنيًا على دليل لا على اسم checkpoint.'}</div>${exposedUnresolved?`<div class="alert dangerish"><strong>تاريخ معالجة لا يمكن محوه</strong><span>${exposedUnresolved} مواد غير محسومة دخلت post-training بقرار صريح. إذا لم يمكن حسمها بدليل لاحق، فالمعالجة الصحيحة هي التخلص من النسخة الناتجة وإعادة الجولة من دونها، لا تغيير حالتها وكأنها لم تُستخدم.</span></div>`:''}<div class="action-row"><button id="sendHuman" class="primary-btn">شاهد ما يختفي في المرحلة التالية</button></div></div>`);
     $('#sendHuman').addEventListener('click',()=>go('abstract6'));
   }
 
   function abstract6() {
-    abstraction([['ديفيد','مهندس تعلم آلي','⌁'],['فرق البنية والتشغيل','','▥']],'نسخة مطورة من النموذج','إعدادات الجولة والحوسبة ومراقبة الأعطال والعمل الهندسي أصبحت في المرحلة التالية نسخة من النموذج تحتاج إلى تقييم، مع بقاء أي مسائل بيانات غير محسومة ظاهرة كدين تحقق.','ch7Intro');
+    abstraction([['ديفيد','مهندس تعلم آلي','⌁'],['فرق البنية والتشغيل','','▥']],'نسخة مطورة من النموذج','إعدادات الجولة والحوسبة ومراقبة الأعطال والعمل الهندسي أصبحت نسخة تحتاج إلى تقييم؛ وأهلية البيانات وتاريخ استخدامها يظلان منفصلين عن مجرد اكتمال المعالجة.','ch7Intro');
   }
 
   return { ch6Intro,trainingSetup,trainingRun,trainingEval,abstract6 };
