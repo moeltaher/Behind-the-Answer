@@ -8,6 +8,7 @@ async function load(page,patch={}){await page.goto(BASE_URL,{waitUntil:'networki
 async function click(page,selector){await page.locator(selector).waitFor({state:'visible'});await page.locator(selector).click();}
 async function saved(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);}
 function advanced(extra={}){return{dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingApproved:[0],dataTrainingUsed:[0,1],dataCurrentTrainingUsed:[0,1],candidateRevision:1,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra};}
+const annotationResults=Array.from({length:6},(_,index)=>({index,choice:'آمن',acceptedAsReasonable:true,pending:false,reviewRejected:false,disputed:false}));
 const browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1280,height:900}});
 console.log('FIFTH_AUDIT:history-is-preserved-when-revision-changes');
 const historical=[{id:'checkpoint-evidence-reviewed-r1',label:'دليل قديم',effectText:'حدث فعلًا'},{id:'release-gate-regression-r1',label:'بوابة قديمة',effectText:'خاصة بالنسخة 1'}];
@@ -27,9 +28,17 @@ state=await saved(page);if(state.flags.evaluatorCalibrationComplete)throw new Er
 await page.selectOption('#calibrationChoice','a');await click(page,'#confirmCalibration');state=await saved(page);if(!state.flags.evaluatorCalibrationComplete)throw new Error('Correct calibration proof did not complete calibration.');
 console.log('FIFTH_AUDIT:task-panel-is-universal');
 for(const [scene,flags] of [
- ['intro',{}],['dataFollowup',{dataIndex:0,dataFollowup:{index:0,reason:'rights-cleared'}}],
- ['annotationReview',{annotationResults:[]}],['safetyRetest',{...advanced()}],
+ ['intro',{}],
+ ['dataFollowup',{dataIndex:0,dataFollowup:{index:0,reason:'rights-cleared'},dataSort:{keep:0,remove:0,redact:0,review:1}}],
+ ['annotationReview',{annotationResults}],
+ ['safetyRetest',{...advanced()}],
  ['transferChallenge',{...advanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2})}],
  ['results',{...advanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'})}]
-]){await load(page,{scene,flags});if(await page.locator('[data-task-panel]').count()!==1)throw new Error(`Missing universal task panel in ${scene}.`);await page.getByText('مهمتك الآن',{exact:true}).waitFor({state:'visible'});}
+]){
+  await load(page,{scene,flags});
+  const persisted=await saved(page);
+  if(persisted.scene!==scene)throw new Error(`Guidance test state for ${scene} was rejected or redirected to ${persisted.scene}.`);
+  if(await page.locator('[data-task-panel]').count()!==1)throw new Error(`Missing universal task panel in ${scene}.`);
+  await page.getByText('مهمتك الآن',{exact:true}).waitFor({state:'visible'});
+}
 await browser.close();console.log('Fifth-audit regression checks passed.');
