@@ -14,6 +14,9 @@ function stateWith(patch={}){
     } else target[key]=value;
   });
   merge(state,patch);
+  const r=state.flags.candidateRevision;
+  if(r>0){for(const d of [{id:`training-compute-${state.flags.trainingCompute}-r${r}`,label:'إعداد حوسبة',effectText:'fixture'},{id:`training-checkpoint-${state.flags.trainingCheckpoint}-r${r}`,label:'إعداد checkpoint',effectText:'fixture'}])if(!state.decisions.some(x=>x.id===d.id))state.decisions.push(d);}
+  if(state.flags.deployRecovery&&state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){const id=`deploy-resilience-risk-${state.flags.deployLoad.join('-')}`;if(!state.decisions.some(d=>d.id===id))state.decisions.push({id,label:'قبول فجوة المرونة',effectText:'fixture'});}
   return state;
 }
 async function load(page,patch={}){
@@ -60,7 +63,6 @@ await load(page,{scene:'results',flags:{...baseAdvanced({
   releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'
 })}});
 await page.getByText('استُخدمت تاريخيًا ثم خرجت من النسخة الحالية',{exact:true}).waitFor({state:'visible'});
-await page.getByText('1',{exact:true}).first().waitFor({state:'visible'});
 
 console.log('FOURTH_AUDIT:risk-gate-cannot-lie');
 await load(page,{scene:'launchDecision',flags:{...baseAdvanced({
@@ -69,16 +71,21 @@ await load(page,{scene:'launchDecision',flags:{...baseAdvanced({
 await page.getByText('مقفولة حتى معالجة حاجب البيانات',{exact:true}).waitFor({state:'visible'});
 if(await page.locator('[data-gate-pass="risk"]').count()) throw new Error('Risk gate can still be approved while its evidence statement is false.');
 
-console.log('FOURTH_AUDIT:retraining-revision-and-evidence-reset');
+console.log('FOURTH_AUDIT:retraining-waits-for-new-setup');
 await load(page,{scene:'launchDecision',flags:{...baseAdvanced({
   dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},
   dataTrainingApproved:[0],dataTrainingUsed:[0,1],dataCurrentTrainingUsed:[0,1],releaseGates:['regression','capacity','rollback']
 })}});
 await click(page,'[data-governance-remediate="0"]');
-const retrained=await saved(page);
-if(retrained.flags.candidateRevision!==2||retrained.scene!=='trainingRun') throw new Error('Retraining did not create revision 2 and resume post-training.');
-if(retrained.flags.releaseGates.length||retrained.flags.checkpointEvalComplete||retrained.flags.safetyRetested||retrained.flags.evalIndex!==0) throw new Error('Evidence from revision 1 survived revision 2.');
-if(!retrained.flags.dataTrainingUsed.includes(0)||retrained.flags.dataCurrentTrainingUsed.includes(0)) throw new Error('Historical lineage was erased or current lineage was not updated.');
+let retrained=await saved(page);
+if(retrained.flags.candidateRevision!==1||retrained.scene!=='trainingSetup') throw new Error('Governance remediation created a phantom revision before training started.');
+if(retrained.flags.releaseGates.length||retrained.flags.checkpointEvalComplete||retrained.flags.safetyRetested||retrained.flags.evalIndex!==0) throw new Error('Evidence from revision 1 remained active after planning retraining.');
+if(!retrained.flags.dataTrainingUsed.includes(0)||retrained.flags.dataCurrentTrainingUsed.length) throw new Error('Historical lineage was erased or current lineage was not cleared before setup.');
+if(retrained.flags.trainingCompute!=='12'||retrained.flags.trainingCheckpoint!=='validated')throw new Error('Next revision inherited old training settings silently.');
+await click(page,'#trainStart');
+retrained=await saved(page);
+if(retrained.flags.candidateRevision!==2||retrained.scene!=='trainingRun')throw new Error('Revision 2 was not created exactly when the new training round started.');
+if(!retrained.decisions.some(d=>d.id==='training-compute-12-r2')||!retrained.decisions.some(d=>d.id==='training-checkpoint-validated-r2'))throw new Error('New revision configuration was not recorded.');
 
 console.log('FOURTH_AUDIT:distribution-sensitive-failover');
 for(const [values,expected] of [[[45,30,25],'1 من 3 حالات خروج كاملة يمكن امتصاصها'],[[60,5,35],'0 من 3 حالات خروج كاملة يمكن امتصاصها']]){
@@ -94,4 +101,4 @@ await page.waitForTimeout(50);
 if(await page.evaluate(()=>document.activeElement?.tagName)!=='H1') throw new Error('Focus was lost after same-scene rerender.');
 
 await browser.close();
-console.log('Fourth-audit regression checks passed.');
+console.log('Fourth-audit regression checks passed under schema v5.');
