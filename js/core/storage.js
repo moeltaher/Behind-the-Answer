@@ -1,9 +1,10 @@
 import { STATE_SCHEMA_VERSION, clone } from './state.js';
+import { SCENE_ORDER } from '../data/stage-backgrounds.js';
 
 export const STORAGE_KEY='behindTheAnswerGame';
 export const SETTINGS_KEY='behindTheAnswerSettings';
 export const DEFAULT_SETTINGS={reduceMotion:false,highContrast:false,largeText:false,soundOn:false};
-const SCENES=['intro','zoomOut','ch1Intro','mineOrientation','mineTask','mineInspection','mineEnd','abstract1','ch2Intro','factoryOrientation','factoryMonitor','factoryIncident','factoryOutcome','abstract2','ch3Intro','dcInstall','dcCooling','dcCoolingOutcome','dcWorkers','abstract3','ch4Intro','dataOrigins','dataClean','dataFollowup','dataCleanSummary','abstract4','ch5Intro','annotationIntro','annotationTask','annotationReview','annotationEnd','abstract5','ch6Intro','trainingSetup','trainingRun','trainingEval','abstract6','ch7Intro','evalTask','checkpointEval','safetyTest','safetyOutcome','safetyRetest','launchDecision','launchOutcome','abstract7','ch8Intro','deployLoad','deployIncident','onCall','supportTask','deployEnd','abstract8','pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage'];
+const SCENES=SCENE_ORDER;
 const SCENE_SET=new Set(SCENES),SERVER_STEPS=new Set(['rack','power','network','register']),DATA_STATUSES=new Set(['ready','pending','excluded']),CHECK_VALUES=new Set(['clear','unresolved','na']),ANNOTATION_CHOICES=new Set(['آمن','عنف','مضايقة أو إساءة','خطاب كراهية','إيذاء النفس','غير واضح']),DEPLOY_TABS=new Set(['network','compute','model']),DATA_ORIGINS=new Set(['writer','photo','code','research','forum','translate','docs','qa','web','comment','manual','news']),RELEASE_GATES=new Set(['regression','capacity','risk','rollback']),EXTRA_CHECKS=new Set(['checkpoint','stability']),DEPLOY_LIMITS=[60,45,35],FAILOVER_INGRESS_LIMITS=[20,20,20];
 const from=scene=>new Set(SCENES.slice(SCENES.indexOf(scene)));
 const TRAINING_OR_LATER=from('trainingRun'),AFTER_TRAINING=from('trainingEval'),CHECKPOINT_OR_LATER=from('checkpointEval'),SAFETY_OR_LATER=from('safetyTest'),SAFETY_OUTCOME_OR_LATER=from('safetyOutcome'),SAFETY_RETEST_OR_LATER=from('safetyRetest'),LAUNCH_OR_LATER=from('launchDecision'),LAUNCHED_OR_LATER=from('launchOutcome'),DEPLOY_INCIDENT_OR_LATER=from('deployIncident'),ONCALL_OR_LATER=from('onCall'),ENDING_OR_LATER=from('pipelineAssemble'),FINAL_ANSWER_OR_LATER=from('finalAnswer'),REWIND_FOR_OLD_SCHEMA=from('ch6Intro');
@@ -37,7 +38,7 @@ function migrateOldState(defaultState,saved){if(!isPlainObject(saved)||![4,3,2,u
     const rewound=REWIND_FOR_OLD_SCHEMA.has(migrated.scene);
     if(rewound){migrated.scene='trainingSetup';normalizePreTraining(migrated);}
     const source=saved.schemaVersion===4?'الإصدار 4':saved.schemaVersion===3?'الإصدار 3':saved.schemaVersion===2?'الإصدار 2':'إصدار قديم';
-    migrated.systemNotice=rewound?`تم تحديث الحفظ من ${source} إلى الإصدار 5. احتفظت اللعبة بالتقدم حتى ما قبل post-training، وأعادتك إلى إعداد الجولة لأن الإصدار الجديد يشترط إعدادًا مسجلًا لكل revision وقرارًا صريحًا لفجوة المرونة قبل التشغيل.`:`تم تحديث الحفظ من ${source} إلى الإصدار 5 مع الاحتفاظ بالتقدم الحالي.`;
+    migrated.systemNotice=rewound?`تم تحديث الحفظ من ${source} إلى الإصدار 5. احتفظت اللعبة بالتقدم حتى ما قبل التدريب الإضافي، وأعادتك إلى إعداد الجولة لأن الإصدار الجديد يشترط إعدادًا مسجلًا لكل نسخة مرشحة وقرارًا صريحًا لفجوة المرونة قبل التشغيل.`:`تم تحديث الحفظ من ${source} إلى الإصدار 5 مع الاحتفاظ بالتقدم الحالي.`;
     return validState(migrated)?migrated:null;
   }catch{return null;}}
 function withResetNotice(defaultState){const fresh=clone(defaultState);fresh.systemNotice='تعذر قراءة الحفظ السابق بأمان بعد تحديث بنية اللعبة، لذلك بدأت جلسة جديدة بدل استخدام حالة قد تكون غير منطقية.';return fresh;}
