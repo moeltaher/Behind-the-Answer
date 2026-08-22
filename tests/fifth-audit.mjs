@@ -8,6 +8,7 @@ async function load(page,patch={}){await page.goto(BASE_URL,{waitUntil:'networki
 async function click(page,selector){await page.locator(selector).waitFor({state:'visible'});await page.locator(selector).click();}
 async function saved(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);}
 function advanced(extra={}){return{dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingApproved:[0],dataTrainingUsed:[0,1],dataCurrentTrainingUsed:[0,1],candidateRevision:1,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra};}
+function released(extra={}){return advanced({dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataTrainingApproved:[],releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',...extra});}
 const annotationResults=Array.from({length:6},(_,index)=>({index,choice:'آمن',acceptedAsReasonable:true,pending:false,reviewRejected:false,disputed:false}));
 const browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1280,height:900}});
 console.log('FIFTH_AUDIT:history-is-preserved-when-revision-changes');
@@ -32,8 +33,8 @@ for(const [scene,flags] of [
  ['dataFollowup',{dataIndex:0,dataFollowup:{index:0,reason:'rights-cleared'},dataSort:{keep:0,remove:0,redact:0,review:1}}],
  ['annotationReview',{annotationResults}],
  ['safetyRetest',{...advanced()}],
- ['transferChallenge',{...advanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2})}],
- ['results',{...advanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'})}]
+ ['transferChallenge',{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2})}],
+ ['results',{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'})}]
 ]){
   await load(page,{scene,flags});
   const persisted=await saved(page);
