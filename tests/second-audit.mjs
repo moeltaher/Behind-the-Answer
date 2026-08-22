@@ -71,7 +71,7 @@ await load(page,{scene:'launchDecision',flags:{
   dataSort:{keep:1,remove:0,redact:0,review:0}
 }});
 await page.getByText('حاجب إصدار: حوكمة البيانات',{exact:true}).waitFor({state:'visible'});
-if(!(await page.locator('.choice-grid').last().isHidden())) throw new Error('Launch choices must be hidden while a data blocker remains.');
+if(!(await page.locator('#criticalOnly').isHidden()) || !(await page.locator('#delayLaunch').isHidden())) throw new Error('Launch choices must be hidden while a data blocker remains.');
 await click(page,'[data-data-resolve="0"]');
 for(const id of ['regression','capacity','risk','rollback']) await click(page,`[data-release-gate="${id}"]`);
 await page.getByText('أعمال إضافية قابلة للمراقبة',{exact:true}).waitFor({state:'visible'});
