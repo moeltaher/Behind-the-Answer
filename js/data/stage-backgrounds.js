@@ -7,7 +7,7 @@ export const SCENES_BY_STAGE = {
   training: ['ch6Intro','trainingSetup','trainingRun','trainingRecovery','trainingEval','abstract6'],
   evaluation: ['ch7Intro','evalTask','checkpointEval','safetyTest','safetyOutcome','safetyRetest','launchDecision','launchOutcome','abstract7'],
   deployment: ['ch8Intro','deployLoad','deployIncident','onCall','supportTask','deployEnd','abstract8'],
-  ending: ['intro','zoomOut','pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage']
+  ending: ['intro','zoomOut','pipelineAssemble','finalAnswer','transferChallenge','results','finalMessage']
 };
 
 export const SCENE_ORDER = [
@@ -20,7 +20,7 @@ export const SCENE_ORDER = [
   ...SCENES_BY_STAGE.training,
   ...SCENES_BY_STAGE.evaluation,
   ...SCENES_BY_STAGE.deployment,
-  'pipelineAssemble','transferChallenge','finalAnswer','results','finalMessage'
+  'pipelineAssemble','finalAnswer','transferChallenge','results','finalMessage'
 ];
 
 const STAGE_BACKDROPS = {
