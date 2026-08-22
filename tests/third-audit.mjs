@@ -108,7 +108,8 @@ const decisions=[
 await load(page,{scene:'results',decisions,flags:{checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'}});
 const displayed=await page.locator('.full-evidence-details .decision-row').count();
 if(displayed!==decisions.length) throw new Error(`Full record lost decisions: ${displayed}/${decisions.length}.`);
-await page.getByRole('heading',{name:'قرارات أخرى',exact:true}).waitFor({state:'attached'});
+const fallbackHeading=page.locator('.full-evidence-details h2').filter({hasText:'قرارات أخرى'});
+if(await fallbackHeading.count()!==1) throw new Error('Fallback decision category was not rendered in the full record.');
 
 await browser.close();
 console.log('Third-audit regression checks passed.');
