@@ -1,6 +1,4 @@
 const SUPPORTING_ACTORS = {
-  supervisor: { name: 'مشرف الوردية', role: 'يشرف على الحصة والوقت', image: './assets/images/characters/supervisor.svg' },
-  coworker: { name: 'زميل موسى', role: 'عامل في نفس موقع الاستخراج', image: './assets/images/characters/support-worker.svg' },
   maintenance: { name: 'فني صيانة', role: 'يفحص الأعطال والمعدات', image: './assets/images/characters/support-worker.svg' },
   qualityInspector: { name: 'فاحص جودة', role: 'يراجع الوحدات قبل تمريرها', image: './assets/images/characters/reviewer.svg' },
   cleaner: { name: 'عامل نظافة', role: 'يحافظ على بيئة التشغيل', image: './assets/images/characters/cleaner.svg' },
@@ -30,6 +28,4 @@ export const DATACENTER_WORKERS = [
   { id: 'network', actorId: 'networkOperator', icon: '◎' }
 ];
 
-export function supportingActor(id) {
-  return SUPPORTING_ACTORS[id] || null;
-}
+export function supportingActor(id) { return SUPPORTING_ACTORS[id] || null; }
