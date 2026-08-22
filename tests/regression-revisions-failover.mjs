@@ -47,7 +47,7 @@ if(retrained.flags.candidateRevision!==2||retrained.scene!=='trainingRun')throw 
 if(!retrained.decisions.some(d=>d.id==='training-compute-8-r2')||!retrained.decisions.some(d=>d.id==='training-checkpoint-validated-r2'))throw new Error('New revision configuration was not recorded.');
 
 console.log('REVISIONS_FAILOVER:distribution-sensitive-failover');
-for(const [values,expected] of [[[45,30,25],'1 من 3 حالات خروج كاملة يمكن امتصاصها'],[[60,5,35],'0 من 3 حالات خروج كاملة يمكن امتصاصها']]){
+for(const [values,expected] of [[[45,30,25],'1/3 حالات يمكن امتصاصها'],[[60,5,35],'0/3 حالات يمكن امتصاصها']]){
   await load(page,{scene:'deployLoad',flags:{...baseAdvanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:values})}});
   for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
   await page.getByText(expected,{exact:true}).waitFor({state:'visible'});
