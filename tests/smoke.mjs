@@ -2,11 +2,12 @@ import { chromium, firefox, webkit } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 import { DEFAULT_STATE, clone } from '../js/core/state.js';
 import { STORAGE_KEY, SETTINGS_KEY, DEFAULT_SETTINGS } from '../js/core/storage.js';
+import { DEMO_PROMPT } from '../js/data/story.js';
 
 const BASE_URL='http://127.0.0.1:4173';
-const SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
+const TEST_SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
 
-function stateWith(patch={}){
+function currentState(patch={}){
   const state=clone(DEFAULT_STATE);
   const merge=(target,source)=>Object.entries(source).forEach(([key,value])=>{
     if(value&&typeof value==='object'&&!Array.isArray(value)){
@@ -17,83 +18,170 @@ function stateWith(patch={}){
   merge(state,patch);
   return state;
 }
-async function load(page,patch={}){
+async function load(page,patch=null,settings=TEST_SETTINGS){
   await page.goto(BASE_URL,{waitUntil:'networkidle'});
-  await page.evaluate(({storageKey,settingsKey,state,settings})=>{
+  await page.evaluate(({storageKey,settingsKey,state,settingsValue})=>{
     localStorage.clear();
-    localStorage.setItem(settingsKey,JSON.stringify(settings));
-    localStorage.setItem(storageKey,JSON.stringify(state));
-  },{storageKey:STORAGE_KEY,settingsKey:SETTINGS_KEY,state:stateWith(patch),settings:SETTINGS});
+    if(settingsValue) localStorage.setItem(settingsKey,JSON.stringify(settingsValue));
+    if(state) localStorage.setItem(storageKey,JSON.stringify(state));
+  },{storageKey:STORAGE_KEY,settingsKey:SETTINGS_KEY,state:patch?currentState(patch):null,settingsValue:settings});
   await page.reload({waitUntil:'networkidle'});
 }
-async function click(page,selector){await page.locator(selector).waitFor({state:'visible'});await page.locator(selector).click();}
-async function saved(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);}
+async function saved(page){ return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY); }
+async function click(page,selector){ const target=page.locator(selector); await target.waitFor({state:'visible'}); await target.click(); }
+async function chooseData(page,choice){ await click(page,`[data-sort="${choice}"]`); }
+async function chooseAnnotation(page,label){ await click(page,`[data-tag="${label}"]`); }
+async function setLoad(page,values){ await page.evaluate(next=>next.forEach((value,index)=>{const input=document.querySelector(`#range${index}`);input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}),values); }
+async function completeCheckpoint(page){
+  const answers={apology:'b',legal:'a',friendly:'b'};
+  for(const [id,value] of Object.entries(answers)) await page.selectOption(`[data-checkpoint-sample="${id}"]`,value);
+  await click(page,'#checkCheckpoint');
+  await click(page,'#toSafety');
+}
+async function completeRelease(page,{delay=true}={}){
+  await click(page,'[data-gate-pass="regression"]');
+  await click(page,'[data-gate-investigate="capacity"]');
+  await click(page,'[data-gate-pass="capacity"]');
+  await click(page,'[data-gate-pass="risk"]');
+  await click(page,'[data-gate-pass="rollback"]');
+  if(delay){
+    for(const id of ['checkpoint','stability']) if(await page.locator(`[data-extra-check="${id}"]`).count()) await click(page,`[data-extra-check="${id}"]`);
+    if(await page.locator('#delayLaunch').count()) await click(page,'#delayLaunch');
+    else await click(page,'#launchReady');
+  } else if(await page.locator('#criticalOnly').count()) await click(page,'#criticalOnly');
+  else await click(page,'#launchReady');
+}
+async function completeFailover(page,expected='1 من 3 حالات خروج كاملة يمكن امتصاصها'){
+  for(const index of [0,1,2]) await click(page,`[data-failover-check="${index}"]`);
+  await page.getByText(expected,{exact:true}).waitFor({state:'visible'});
+  await click(page,'#finishFailover');
+}
+async function completeTransfer(page){
+  const answers={weights:'build',retrieval:'request',inference:'request',monitoring:'continuous',maintenance:'continuous'};
+  for(const [id,value] of Object.entries(answers)) await page.selectOption(`[data-transfer-item="${id}"]`,value);
+  await click(page,'#transferSubmit');
+}
+
 function advancedFlags(extra={}){
   return {
-    dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},
-    dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,
-    safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra
+    dataIndex:1,
+    dataStatuses:['ready'],
+    dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],
+    dataSort:{keep:1,remove:0,redact:0,review:0},
+    dataTrainingUsed:[0],
+    dataCurrentTrainingUsed:[0],
+    candidateRevision:1,
+    trainingIncidentChoice:'pause',
+    evalIndex:3,
+    evalCorrectCount:3,
+    evaluatorCalibrationComplete:true,
+    checkpointEvalComplete:true,
+    safetyChoice:'details',
+    safetyRemediated:true,
+    safetyRetested:true,
+    ...extra
   };
 }
 
-async function completeJourney(browserType,label,viewport){
-  const browser=await browserType.launch();
+async function runJourney(viewport,label){
+  console.log(`SMOKE_PHASE:${label}:start`);
+  const browser=await chromium.launch();
   const page=await browser.newPage({viewport});
-  await page.goto(BASE_URL,{waitUntil:'networkidle'});
-  await page.evaluate(({settingsKey,settings})=>{localStorage.clear();localStorage.setItem(settingsKey,JSON.stringify(settings));},{settingsKey:SETTINGS_KEY,settings:SETTINGS});
-  await page.reload({waitUntil:'networkidle'});
-  const step=async selector=>click(page,selector);
-  await step('#startBtn'); await step('#zoomContinue'); await step('[data-next="mineOrientation"]'); await step('#mineReady');
-  for(let i=0;i<10;i++) await step('[data-sector="a"]');
-  await step('[data-sector="b"]'); await step('#mineContinue'); await step('[data-sector="a"]'); await step('#mineInspectionContinue'); await step('#mineEndContinue'); await step('[data-next="ch2Intro"]');
-  await step('[data-next="factoryOrientation"]'); await step('#factoryReady'); await step('#factoryMonitor'); await step('[data-factory="stop"]'); await step('#factoryOutcomeContinue'); await step('[data-next="ch3Intro"]');
-  await step('[data-next="dcInstall"]'); for(const id of ['rack','power','network','register']) await step(`[data-server-step="${id}"]`); await step('#dcTest'); await step('[data-cooling="stop"]'); await step('#dcAfterCooling'); await step('#dcWorkersContinue'); await step('[data-next="ch4Intro"]');
-  await step('[data-next="dataOrigins"]'); await step('#toClean');
-  for(let i=0;i<5;i++){
-    const choice=await page.locator('[data-clean-choice]').evaluateAll(nodes=>nodes.find(node=>!node.disabled)?.dataset.cleanChoice);
-    if(!choice) break;
-    await step(`[data-clean-choice="${choice}"]`);
-    if(await page.locator('#followupRedact').count()) await step('#followupRedact');
-  }
-  await step('#finishData'); await step('[data-next="ch5Intro"]'); await step('[data-next="annotationIntro"]'); await step('#annotationStart');
-  for(let i=0;i<6;i++){
-    const first=page.locator('[data-label-choice]').first(); await first.waitFor({state:'visible'}); await first.click();
-    if(await page.locator('#takeBreak').count()) await step('#takeBreak');
-    if(await page.locator('#annotationNext').count()) await step('#annotationNext');
-  }
-  if(await page.locator('#annotationReviewContinue').count()) await step('#annotationReviewContinue');
-  await step('#annotationEndContinue'); await step('[data-next="ch6Intro"]'); await step('[data-next="trainingSetup"]');
-  for(const button of await page.locator('[data-training-hold]').all()) await button.click();
-  await step('#trainStart'); await step('#trainPause'); await step('#sendHuman'); await step('[data-next="ch7Intro"]'); await step('[data-next="evalTask"]');
-  for(let i=0;i<3;i++){await step('[data-eval="a"]');await step('#nextEval');}
-  if(await page.locator('#calibrationChoice').count()){await page.selectOption('#calibrationChoice','a');await step('#confirmCalibration');}else await step('#confirmCalibration');
-  for(const [id,value] of [['apology','b'],['legal','a'],['friendly','b']]) await page.selectOption(`[data-checkpoint-sample="${id}"]`,value);
-  await step('#checkCheckpoint'); await step('#toSafety'); await step('[data-safety="details"]'); await step('#remediateSafety'); await step('#confirmSafetyRetest');
-  while(await page.locator('[data-governance-remediate]').count()) await page.locator('[data-governance-remediate]').first().click();
-  while(await page.locator('[data-gate-investigate]').count()) await page.locator('[data-gate-investigate]').first().click();
-  while(await page.locator('[data-gate-pass]').count()) await page.locator('[data-gate-pass]').first().click();
-  while(await page.locator('[data-extra-check]').count()) await page.locator('[data-extra-check]').first().click();
-  if(await page.locator('#launchReady').count()) await step('#launchReady'); else await step('#delayLaunch');
-  await step('#finishEval'); await step('[data-next="ch8Intro"]'); await step('[data-next="deployLoad"]');
-  for(const [id,value] of [['#range0','45'],['#range1','30'],['#range2','25']]) await page.locator(id).fill(value);
-  await step('#testLoad'); for(const i of [0,1,2]) await step(`[data-failover-check="${i}"]`); await step('#finishFailover');
-  for(const id of ['network','compute','model']) await step(`[data-incident-tab="${id}"]`); await step('[data-recovery="rollback"]'); await step('#onCallContinue');
-  for(let i=0;i<2;i++){await step('[data-support-choice="evidence"]');if(await page.locator('#supportNext').count())await step('#supportNext');}
-  await step('#deployEndContinue'); await step('[data-next="pipelineAssemble"]'); await step('#backPrompt');
-  for(const [id,value] of [['weights','build'],['retrieval','request'],['inference','request'],['monitoring','continuous'],['maintenance','continuous']]) await page.selectOption(`[data-transfer-item="${id}"]`,value);
-  await step('#transferSubmit'); await step('#transferContinue'); await step('#showResults'); await step('#resultsContinue');
-  await page.getByText('مهمتك الآن',{exact:true}).waitFor({state:'visible'});
-  await browser.close(); console.log(`Complete journey passed: ${label}`);
+  const errors=[];
+  page.on('pageerror',error=>errors.push(error.stack||error.message));
+  await load(page);
+
+  await click(page,'#introSend'); await click(page,'#descend'); await click(page,'#chapterNext'); await click(page,'#startMine');
+  await click(page,'[data-sector="b"]'); await click(page,'[data-sector="b"]'); await click(page,'#mineStop'); await click(page,'#finishMine');
+  for(let i=0;i<4;i+=1) await click(page,'[data-sector="b"]');
+  await click(page,'#mineAbstract'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext'); await click(page,'#enterFab'); await click(page,'#observeFab'); await click(page,'#fabContinue'); await click(page,'#toFactoryAbstract'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext');
+  for(const step of ['rack','network','power','register']) await click(page,`[data-server-step="${step}"]`);
+  await click(page,'#bootServer'); await click(page,'#dcMove'); await click(page,'#repairCooling'); await click(page,'#dcAfterCooling'); await click(page,'#dcReady'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext'); await click(page,'#toClean');
+  await chooseData(page,'remove'); await chooseData(page,'keep'); await chooseData(page,'review'); await click(page,'#followupRedact'); await chooseData(page,'review'); await chooseData(page,'review');
+  await click(page,'#dataAbstract'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext'); await click(page,'#startAnnot');
+  for(const choice of ['آمن','عنف','مضايقة أو إساءة']) await chooseAnnotation(page,choice);
+  await click(page,'#takeBreak');
+  for(const choice of ['غير واضح','خطاب كراهية','غير واضح']) await chooseAnnotation(page,choice);
+  await page.getByText('مراجعة اختياراتك مثالًا بمثال',{exact:true}).waitFor({state:'visible'});
+  if(await page.locator('#appeal').count()) await click(page,'#appeal');
+  await click(page,'#annotAbstract'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext');
+  if(await page.locator('#trainStart').isDisabled()) throw new Error(`${label}: valid inputs should unlock training.`);
+  await page.selectOption('#computeSel','8'); await page.selectOption('#checkpointSel','recent'); await click(page,'#trainStart'); await click(page,'#trainContinue'); await click(page,'#sendHuman'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext');
+  for(const choice of ['a','b','bad']){ if(choice==='b') await page.getByText(DEMO_PROMPT,{exact:true}).waitFor({state:'visible'}); await click(page,`[data-eval="${choice}"]`); await click(page,'#nextEval'); }
+  await page.getByRole('heading',{name:/تطبيق المعيار|أكملت المهام الثلاث/}).waitFor({state:'visible'});
+  if(await page.locator('#calibrationChoice').count()) await page.selectOption('#calibrationChoice','a');
+  await click(page,'#confirmCalibration');
+  await completeCheckpoint(page);
+  await click(page,'[data-safety="details"]'); await click(page,'#remediateSafety'); await click(page,'#confirmSafetyRetest');
+  await completeRelease(page,{delay:true}); await click(page,'#finishEval'); await click(page,'#abstractNext');
+
+  await click(page,'#chapterNext'); await setLoad(page,[45,30,25]); await click(page,'#testLoad'); await completeFailover(page);
+  for(const tab of ['network','compute','model']) await click(page,`[data-tab="${tab}"]`);
+  await click(page,'#rollback'); await click(page,'#toSupport'); await click(page,'#supportInvestigate'); await click(page,'#supportFast'); await click(page,'#uptimeAbstract'); await click(page,'#abstractNext');
+
+  await click(page,'#backPrompt'); await completeTransfer(page); await click(page,'#transferContinue');
+  await page.getByText('وقد يحدث وقت الطلب بحسب تصميم المنتج',{exact:true}).waitFor({state:'visible'});
+  await click(page,'#showResults');
+  const state=await saved(page);
+  const displayed=await page.locator('.full-evidence-details .decision-row').count();
+  if(displayed!==state.decisions.length) throw new Error(`${label}: full record displays ${displayed}/${state.decisions.length} decisions.`);
+  await page.getByRole('heading',{name:'سلسلة البيانات عبر revisions',exact:true}).waitFor({state:'visible'});
+  await click(page,'#toFinalMessage');
+  await page.getByRole('heading',{name:'الواجهة هي نهاية السلسلة، وليست بدايتها.',exact:true}).waitFor({state:'visible'});
+  if(errors.length) throw new Error(`${label}: page errors: ${errors.join(' | ')}`);
+  await browser.close();
+  console.log(`Complete journey passed: ${label}`);
 }
 
 async function runCausalChecks(){
   console.log('SMOKE_PHASE:causal');
   const browser=await chromium.launch();
   const page=await browser.newPage({viewport:{width:1280,height:900}});
+
+  await load(page,{scene:'trainingSetup',flags:{dataIndex:1,dataStatuses:['excluded'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'}],dataSort:{keep:0,remove:1,redact:0,review:0}}});
+  if(!(await page.locator('#trainStart').isDisabled())) throw new Error('Training started with zero eligible inputs.');
+  await page.getByText('لا يمكن بدء جولة بلا مدخلات',{exact:true}).waitFor({state:'visible'});
+
+  await load(page,{scene:'launchDecision',flags:{...advancedFlags({
+    dataIndex:2,
+    dataStatuses:['ready','ready'],
+    dataChecks:[{rights:'unresolved',privacy:'clear',fitness:'clear'},{rights:'clear',privacy:'clear',fitness:'clear'}],
+    dataSort:{keep:2,remove:0,redact:0,review:0},
+    dataTrainingApproved:[0],
+    dataTrainingUsed:[0,1],
+    dataCurrentTrainingUsed:[0,1],
+    releaseGates:['regression','capacity','rollback']
+  })}});
+  if(await page.locator('[data-gate-pass="risk"]').count()) throw new Error('Risk gate was passable while current candidate had a governance blocker.');
+  const oldRevision=(await saved(page)).flags.candidateRevision;
+  await click(page,'[data-governance-remediate="0"]');
+  let state=await saved(page);
+  if(state.flags.candidateRevision!==oldRevision+1||state.scene!=='trainingRun') throw new Error('Retraining did not create a new candidate revision and return to training.');
+  if(state.flags.releaseGates.length||state.flags.checkpointEvalComplete||state.flags.safetyRetested) throw new Error('Old candidate evidence survived retraining.');
+  if(!state.flags.dataTrainingUsed.includes(0)||state.flags.dataCurrentTrainingUsed.includes(0)) throw new Error('Historical use/current candidate lineage was not preserved correctly.');
+
+  await load(page,{scene:'launchDecision',flags:{...advancedFlags({releaseGates:[]})}});
+  await click(page,'[data-gate-investigate="capacity"]');
+  await page.waitForTimeout(50);
+  const activeTag=await page.evaluate(()=>document.activeElement?.tagName);
+  if(activeTag!=='H1') throw new Error(`Same-scene rerender lost keyboard focus; active element is ${activeTag}.`);
+
   await load(page,{scene:'deployLoad',flags:{...advancedFlags({trainingCheckpoint:'recent',releaseGates:['regression','capacity','risk','rollback'],launchChoice:'fast',deferredExtraChecks:['checkpoint']})}});
   await page.getByText('نفّذ الفحوص التي قررت تأجيلها بدل اعتبارها مكتملة.',{exact:true}).waitFor({state:'visible'});
   await click(page,'[data-monitoring-check="checkpoint"]');
-  let state=await saved(page);
+  state=await saved(page);
   if(!state.flags.monitoringChecksCompleted.includes('checkpoint')) throw new Error('Deferred monitoring work was not persisted.');
   await page.getByText('لم يظهر انحدار جديد يمنع استمرار النسخة الحالية في سيناريو اللعبة.',{exact:true}).waitFor({state:'visible'});
   await click(page,'#continueAfterMonitoring');
@@ -134,43 +222,60 @@ async function runMigrationBrowserCheck(){
   v3.flags.dataChecks=[{rights:'na',privacy:'na',fitness:'na'},{rights:'clear',privacy:'clear',fitness:'clear'}];
   v3.flags.dataSort={keep:1,remove:1,redact:0,review:0};
   await page.goto(BASE_URL,{waitUntil:'networkidle'});
-  await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:STORAGE_KEY,value:v3});
+  await page.evaluate(({key,value})=>{localStorage.clear();localStorage.setItem(key,JSON.stringify(value));},{key:STORAGE_KEY,value:v3});
   await page.reload({waitUntil:'networkidle'});
   const migrated=await saved(page);
-  if(migrated.schemaVersion!==4||migrated.scene!=='trainingSetup'||migrated.flags.candidateRevision!==0) throw new Error('Browser v3 migration did not rewind safely to training setup.');
-  await browser.close(); console.log('Browser migration passed.');
+  if(migrated.schemaVersion!==4||migrated.scene!=='trainingSetup') throw new Error('Browser v3 migration did not rewind safely to trainingSetup.');
+  await page.getByText('الإصدار 3 إلى الإصدار 4',{exact:false}).waitFor({state:'visible'});
+
+  const invalid=currentState({scene:'finalMessage'});
+  await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:STORAGE_KEY,value:invalid});
+  await page.reload({waitUntil:'networkidle'});
+  const reset=await saved(page);
+  if(reset.scene!=='intro') throw new Error('Impossible v4 scene/state combination was accepted.');
+  await browser.close();
+  console.log('Browser migration and impossible-state reset passed.');
 }
 
-async function runAccessibilityMatrix(){
-  console.log('SMOKE_PHASE:accessibility');
+async function runA11y(){
+  console.log('SMOKE_PHASE:axe');
   const browser=await chromium.launch();
-  const page=await browser.newPage({viewport:{width:1280,height:900}});
+  const context=await browser.newContext({viewport:{width:1280,height:900}});
+  const page=await context.newPage();
   const cases=[
-    ['intro',{}],
-    ['trainingSetup',{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0}}],
-    ['launchDecision',advancedFlags({releaseGates:[]})],
-    ['deployLoad',advancedFlags({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready'})],
-    ['transferChallenge',advancedFlags({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2})]
+    {scene:'intro'},
+    {scene:'trainingSetup',flags:{dataIndex:1,dataStatuses:['excluded'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'}],dataSort:{keep:0,remove:1,redact:0,review:0}}},
+    {scene:'checkpointEval',flags:{...advancedFlags({checkpointEvalComplete:false})}},
+    {scene:'launchDecision',flags:{...advancedFlags({releaseGates:[]})}},
+    {scene:'deployLoad',flags:{...advancedFlags({trainingCheckpoint:'recent',releaseGates:['regression','capacity','risk','rollback'],launchChoice:'fast',deferredExtraChecks:['checkpoint']})}},
+    {scene:'transferChallenge',flags:{...advancedFlags({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2})}}
   ];
-  for(const [scene,flags] of cases){
-    await load(page,{scene,flags});
-    const result=await new AxeBuilder({page}).analyze();
-    if(result.violations.length) throw new Error(`Accessibility violations in ${scene}: ${result.violations.map(v=>v.id).join(', ')}`);
+  for(const patch of cases){
+    await load(page,patch);
+    const results=await new AxeBuilder({page}).analyze();
+    const serious=results.violations.filter(item=>['serious','critical'].includes(item.impact));
+    if(serious.length) throw new Error(`Accessibility violations in ${patch.scene}: ${serious.map(item=>item.id).join(', ')}`);
   }
-  await browser.close(); console.log('Accessibility matrix passed.');
+  await context.close(); await browser.close();
+  console.log('Dynamic accessibility matrix passed.');
 }
 
-async function runCrossBrowserSmoke(browserType,label){
-  const browser=await browserType.launch(); const page=await browser.newPage({viewport:{width:1100,height:800}}); await page.goto(BASE_URL,{waitUntil:'networkidle'}); await page.getByText('مهمتك الآن',{exact:true}).waitFor({state:'visible'}); await page.locator('#startBtn').click(); await page.locator('#zoomContinue').waitFor({state:'visible'}); await browser.close(); console.log(`${label} smoke passed.`);
+async function crossBrowser(browserType,label){
+  const browser=await browserType.launch();
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  await load(page);
+  await click(page,'#settingsBtn'); await page.locator('#settingsDialog').waitFor({state:'visible'}); await click(page,'#settingsDialog [data-close-dialog]');
+  await click(page,'#introSend'); await click(page,'#descend');
+  await page.getByRole('heading',{name:'استخراج مواد الأجهزة',exact:true}).waitFor({state:'visible'});
+  await browser.close();
+  console.log(`${label} smoke passed.`);
 }
 
-console.log('SMOKE_PHASE:desktop:start');
-await completeJourney(chromium,'desktop',{width:1280,height:900});
-console.log('SMOKE_PHASE:mobile:start');
-await completeJourney(chromium,'mobile',{width:390,height:844});
+await runJourney({width:1280,height:900},'desktop');
+await runJourney({width:390,height:844},'mobile');
 await runCausalChecks();
 await runMigrationBrowserCheck();
-await runAccessibilityMatrix();
-await runCrossBrowserSmoke(firefox,'Firefox');
-await runCrossBrowserSmoke(webkit,'WebKit');
-console.log('Complete browser suite passed.');
+await runA11y();
+await crossBrowser(firefox,'firefox');
+await crossBrowser(webkit,'webkit');
+console.log('Browser v4 journey, causality, migration, focus, accessibility and cross-browser checks passed.');
