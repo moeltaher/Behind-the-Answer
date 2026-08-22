@@ -36,7 +36,7 @@ function journeyMap(ctx, currentIndex) {
     const stateClass = index === currentIndex ? 'current' : index < currentIndex ? 'done' : '';
     return `<div class="journey-node ${stateClass}"><span class="journey-icon" aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></div>`;
   }).join('');
-  return `<div class="journey-map" aria-label="ترتيب اللعب عبر ثماني مراحل، وليس مخططًا هندسيًا للنظام">${nodes}</div>`;
+  return `<div class="journey-map" tabindex="0" role="region" aria-label="ترتيب اللعب القابل للتمرير عبر ثماني مراحل، وليس مخططًا هندسيًا للنظام">${nodes}</div>`;
 }
 
 function terminology(index) {
