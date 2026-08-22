@@ -1,16 +1,10 @@
 import { STATE_SCHEMA_VERSION, clone } from './state.js';
 
-export const STORAGE_KEY = 'behindTheAnswerGame';
-export const SETTINGS_KEY = 'behindTheAnswerSettings';
+export const STORAGE_KEY='behindTheAnswerGame';
+export const SETTINGS_KEY='behindTheAnswerSettings';
+export const DEFAULT_SETTINGS={reduceMotion:false,highContrast:false,largeText:false,soundOn:false};
 
-export const DEFAULT_SETTINGS = {
-  reduceMotion: false,
-  highContrast: false,
-  largeText: false,
-  soundOn: false
-};
-
-const SCENES = [
+const SCENES=[
   'intro','zoomOut','ch1Intro','mineOrientation','mineTask','mineInspection','mineEnd','abstract1',
   'ch2Intro','factoryOrientation','factoryMonitor','factoryIncident','factoryOutcome','abstract2',
   'ch3Intro','dcInstall','dcCooling','dcCoolingOutcome','dcWorkers','abstract3',
@@ -31,31 +25,30 @@ const DATA_ORIGINS=new Set(['writer','photo','code','research','forum','translat
 const RELEASE_GATES=new Set(['regression','capacity','risk','rollback']);
 const EXTRA_CHECKS=new Set(['checkpoint','stability']);
 const DEPLOY_LIMITS=[60,45,35];
-const TRAINING_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('trainingRun')));
-const AFTER_TRAINING=new Set(SCENES.slice(SCENES.indexOf('trainingEval')));
-const CHECKPOINT_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('checkpointEval')));
-const SAFETY_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('safetyTest')));
-const SAFETY_OUTCOME_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('safetyOutcome')));
-const SAFETY_RETEST_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('safetyRetest')));
-const LAUNCH_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('launchDecision')));
-const LAUNCHED_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('launchOutcome')));
-const DEPLOY_INCIDENT_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('deployIncident')));
-const ONCALL_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('onCall')));
-const ENDING_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('pipelineAssemble')));
-const FINAL_ANSWER_OR_LATER=new Set(SCENES.slice(SCENES.indexOf('finalAnswer')));
-const REWIND_FOR_OLD_SCHEMA=new Set(SCENES.slice(SCENES.indexOf('ch6Intro')));
+const from=scene=>new Set(SCENES.slice(SCENES.indexOf(scene)));
+const TRAINING_OR_LATER=from('trainingRun');
+const AFTER_TRAINING=from('trainingEval');
+const CHECKPOINT_OR_LATER=from('checkpointEval');
+const SAFETY_OR_LATER=from('safetyTest');
+const SAFETY_OUTCOME_OR_LATER=from('safetyOutcome');
+const SAFETY_RETEST_OR_LATER=from('safetyRetest');
+const LAUNCH_OR_LATER=from('launchDecision');
+const LAUNCHED_OR_LATER=from('launchOutcome');
+const DEPLOY_INCIDENT_OR_LATER=from('deployIncident');
+const ONCALL_OR_LATER=from('onCall');
+const ENDING_OR_LATER=from('pipelineAssemble');
+const FINAL_ANSWER_OR_LATER=from('finalAnswer');
+const REWIND_FOR_OLD_SCHEMA=from('ch6Intro');
 
-function isPlainObject(value){ return Boolean(value)&&typeof value==='object'&&!Array.isArray(value); }
-function exactKeys(value,keys){ return isPlainObject(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key)); }
-function uniqueAllowedStrings(value,allowed){ return Array.isArray(value)&&new Set(value).size===value.length&&value.every(item=>typeof item==='string'&&allowed.has(item)); }
-function uniqueIndices(value,max){ return Array.isArray(value)&&new Set(value).size===value.length&&value.every(item=>Number.isInteger(item)&&item>=0&&item<max); }
-function validDecision(value){ return exactKeys(value,['id','label','effectText'])&&['id','label','effectText'].every(key=>typeof value[key]==='string'); }
-function validLedger(value){ return exactKeys(value,['chapter','human','work','system','details'])&&Number.isInteger(value.chapter)&&value.chapter>=0&&value.chapter<8&&['human','work','system','details'].every(key=>typeof value[key]==='string'); }
-function validCheck(value){ return exactKeys(value,['rights','privacy','fitness'])&&[value.rights,value.privacy,value.fitness].every(item=>CHECK_VALUES.has(item)); }
-function validAnnotationResult(value){
-  return exactKeys(value,['index','choice','acceptedAsReasonable','pending','reviewRejected','disputed'])&&Number.isInteger(value.index)&&value.index>=0&&value.index<6&&ANNOTATION_CHOICES.has(value.choice)&&['acceptedAsReasonable','pending','reviewRejected','disputed'].every(key=>typeof value[key]==='boolean');
-}
-function validNullableChoice(value,allowed){ return value===null||allowed.includes(value); }
+function isPlainObject(value){return Boolean(value)&&typeof value==='object'&&!Array.isArray(value);}
+function exactKeys(value,keys){return isPlainObject(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));}
+function uniqueAllowedStrings(value,allowed){return Array.isArray(value)&&new Set(value).size===value.length&&value.every(item=>typeof item==='string'&&allowed.has(item));}
+function uniqueIndices(value,max){return Array.isArray(value)&&new Set(value).size===value.length&&value.every(item=>Number.isInteger(item)&&item>=0&&item<max);}
+function validDecision(value){return exactKeys(value,['id','label','effectText'])&&['id','label','effectText'].every(key=>typeof value[key]==='string');}
+function validLedger(value){return exactKeys(value,['chapter','human','work','system','details'])&&Number.isInteger(value.chapter)&&value.chapter>=0&&value.chapter<8&&['human','work','system','details'].every(key=>typeof value[key]==='string');}
+function validCheck(value){return exactKeys(value,['rights','privacy','fitness'])&&[value.rights,value.privacy,value.fitness].every(item=>CHECK_VALUES.has(item));}
+function validAnnotationResult(value){return exactKeys(value,['index','choice','acceptedAsReasonable','pending','reviewRejected','disputed'])&&Number.isInteger(value.index)&&value.index>=0&&value.index<6&&ANNOTATION_CHOICES.has(value.choice)&&['acceptedAsReasonable','pending','reviewRejected','disputed'].every(key=>typeof value[key]==='boolean');}
+function validNullableChoice(value,allowed){return value===null||allowed.includes(value);}
 function validServerSequence(steps){
   if(!uniqueAllowedStrings(steps,SERVER_STEPS)) return false;
   if(!steps.length) return true;
@@ -66,20 +59,17 @@ function validServerSequence(steps){
   if(steps.includes('network')&&steps.indexOf('network')===0) return false;
   return true;
 }
-function hasUnresolved(check){ return check&&Object.values(check).includes('unresolved'); }
-function unresolvedReadyIndices(flags){ return flags.dataStatuses.flatMap((status,index)=>status==='ready'&&hasUnresolved(flags.dataChecks[index])?[index]:[]); }
-function exposedCurrentUnresolvedIndices(flags){ return flags.dataCurrentTrainingUsed.filter(index=>flags.dataStatuses[index]==='ready'&&hasUnresolved(flags.dataChecks[index])); }
-function neededExtraChecks(flags){
-  const result=[];
-  if(flags.trainingCheckpoint==='recent') result.push('checkpoint');
-  if(flags.trainingCompute==='8'&&flags.trainingIncidentChoice==='continue') result.push('stability');
-  return result;
-}
+function hasUnresolved(check){return Boolean(check)&&Object.values(check).includes('unresolved');}
+function unresolvedReadyIndices(flags){return flags.dataStatuses.flatMap((status,index)=>status==='ready'&&hasUnresolved(flags.dataChecks[index])?[index]:[]);}
+function exposedCurrentUnresolvedIndices(flags){return flags.dataCurrentTrainingUsed.filter(index=>flags.dataStatuses[index]==='ready'&&hasUnresolved(flags.dataChecks[index]));}
+function neededExtraChecks(flags){const result=[];if(flags.trainingCheckpoint==='recent')result.push('checkpoint');if(flags.trainingCompute==='8'&&flags.trainingIncidentChoice==='continue')result.push('stability');return result;}
+function confirmedAnnotations(flags){return flags.annotationResults.filter(result=>result.acceptedAsReasonable&&!result.pending&&!result.reviewRejected).length;}
+
 function sceneConsistent(state){
   const f=state.flags;
   const scene=state.scene;
   if(TRAINING_OR_LATER.has(scene)&&f.candidateRevision<1) return false;
-  if(TRAINING_OR_LATER.has(scene)&&f.dataCurrentTrainingUsed.length===0&&f.annotationResults.filter(r=>r.acceptedAsReasonable&&!r.pending&&!r.reviewRejected).length===0) return false;
+  if(TRAINING_OR_LATER.has(scene)&&f.dataCurrentTrainingUsed.length===0&&confirmedAnnotations(f)===0) return false;
   if(AFTER_TRAINING.has(scene)&&f.trainingIncidentChoice===null) return false;
   if(CHECKPOINT_OR_LATER.has(scene)&&f.evalIndex<3) return false;
   if(CHECKPOINT_OR_LATER.has(scene)&&!f.evaluatorCalibrationComplete) return false;
@@ -94,6 +84,7 @@ function sceneConsistent(state){
   if(FINAL_ANSWER_OR_LATER.has(scene)&&f.transferChoice!=='build-use') return false;
   return true;
 }
+
 function validStateInvariants(state){
   const f=state.flags;
   if(!validServerSequence(f.serverSteps)) return false;
@@ -122,10 +113,14 @@ function validStateInvariants(state){
   if(f.safetyChoice!==null&&!f.checkpointEvalComplete) return false;
   if(f.releaseGates.includes('risk')&&exposedCurrentUnresolvedIndices(f).length) return false;
   const needed=neededExtraChecks(f);
+  if(f.launchChoice!==null){
+    if(!f.safetyRetested||f.releaseGates.length!==RELEASE_GATES.size) return false;
+    if(exposedCurrentUnresolvedIndices(f).length) return false;
+  }
   if(f.launchChoice==='delay'&&needed.some(id=>!f.extraChecks.includes(id))) return false;
   if(f.launchChoice==='fast'){
     const pending=needed.filter(id=>!f.extraChecks.includes(id));
-    if(!pending.length||pending.some(id=>!f.deferredExtraChecks.includes(id))) return false;
+    if(!pending.length||pending.some(id=>!f.deferredExtraChecks.includes(id))||f.deferredExtraChecks.some(id=>!pending.includes(id))) return false;
   }
   if(f.launchChoice!=='fast'&&f.deferredExtraChecks.length) return false;
   if(f.monitoringChecksCompleted.some(id=>!f.deferredExtraChecks.includes(id))) return false;
@@ -169,40 +164,15 @@ function validState(state){
   return validStateInvariants(state);
 }
 
-function copyCommonFlags(target,savedFlags){
-  for(const key of Object.keys(target.flags)) if(Object.hasOwn(savedFlags,key)) target.flags[key]=clone(savedFlags[key]);
-}
+function copyCommonFlags(target,savedFlags){for(const key of Object.keys(target.flags))if(Object.hasOwn(savedFlags,key))target.flags[key]=clone(savedFlags[key]);}
 function normalizePreTraining(target){
   const f=target.flags;
   f.factoryMaintenanceDebt=f.factoryChoice==='continue';
-  f.dataTrainingApproved=[];
-  f.dataTrainingUsed=[];
-  f.dataCurrentTrainingUsed=[];
-  f.dataTrainingHeld=[];
-  f.candidateRevision=0;
-  f.trainingIncidentChoice=null;
-  f.evaluatorCalibrationComplete=false;
-  f.checkpointEvalComplete=false;
-  f.evalIndex=0;
-  f.evalCorrectCount=0;
-  f.evalFeedback=null;
-  f.safetyChoice=null;
-  f.safetyRemediated=false;
-  f.safetyRetested=false;
-  f.releaseGates=[];
-  f.extraChecks=[];
-  f.deferredExtraChecks=[];
-  f.monitoringChecksCompleted=[];
-  f.launchChoice=null;
-  f.deployLoad=null;
-  f.deployFailoverChecks=[];
-  f.deployTabs=[];
-  f.deployRecovery=null;
-  f.supportIndex=0;
-  f.supportFeedbackLabel='';
-  f.supportFeedbackDetail='';
-  f.transferChoice=null;
-  target.decisions=target.decisions.filter(decision=>!(/^(training-|train-|checkpoint-|safety-|release-|extra-check-|launch-|deploy-|support-)/.test(decision.id)));
+  f.dataTrainingApproved=[];f.dataTrainingUsed=[];f.dataCurrentTrainingUsed=[];f.dataTrainingHeld=[];
+  f.candidateRevision=0;f.trainingIncidentChoice=null;f.evaluatorCalibrationComplete=false;f.checkpointEvalComplete=false;f.evalIndex=0;f.evalCorrectCount=0;f.evalFeedback=null;
+  f.safetyChoice=null;f.safetyRemediated=false;f.safetyRetested=false;f.releaseGates=[];f.extraChecks=[];f.deferredExtraChecks=[];f.monitoringChecksCompleted=[];f.launchChoice=null;
+  f.deployLoad=null;f.deployFailoverChecks=[];f.deployTabs=[];f.deployRecovery=null;f.supportIndex=0;f.supportFeedbackLabel='';f.supportFeedbackDetail='';f.transferChoice=null;
+  target.decisions=target.decisions.filter(decision=>!(/^(training-|train-|evaluator-|checkpoint-|safety-|release-|extra-check-|launch-|monitoring-|deploy-|support-)/.test(decision.id)));
   target.ledger=target.ledger.filter(entry=>entry.chapter<5);
 }
 function migrateOldState(defaultState,saved){
@@ -226,19 +196,11 @@ function migrateOldState(defaultState,saved){
     return validState(migrated)?migrated:null;
   }catch{return null;}
 }
-function withResetNotice(defaultState){ const fresh=clone(defaultState); fresh.systemNotice='تعذر قراءة الحفظ السابق بأمان بعد تحديث بنية اللعبة، لذلك بدأت جلسة جديدة بدل استخدام حالة قد تكون غير منطقية.'; return fresh; }
+function withResetNotice(defaultState){const fresh=clone(defaultState);fresh.systemNotice='تعذر قراءة الحفظ السابق بأمان بعد تحديث بنية اللعبة، لذلك بدأت جلسة جديدة بدل استخدام حالة قد تكون غير منطقية.';return fresh;}
 
-export function loadState(defaultState){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw) return clone(defaultState);
-    const saved=JSON.parse(raw);
-    if(validState(saved)) return saved;
-    return migrateOldState(defaultState,saved)||withResetNotice(defaultState);
-  }catch{return withResetNotice(defaultState);}
-}
-export function saveState(state){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); return true; }catch{return false;} }
-function systemDefaultSettings(){ const reduceMotion=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches; return {...DEFAULT_SETTINGS,reduceMotion}; }
-function validSettings(value){ return exactKeys(value,Object.keys(DEFAULT_SETTINGS))&&Object.values(value).every(item=>typeof item==='boolean'); }
-export function loadSettings(){ const defaults=systemDefaultSettings(); try{ const raw=localStorage.getItem(SETTINGS_KEY); if(!raw) return defaults; const saved=JSON.parse(raw); return validSettings(saved)?saved:defaults; }catch{return defaults;} }
-export function saveSettings(settings){ try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); return true; }catch{return false;} }
+export function loadState(defaultState){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return clone(defaultState);const saved=JSON.parse(raw);if(validState(saved))return saved;return migrateOldState(defaultState,saved)||withResetNotice(defaultState);}catch{return withResetNotice(defaultState);}}
+export function saveState(state){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return true;}catch{return false;}}
+function systemDefaultSettings(){const reduceMotion=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;return{...DEFAULT_SETTINGS,reduceMotion};}
+function validSettings(value){return exactKeys(value,Object.keys(DEFAULT_SETTINGS))&&Object.values(value).every(item=>typeof item==='boolean');}
+export function loadSettings(){const defaults=systemDefaultSettings();try{const raw=localStorage.getItem(SETTINGS_KEY);if(!raw)return defaults;const saved=JSON.parse(raw);return validSettings(saved)?saved:defaults;}catch{return defaults;}}
+export function saveSettings(settings){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));return true;}catch{return false;}}
