@@ -18,9 +18,9 @@ await click(page,'#trainPause');
 let state=await saved(page);
 if(state.scene!=='trainingRecovery')throw new Error('Training pause skipped explicit recovery scene.');
 if(state.flags.trainingIncidentChoice!==null)throw new Error('Pause marked the incident complete before recovery.');
-await page.getByRole('heading',{name:'حددت فرق البنية مجموعة خرجت من الخدمة وتحتاج إلى استعادة قبل الاستئناف.',exact:true}).waitFor({state:'visible'});
-await page.getByText('إعادة تشغيل المجموعة أو استبدالها',{exact:true}).waitFor({state:'visible'});
-await page.getByText('التحقق من عودة 12/12',{exact:true}).waitFor({state:'visible'});
+await page.getByRole('heading',{name:'الجولة متوقفة حتى تعود المجموعة المعطلة إلى حالة صالحة.',exact:true}).waitFor({state:'visible'});
+await page.getByText('استعادة أو استبدال المجموعة',{exact:true}).waitFor({state:'visible'});
+await page.getByText('التحقق من 8/8',{exact:true}).waitFor({state:'visible'});
 await click(page,'#repairTrainingCompute');
 state=await saved(page);
 if(state.scene!=='trainingEval'||state.flags.trainingIncidentChoice!=='pause')throw new Error('Training recovery did not close the incident before evaluation.');
@@ -51,11 +51,11 @@ if(state.flags.dataChecks[3].rights!=='clear')throw new Error('Adopting visible 
 
 console.log('CLARITY_REMEDIATION:failover-ceiling-after-tests');
 await load(page,{scene:'deployLoad',flags:{...released()}});
-if(await page.getByText(/الحد الأقصى.*1\/3/).count())throw new Error('Failover ceiling is revealed before the tests.');
+if(await page.getByText(/السقف بهذه السعات وحدود الاستقبال هو 1\/3/).count())throw new Error('Failover ceiling is revealed before the tests.');
 for(const [selector,value] of [['#range0','45'],['#range1','30'],['#range2','25']])await page.locator(selector).evaluate((input,next)=>{input.value=next;input.dispatchEvent(new Event('input',{bubbles:true}));},value);
 await click(page,'#testLoad');
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
-await page.getByText(/الحد الأقصى بهذه الثوابت هو 1\/3/).waitFor({state:'visible'});
+await page.getByText(/السقف بهذه السعات وحدود الاستقبال هو 1\/3/).waitFor({state:'visible'});
 
 console.log('CLARITY_REMEDIATION:answer-before-transfer-test');
 await load(page,{scene:'pipelineAssemble',flags:{...ending({transferChoice:null})}});
