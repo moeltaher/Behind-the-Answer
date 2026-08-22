@@ -13,6 +13,12 @@ class ThrowingStorage extends MemoryStorage { setItem() { throw new Error('stora
 globalThis.localStorage = new MemoryStorage();
 function saveRaw(key,value){ localStorage.setItem(key,JSON.stringify(value)); }
 function expectReset(value){ saveRaw(STORAGE_KEY,value); const loaded=loadState(DEFAULT_STATE); assert.equal(loaded.schemaVersion,STATE_SCHEMA_VERSION); assert.equal(loaded.scene,'intro'); assert.match(loaded.systemNotice,/جلسة جديدة/); }
+function configDecisions(revision=1,compute='12',checkpoint='validated'){
+  return [
+    {id:`training-compute-${compute}-r${revision}`,label:'إعداد حوسبة',effectText:'fixture'},
+    {id:`training-checkpoint-${checkpoint}-r${revision}`,label:'إعداد checkpoint',effectText:'fixture'}
+  ];
+}
 
 function completeState(){
   const state=clone(DEFAULT_STATE);
@@ -38,9 +44,7 @@ function completeState(){
   state.flags.dataSort={keep:2,remove:3,redact:0,review:0};
   state.flags.dataTrainingUsed=[1,3];
   state.flags.dataCurrentTrainingUsed=[1,3];
-  state.flags.annotationResults=[
-    {index:0,choice:'آمن',acceptedAsReasonable:true,pending:false,reviewRejected:false,disputed:false}
-  ];
+  state.flags.annotationResults=[{index:0,choice:'آمن',acceptedAsReasonable:true,pending:false,reviewRejected:false,disputed:false}];
   state.flags.annotationUnpaidMinutes=9;
   state.flags.breakDecisionMade=true;
   state.flags.tookBreak=true;
@@ -61,9 +65,11 @@ function completeState(){
   state.flags.deployRecovery='rollback';
   state.flags.supportIndex=2;
   state.flags.transferChoice='build-use';
+  state.decisions=[...configDecisions(),{id:'deploy-resilience-risk-45-30-25',label:'قبلت فجوة المرونة',effectText:'fixture'}];
   return state;
 }
 
+assert.equal(STATE_SCHEMA_VERSION,5);
 const validState=completeState();
 saveRaw(STORAGE_KEY,validState);
 assert.deepEqual(loadState(DEFAULT_STATE),validState);
@@ -72,12 +78,39 @@ const badServerStep=clone(validState); badServerStep.flags.serverSteps=['rack','
 const badChecks=clone(validState); badChecks.flags.dataChecks.pop(); expectReset(badChecks);
 const badLineage=clone(validState); badLineage.flags.dataCurrentTrainingUsed=[4]; expectReset(badLineage);
 const riskWithCurrentBlocker=clone(validState); riskWithCurrentBlocker.flags.dataStatuses[3]='ready'; riskWithCurrentBlocker.flags.dataChecks[3]={rights:'unresolved',privacy:'clear',fitness:'clear'}; expectReset(riskWithCurrentBlocker);
-const fastWithoutDebt=clone(validState); fastWithoutDebt.flags.launchChoice='fast'; fastWithoutDebt.flags.trainingCheckpoint='recent'; fastWithoutDebt.flags.deferredExtraChecks=[]; expectReset(fastWithoutDebt);
+const fastWithoutDebt=clone(validState); fastWithoutDebt.flags.launchChoice='fast'; fastWithoutDebt.flags.trainingCheckpoint='recent'; fastWithoutDebt.flags.deferredExtraChecks=[]; fastWithoutDebt.decisions=fastWithoutDebt.decisions.filter(d=>!d.id.startsWith('training-checkpoint-')); fastWithoutDebt.decisions.push({id:'training-checkpoint-recent-r1',label:'recent',effectText:'fixture'}); expectReset(fastWithoutDebt);
 const monitoringOutsideDebt=clone(validState); monitoringOutsideDebt.flags.monitoringChecksCompleted=['checkpoint']; expectReset(monitoringOutsideDebt);
 const finalWithoutTransfer=clone(validState); finalWithoutTransfer.flags.transferChoice=null; expectReset(finalWithoutTransfer);
 const checkpointWithoutCalibration=clone(validState); checkpointWithoutCalibration.scene='checkpointEval'; checkpointWithoutCalibration.flags.evaluatorCalibrationComplete=false; expectReset(checkpointWithoutCalibration);
 const launchWithoutGates=clone(validState); launchWithoutGates.flags.releaseGates=['regression','capacity']; expectReset(launchWithoutGates);
 const recoveryWithoutFailover=clone(validState); recoveryWithoutFailover.flags.deployFailoverChecks=[0,1]; expectReset(recoveryWithoutFailover);
+const missingTrainingConfig=clone(validState); missingTrainingConfig.decisions=missingTrainingConfig.decisions.filter(d=>!d.id.startsWith('training-checkpoint-')); expectReset(missingTrainingConfig);
+const missingResilienceAcceptance=clone(validState); missingResilienceAcceptance.decisions=missingResilienceAcceptance.decisions.filter(d=>!d.id.startsWith('deploy-resilience-risk-')); expectReset(missingResilienceAcceptance);
+const wrongDistributionAcceptance=clone(validState); wrongDistributionAcceptance.decisions=wrongDistributionAcceptance.decisions.filter(d=>!d.id.startsWith('deploy-resilience-risk-')); wrongDistributionAcceptance.decisions.push({id:'deploy-resilience-risk-40-30-30',label:'قديم',effectText:'fixture'}); expectReset(wrongDistributionAcceptance);
+
+const v4=clone(validState);
+v4.schemaVersion=4;
+saveRaw(STORAGE_KEY,v4);
+const migratedV4=loadState(DEFAULT_STATE);
+assert.equal(migratedV4.schemaVersion,5);
+assert.equal(migratedV4.scene,'trainingSetup');
+assert.equal(migratedV4.flags.candidateRevision,0);
+assert.deepEqual(migratedV4.flags.dataTrainingUsed,[]);
+assert.deepEqual(migratedV4.flags.releaseGates,[]);
+assert.match(migratedV4.systemNotice,/الإصدار 4.*الإصدار 5/);
+
+const preTrainingV4=clone(DEFAULT_STATE);
+preTrainingV4.schemaVersion=4;
+preTrainingV4.scene='factoryOutcome';
+preTrainingV4.flags.factoryChoice='continue';
+preTrainingV4.flags.factoryMaintenanceDebt=false;
+preTrainingV4.decisions=[{id:'factory-debt-closed',label:'مغلق',effectText:'fixture'}];
+saveRaw(STORAGE_KEY,preTrainingV4);
+const migratedPreTraining=loadState(DEFAULT_STATE);
+assert.equal(migratedPreTraining.schemaVersion,5);
+assert.equal(migratedPreTraining.scene,'factoryOutcome');
+assert.equal(migratedPreTraining.flags.factoryMaintenanceDebt,false);
+assert.match(migratedPreTraining.systemNotice,/الإصدار 4.*الإصدار 5/);
 
 const v3=clone(DEFAULT_STATE);
 v3.schemaVersion=3;
@@ -105,22 +138,22 @@ v3.flags.supportIndex=2;
 v3.flags.transferChoice='build-use';
 saveRaw(STORAGE_KEY,v3);
 const migratedV3=loadState(DEFAULT_STATE);
-assert.equal(migratedV3.schemaVersion,4);
+assert.equal(migratedV3.schemaVersion,5);
 assert.equal(migratedV3.scene,'trainingSetup');
 assert.equal(migratedV3.flags.candidateRevision,0);
 assert.deepEqual(migratedV3.flags.dataTrainingUsed,[]);
 assert.deepEqual(migratedV3.flags.releaseGates,[]);
-assert.match(migratedV3.systemNotice,/الإصدار 3.*الإصدار 4/);
+assert.match(migratedV3.systemNotice,/الإصدار 3.*الإصدار 5/);
 
 const v2=clone(v3); v2.schemaVersion=2; saveRaw(STORAGE_KEY,v2);
 const migratedV2=loadState(DEFAULT_STATE);
-assert.equal(migratedV2.schemaVersion,4);
+assert.equal(migratedV2.schemaVersion,5);
 assert.equal(migratedV2.scene,'trainingSetup');
-assert.match(migratedV2.systemNotice,/الإصدار 2.*الإصدار 4/);
+assert.match(migratedV2.systemNotice,/الإصدار 2.*الإصدار 5/);
 
 saveRaw(SETTINGS_KEY,DEFAULT_SETTINGS); assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);
 saveRaw(SETTINGS_KEY,{...DEFAULT_SETTINGS,oldSetting:true}); assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);
 localStorage.clear(); globalThis.matchMedia=query=>({matches:query.includes('prefers-reduced-motion')}); assert.equal(loadSettings().reduceMotion,true);
 globalThis.localStorage=new ThrowingStorage(); assert.equal(saveState(validState),false); assert.equal(saveSettings(DEFAULT_SETTINGS),false);
 delete globalThis.matchMedia;
-console.log('Storage v4 validates candidate lineage, scene causality, monitoring debt, migrations, settings and explicit save failures.');
+console.log('Storage v5 validates revision configuration, lineage, explicit resilience acceptance, migrations, settings and save failures.');
