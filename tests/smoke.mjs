@@ -214,7 +214,8 @@ async function runMigrationBrowserCheck(){
 async function runA11y(){
   console.log('SMOKE_PHASE:axe');
   const browser=await chromium.launch();
-  const page=await browser.newPage({viewport:{width:1280,height:900}});
+  const context=await browser.newContext({viewport:{width:1280,height:900}});
+  const page=await context.newPage();
   const annotationResults=[
     ['آمن',true,false,false,false],['عنف',true,false,false,false],['مضايقة أو إساءة',true,false,false,false],['غير واضح',true,false,true,true],['خطاب كراهية',true,false,false,false],['غير واضح',true,true,false,false]
   ].map((entry,index)=>({index,choice:entry[0],acceptedAsReasonable:entry[1],pending:entry[2],reviewRejected:entry[3],disputed:entry[4]}));
@@ -233,6 +234,7 @@ async function runA11y(){
     const serious=results.violations.filter(item=>['serious','critical'].includes(item.impact));
     if(serious.length) throw new Error(`Accessibility violations in ${patch.scene}: ${serious.map(item=>item.id).join(', ')}`);
   }
+  await context.close();
   await browser.close();
   console.log('Dynamic accessibility matrix passed.');
 }
