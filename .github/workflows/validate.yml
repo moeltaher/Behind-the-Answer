@@ -61,23 +61,23 @@ jobs:
       - name: Run complete browser, causality, migration, accessibility and cross-browser suite
         run: npm run test:browser
 
-      - name: Run third-audit regression suite
-        run: npm run test:third-audit
+      - name: Run data governance regressions
+        run: npm run test:regression:data-governance
 
-      - name: Run fourth-audit regression suite
-        run: npm run test:fourth-audit
+      - name: Run revisions and failover regressions
+        run: npm run test:regression:revisions-failover
 
-      - name: Run fifth-audit regression suite
-        run: npm run test:fifth-audit
+      - name: Run guidance and history regressions
+        run: npm run test:regression:guidance-history
 
-      - name: Run sixth-audit regression suite
-        run: npm run test:sixth-audit
+      - name: Run causality and results regressions
+        run: npm run test:regression:causality-results
 
-      - name: Run seventh-audit regression suite
-        run: npm run test:seventh-audit
+      - name: Run state and role regressions
+        run: npm run test:regression:state-roles
 
-      - name: Run eighth-audit regression suite
-        run: npm run test:eighth-audit
+      - name: Run clarity and remediation regressions
+        run: npm run test:regression:clarity-remediation
 
       - name: Stop static server
         if: always()
