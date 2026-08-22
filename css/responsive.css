@@ -38,7 +38,6 @@
   .annotation-tags { grid-template-columns:1fr 1fr; }
   .people-wall { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
   .person-card { width:auto; }
-  .persistent-footer { display:none!important; }
   .modal { width:calc(100vw - 16px); max-height:90dvh; border-radius:18px; }
 }
 

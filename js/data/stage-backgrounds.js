@@ -1,4 +1,5 @@
 export const SCENES_BY_STAGE = {
+  prelude: ['intro','zoomOut'],
   mining: ['ch1Intro','mineOrientation','mineTask','mineInspection','mineEnd','abstract1'],
   factory: ['ch2Intro','factoryOrientation','factoryMonitor','factoryIncident','factoryOutcome','abstract2'],
   datacenter: ['ch3Intro','dcInstall','dcCooling','dcCoolingOutcome','dcWorkers','abstract3'],
@@ -7,11 +8,11 @@ export const SCENES_BY_STAGE = {
   training: ['ch6Intro','trainingSetup','trainingRun','trainingRecovery','trainingEval','abstract6'],
   evaluation: ['ch7Intro','evalTask','checkpointEval','safetyTest','safetyOutcome','safetyRetest','launchDecision','launchOutcome','abstract7'],
   deployment: ['ch8Intro','deployLoad','deployIncident','onCall','supportTask','deployEnd','abstract8'],
-  ending: ['intro','zoomOut','pipelineAssemble','finalAnswer','transferChallenge','results','finalMessage']
+  ending: ['pipelineAssemble','finalAnswer','transferChallenge','results']
 };
 
 export const SCENE_ORDER = [
-  'intro','zoomOut',
+  ...SCENES_BY_STAGE.prelude,
   ...SCENES_BY_STAGE.mining,
   ...SCENES_BY_STAGE.factory,
   ...SCENES_BY_STAGE.datacenter,
@@ -20,10 +21,11 @@ export const SCENE_ORDER = [
   ...SCENES_BY_STAGE.training,
   ...SCENES_BY_STAGE.evaluation,
   ...SCENES_BY_STAGE.deployment,
-  'pipelineAssemble','finalAnswer','transferChallenge','results','finalMessage'
+  ...SCENES_BY_STAGE.ending
 ];
 
 const STAGE_BACKDROPS = {
+  prelude: './assets/images/scenes/09-user.svg',
   mining: './assets/images/scenes/01-mining.svg',
   factory: './assets/images/scenes/02-factory.svg',
   datacenter: './assets/images/scenes/03-datacenter.svg',
@@ -40,9 +42,8 @@ const SCENE_TO_STAGE = Object.fromEntries(
 );
 
 export function stageForScene(sceneId) { return SCENE_TO_STAGE[sceneId] || null; }
-
 export function backdropForScene(sceneId) {
-  const stage = stageForScene(sceneId);
-  if (!stage) return null;
-  return { group: stage, image: STAGE_BACKDROPS[stage] };
+  const stage=stageForScene(sceneId);
+  if(!stage)return null;
+  return {group:stage,image:STAGE_BACKDROPS[stage]};
 }

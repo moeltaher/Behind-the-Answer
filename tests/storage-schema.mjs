@@ -22,7 +22,7 @@ function configDecisions(revision=1,compute='12',checkpoint='validated'){
 
 function completeState(){
   const state=clone(DEFAULT_STATE);
-  state.scene='finalMessage';
+  state.scene='results';
   state.flags.miningMinutes=35;
   state.flags.miningBUses=2;
   state.flags.miningIncidentChoice='stop';
@@ -74,6 +74,7 @@ const validState=completeState();
 saveRaw(STORAGE_KEY,validState);
 assert.deepEqual(loadState(DEFAULT_STATE),validState);
 
+const removedFinalMessage=clone(validState); removedFinalMessage.scene='finalMessage'; expectReset(removedFinalMessage);
 const badServerStep=clone(validState); badServerStep.flags.serverSteps=['rack','magic']; expectReset(badServerStep);
 const badChecks=clone(validState); badChecks.flags.dataChecks.pop(); expectReset(badChecks);
 const badLineage=clone(validState); badLineage.flags.dataCurrentTrainingUsed=[4]; expectReset(badLineage);
@@ -156,4 +157,4 @@ saveRaw(SETTINGS_KEY,{...DEFAULT_SETTINGS,oldSetting:true}); assert.deepEqual(lo
 localStorage.clear(); globalThis.matchMedia=query=>({matches:query.includes('prefers-reduced-motion')}); assert.equal(loadSettings().reduceMotion,true);
 globalThis.localStorage=new ThrowingStorage(); assert.equal(saveState(validState),false); assert.equal(saveSettings(DEFAULT_SETTINGS),false);
 delete globalThis.matchMedia;
-console.log('Storage v5 validates revision configuration, lineage, explicit resilience acceptance, migrations, settings and save failures.');
+console.log('Storage v5 validates current ending, rejects removed scenes, checks lineage/resilience, migrates old saves, and handles settings/save failures.');
