@@ -122,7 +122,8 @@ function validStateInvariants(state) {
   if (f.miningForcedInspection && !f.miningWarning) return false;
   if (f.factoryMaintenanceDebt !== (f.factoryChoice === 'continue')) return false;
   if (f.deployLoad && f.deployLoad.some((value,index)=>value>DEPLOY_LIMITS[index])) return false;
-  if (f.deployRecovery !== null && (!f.deployLoad || f.deployTabs.length !== 3 || f.deployFailoverChecks.length !== 3)) return false;
+  if (f.deployLoad !== null && f.launchChoice === null) return false;
+  if (f.deployRecovery !== null && (!f.deployLoad || f.deployTabs.length !== 3 || f.deployFailoverChecks.length !== 3 || f.launchChoice === null)) return false;
   if (f.supportIndex > 0 && f.deployRecovery === null) return false;
   if (f.transferChoice !== null && (f.deployRecovery === null || f.supportIndex < 2)) return false;
 
