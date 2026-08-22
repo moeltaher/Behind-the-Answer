@@ -20,6 +20,7 @@
     "test:fourth-audit": "node tests/fourth-audit.mjs",
     "test:fifth-audit": "node tests/fifth-audit.mjs",
     "test:sixth-audit": "node tests/sixth-audit.mjs",
-    "test:seventh-audit": "node tests/seventh-audit.mjs"
+    "test:seventh-audit": "node tests/seventh-audit.mjs",
+    "test:eighth-audit": "node tests/eighth-audit.mjs"
   }
 }
