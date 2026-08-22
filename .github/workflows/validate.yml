@@ -61,8 +61,14 @@ jobs:
       - name: Run complete browser, causality, migration, accessibility and cross-browser suite
         run: npm run test:browser
 
+      - name: Run third-audit regression suite
+        run: npm run test:third-audit
+
       - name: Run fourth-audit regression suite
         run: npm run test:fourth-audit
+
+      - name: Run fifth-audit regression suite
+        run: npm run test:fifth-audit
 
       - name: Stop static server
         if: always()
