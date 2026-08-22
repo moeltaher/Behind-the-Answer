@@ -5,7 +5,7 @@ import { STORAGE_KEY, SETTINGS_KEY, DEFAULT_SETTINGS } from '../js/core/storage.
 
 const BASE_URL='http://127.0.0.1:4173';
 const SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
-function stateWith(patch={}){const state=clone(DEFAULT_STATE);const merge=(t,s)=>Object.entries(s).forEach(([k,v])=>{if(v&&typeof v==='object'&&!Array.isArray(v)){if(!t[k]||typeof t[k]!=='object'||Array.isArray(t[k]))t[k]={};merge(t[k],v);}else t[k]=v;});merge(state,patch);return state;}
+function stateWith(patch={}){const state=clone(DEFAULT_STATE);const merge=(t,s)=>Object.entries(s).forEach(([k,v])=>{if(v&&typeof v==='object'&&!Array.isArray(v)){if(!t[k]||typeof t[k]!=='object'||Array.isArray(t[k]))t[k]={};merge(t[k],v);}else t[k]=v;});merge(state,patch);const r=state.flags.candidateRevision;if(r>0){for(const d of [{id:`training-compute-${state.flags.trainingCompute}-r${r}`,label:'إعداد حوسبة',effectText:'fixture'},{id:`training-checkpoint-${state.flags.trainingCheckpoint}-r${r}`,label:'إعداد checkpoint',effectText:'fixture'}])if(!state.decisions.some(x=>x.id===d.id))state.decisions.push(d);}if(state.flags.deployRecovery&&state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){const id=`deploy-resilience-risk-${state.flags.deployLoad.join('-')}`;if(!state.decisions.some(d=>d.id===id))state.decisions.push({id,label:'قبول فجوة المرونة',effectText:'fixture'});}return state;}
 async function load(page,patch={}){await page.goto(BASE_URL,{waitUntil:'networkidle'});await page.evaluate(({storageKey,settingsKey,state,settings})=>{localStorage.clear();localStorage.setItem(settingsKey,JSON.stringify(settings));localStorage.setItem(storageKey,JSON.stringify(state));},{storageKey:STORAGE_KEY,settingsKey:SETTINGS_KEY,state:stateWith(patch),settings:SETTINGS});await page.reload({waitUntil:'networkidle'});}
 async function click(page,selector){await page.locator(selector).waitFor({state:'visible'});await page.locator(selector).click();}
 async function saved(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);}
@@ -52,16 +52,16 @@ await page.getByText(/ظهر هذا الفحص لأنك خصصت 8 مجموعا�
 console.log('SIXTH_AUDIT:n1-gap-needs-explicit-decision');
 await load(page,{scene:'deployLoad',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
-await page.getByText(/فجوة مرونة حقيقية/).waitFor({state:'visible'});
+await page.getByText(/أفضل مرونة ممكنة/).waitFor({state:'visible'});
 await page.getByText('اقبل فجوة المرونة وسجلها قبل المتابعة',{exact:true}).waitFor({state:'visible'});
 await click(page,'#finishFailover');
 state=await saved(page);
 if(state.scene!=='deployIncident'||!state.decisions.some(d=>d.id==='deploy-resilience-risk-45-30-25'))throw new Error('Explicit resilience-risk acceptance did not gate incident progression.');
 
 console.log('SIXTH_AUDIT:results-prefer-newest-match');
-await load(page,{scene:'results',decisions:[{id:'data-retrain-without-0-r2',label:'إعادة تدريب قديمة',effectText:'قديم'},{id:'data-retrain-without-1-r3',label:'إعادة تدريب أحدث',effectText:'أحدث'}],flags:released({candidateRevision:3})});
+await load(page,{scene:'results',decisions:[{id:'data-retrain-plan-without-0-after-r1',label:'إعادة تدريب قديمة',effectText:'قديم'},{id:'data-retrain-plan-without-1-after-r2',label:'إعادة تدريب أحدث',effectText:'أحدث'}],flags:released({candidateRevision:3})});
 const materialCard=page.locator('.journey-highlight').nth(1);
 await materialCard.getByText('إعادة تدريب أحدث',{exact:true}).waitFor({state:'visible'});
 if(await materialCard.getByText('إعادة تدريب قديمة',{exact:true}).count())throw new Error('Results highlight selected an older matching decision.');
 
-await browser.close();console.log('Sixth-audit regression checks passed.');
+await browser.close();console.log('Sixth-audit regression checks passed under schema v5.');
