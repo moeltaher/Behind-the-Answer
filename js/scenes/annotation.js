@@ -37,7 +37,9 @@ export function createAnnotationRoutes(ctx) {
     const pending=results.filter(r=>r.pending&&!r.reviewRejected).length;
     const rejected=results.filter(r=>r.reviewRejected||!r.acceptedAsReasonable).length;
     const disputed=results.filter(r=>r.reviewRejected&&r.acceptedAsReasonable).length;
-    const reasonable=results.filter(r=>r.acceptedAsReasonable&&!r.reviewRejected).length;
+    // قبل ظهور شاشة المراجع، المبلغ المبدئي يعكس فقط ما يستطيع العامل استنتاجه
+    // من اختياره ودليل المشروع. لا نستخدم reviewRejected هنا حتى لا نسرب قرار المراجع مبكرًا.
+    const reasonable=results.filter(r=>r.acceptedAsReasonable).length;
     const paidTaskMinutes=results.length*TASK_MINUTES;
     const unpaidMinutes=state.flags.annotationUnpaidMinutes;
     const minutes=paidTaskMinutes+unpaidMinutes;
@@ -76,7 +78,7 @@ export function createAnnotationRoutes(ctx) {
     if(index>=ANNOTATION_TASKS.length){ go('annotationReview'); return; }
     if(index===3&&!state.flags.breakDecisionMade){ breakDecision(); return; }
     const task=ANNOTATION_TASKS[index];
-    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مشروع تصنيف البيانات</strong><span>المهمة ${index+1} من ${ANNOTATION_TASKS.length}</span></div><div class="annotation-body">${task.sensitive?'<div class="alert annotation-sensitive"><strong>تنبيه محتوى</strong><span>وصف مقتضب لمادة حساسة من دون تفاصيل صادمة.</span></div>':''}<div class="annotation-stats"><span>المكتملة: ${summary.answered}</span><span>الوقت المتصل: ${summary.minutes} دقيقة</span><span>منه غير مدفوع: ${summary.unpaidMinutes} دقيقة</span><span>المبلغ المبدئي: ${provisionalEarnings()}</span></div><div class="annotation-copy">${ctx.h(task.text)}</div><details class="annotation-policy annotation-policy--compact"><summary>راجع دليل التصنيف</summary><ul>${policyList()}</ul></details><div class="annotation-tags">${ANNOTATION_LABELS.map(label=>`<button data-tag="${ctx.h(label)}">${ctx.h(label)}</button>`).join('')}</div></div></div>`);
+    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مشروع تصنيف البيانات</strong><span>المهمة ${index+1} من ${ANNOTATION_TASKS.length}</span></div><div class="annotation-body">${task.sensitive?'<div class="alert annotation-sensitive"><strong>تنبيه محتوى</strong><span>وصف مقتضب لمادة حساسة من دون تفاصيل صادمة.</span></div>':''}<div class="annotation-stats"><span>المكتملة: ${summary.answered}</span><span>الوقت المتصل: ${summary.minutes} دقيقة</span><span>منه غير مدفوع: ${summary.unpaidMinutes} دقيقة</span><span>المبلغ قبل مراجعة الجودة: ${provisionalEarnings()}</span></div><div class="annotation-copy">${ctx.h(task.text)}</div><details class="annotation-policy annotation-policy--compact"><summary>راجع دليل التصنيف</summary><ul>${policyList()}</ul></details><div class="annotation-tags">${ANNOTATION_LABELS.map(label=>`<button data-tag="${ctx.h(label)}">${ctx.h(label)}</button>`).join('')}</div></div></div>`);
     bind('[data-tag]','click',event=>{
       const choice=event.currentTarget.dataset.tag;
       const pending=task.ambiguity&&choice==='غير واضح';
