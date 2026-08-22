@@ -6,7 +6,6 @@ import { applySettings } from './core/accessibility.js';
 import { addLedger as recordLedger, renderLedger as drawLedger } from './core/ledger.js';
 import { createRouter } from './core/router.js';
 import { CHAPTERS } from './data/chapters.js';
-import { DEMO_PROMPT } from './data/story.js';
 import { characterForScene } from './data/characters.js';
 import { backdropForScene, stageForScene } from './data/stage-backgrounds.js';
 import { monitorTile } from './components/hud.js';
@@ -41,66 +40,28 @@ const ledgerDialog=$('#ledgerDialog');
 const ledgerContent=$('#ledgerContent');
 const settingsDialog=$('#settingsDialog');
 const confirmResetDialog=$('#confirmResetDialog');
-const persistentFooter=$('#persistentFooter');
-const waitingPromptText=$('#waitingPromptText');
 
 const state=loadState(DEFAULT_STATE);
 const settings=loadSettings();
 let storageWarning='';
-function saveState(){
-  const ok=persistState(state);
-  if(!ok) storageWarning='تعذر حفظ التقدم محليًا. يمكنك متابعة الجلسة الحالية، لكن قد لا يمكن استئنافها بعد إغلاق الصفحة أو إعادة تحميلها.';
-  return ok;
-}
-function saveCurrentSettings(){
-  const ok=saveSettings(settings);
-  if(!ok) storageWarning='تعذر حفظ إعدادات الوصول محليًا. ستظل الإعدادات فعالة في الجلسة الحالية فقط.';
-  return ok;
-}
-function addDecision(id,label,effectText){ recordDecision(state,id,label,effectText); saveState(); }
-function addLedger(chapter,human,work,system,details=''){ recordLedger(state,chapter,human,work,system,details); saveState(); }
-function renderLedger(){ drawLedger(state,CHAPTERS,ledgerContent); }
-function tone(frequency=440,duration=.06,type='sine'){ playTone(settings,frequency,duration,type); }
-function updateBackdrop(){
-  const backdrop=backdropForScene(state.scene);
-  if(!backdrop){
-    stageBackdrop.style.removeProperty('--stage-image');
-    stageBackdrop.dataset.stage='';
-    delete document.body.dataset.stage;
-    return;
-  }
-  stageBackdrop.style.setProperty('--stage-image',`url("${backdrop.image}")`);
-  stageBackdrop.dataset.stage=backdrop.group;
-  document.body.dataset.stage=backdrop.group;
-}
+function saveState(){const ok=persistState(state);if(!ok)storageWarning='تعذر حفظ التقدم محليًا. يمكنك متابعة الجلسة الحالية، لكن قد لا يمكن استئنافها بعد إغلاق الصفحة أو إعادة تحميلها.';return ok;}
+function saveCurrentSettings(){const ok=saveSettings(settings);if(!ok)storageWarning='تعذر حفظ إعدادات الوصول محليًا. ستظل الإعدادات فعالة في الجلسة الحالية فقط.';return ok;}
+function addDecision(id,label,effectText){recordDecision(state,id,label,effectText);saveState();}
+function addLedger(chapter,human,work,system,details=''){recordLedger(state,chapter,human,work,system,details);saveState();}
+function renderLedger(){drawLedger(state,CHAPTERS,ledgerContent);}
+function tone(frequency=440,duration=.06,type='sine'){playTone(settings,frequency,duration,type);}
+function updateBackdrop(){const backdrop=backdropForScene(state.scene);if(!backdrop){stageBackdrop.style.removeProperty('--stage-image');stageBackdrop.dataset.stage='';delete document.body.dataset.stage;return;}stageBackdrop.style.setProperty('--stage-image',`url("${backdrop.image}")`);stageBackdrop.dataset.stage=backdrop.group;document.body.dataset.stage=backdrop.group;}
 
-const ctx={ $, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, persistentFooter, saveState, addDecision, addLedger, renderLedger, tone, monitorTile };
+const ctx={$, $$, state, settings, h, chapters:CHAPTERS, progressEl, progressFill, chapterLabel, chapterTitle, ledgerBtn, promptBtn, promptDialog, ledgerDialog, ledgerContent, settingsDialog, confirmResetDialog, saveState, addDecision, addLedger, renderLedger, tone, monitorTile};
 const router=createRouter({state,settings,sceneEl,save:saveState,tone});
-const PRE_JOURNEY_SCENES=new Set(['intro','zoomOut']);
-function currentChapterIndex(){ if(PRE_JOURNEY_SCENES.has(state.scene))return-1; const stage=stageForScene(state.scene); return CHAPTERS.findIndex(chapter=>chapter.key===stage); }
-function sceneHtml(content){
-  const index=currentChapterIndex();
-  renderJourneyProgress(ctx,index);
-  promptBtn.hidden=index<0;
-  persistentFooter.hidden=true;
-  updateBackdrop();
-  const character=characterForScene(state.scene);
-  const guidance=sceneGuidance(state.scene,state);
-  const savedNotice=state.systemNotice?`<div class="alert" role="status"><strong>تحديث الحفظ المحلي</strong><span>${h(state.systemNotice)}</span></div>`:'';
-  const failureNotice=storageWarning?`<div class="alert dangerish" role="status"><strong>تنبيه الحفظ المحلي</strong><span>${h(storageWarning)}</span></div>`:'';
-  router.html(`${savedNotice}${failureNotice}${characterCard(character)}${guidance}${content}`);
-  if(state.systemNotice){ state.systemNotice=''; saveState(); }
-}
+function currentChapterIndex(){const stage=stageForScene(state.scene);return CHAPTERS.findIndex(chapter=>chapter.key===stage);}
+function sceneHtml(content){const index=currentChapterIndex();renderJourneyProgress(ctx,index);promptBtn.hidden=index<0;updateBackdrop();const character=characterForScene(state.scene);const guidance=sceneGuidance(state.scene,state);const savedNotice=state.systemNotice?`<div class="alert" role="status"><strong>تحديث الحفظ المحلي</strong><span>${h(state.systemNotice)}</span></div>`:'';const failureNotice=storageWarning?`<div class="alert dangerish" role="status"><strong>تنبيه الحفظ المحلي</strong><span>${h(storageWarning)}</span></div>`:'';router.html(`${savedNotice}${failureNotice}${characterCard(character)}${guidance}${content}`);if(state.systemNotice){state.systemNotice='';saveState();}}
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});
 ctx.chapterIntro=(index,next)=>drawChapterIntro(ctx,index,next);
 ctx.abstraction=(humans,word,line,next)=>drawAbstraction(ctx,humans,word,line,next);
-ctx.resetGame=(goToIntro=false)=>{ replaceObjectContents(state,clone(DEFAULT_STATE)); storageWarning=''; saveState(); ledgerContent.innerHTML=''; ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close(); if(promptDialog.open)promptDialog.close(); if(goToIntro)router.go('intro'); else router.render(); };
-[
-  createIntroRoutes,createMiningRoutes,createFactoryRoutes,createDatacenterRoutes,createDataRoutes,
-  createAnnotationRoutes,createTrainingRoutes,createEvaluationRoutes,createDeploymentRoutes,createEndingRoutes
-].forEach(createRoutes=>router.register(createRoutes(ctx)));
-if(!router.routes[state.scene]){ state.scene='intro'; saveState(); }
+ctx.resetGame=(goToIntro=false)=>{replaceObjectContents(state,clone(DEFAULT_STATE));storageWarning='';saveState();ledgerContent.innerHTML='';ledgerDialog.close();settingsDialog.close();confirmResetDialog.close();if(promptDialog.open)promptDialog.close();if(goToIntro)router.go('intro');else router.render();};
+[createIntroRoutes,createMiningRoutes,createFactoryRoutes,createDatacenterRoutes,createDataRoutes,createAnnotationRoutes,createTrainingRoutes,createEvaluationRoutes,createDeploymentRoutes,createEndingRoutes].forEach(createRoutes=>router.register(createRoutes(ctx)));
+if(!router.routes[state.scene]){state.scene='intro';saveState();}
 bindDialogs(ctx);
-for(const id of ['reduceMotion','highContrast','largeText','soundOn']){ $(`#${id}`).addEventListener('change',event=>{ settings[id]=event.target.checked; saveCurrentSettings(); applySettings(settings); if(storageWarning) router.render(); }); }
-if(waitingPromptText)waitingPromptText.textContent=`«${DEMO_PROMPT}»`;
-applySettings(settings); updateBackdrop(); router.render();
+for(const id of ['reduceMotion','highContrast','largeText','soundOn']){$(`#${id}`).addEventListener('change',event=>{settings[id]=event.target.checked;saveCurrentSettings();applySettings(settings);if(storageWarning)router.render();});}
+applySettings(settings);updateBackdrop();router.render();
