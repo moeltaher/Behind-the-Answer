@@ -5,6 +5,7 @@ import { tone as playTone } from './core/audio.js';
 import { applySettings } from './core/accessibility.js';
 import { addLedger as recordLedger, renderLedger as drawLedger } from './core/ledger.js';
 import { createRouter } from './core/router.js';
+import { enhanceAuditScene } from './core/audit-enhancements.js';
 import { CHAPTERS } from './data/chapters.js';
 import { DEMO_PROMPT } from './data/story.js';
 import { characterForScene } from './data/characters.js';
@@ -46,7 +47,17 @@ const waitingPromptText=$('#waitingPromptText');
 
 const state=loadState(DEFAULT_STATE);
 const settings=loadSettings();
-function saveState(){ persistState(state); }
+let storageWarning='';
+function saveState(){
+  const ok=persistState(state);
+  if(!ok) storageWarning='تعذر حفظ التقدم محليًا. يمكنك متابعة الجلسة الحالية، لكن قد لا يمكن استئنافها بعد إغلاق الصفحة أو إعادة تحميلها.';
+  return ok;
+}
+function saveCurrentSettings(){
+  const ok=saveSettings(settings);
+  if(!ok) storageWarning='تعذر حفظ إعدادات الوصول محليًا. ستظل الإعدادات فعالة في الجلسة الحالية فقط.';
+  return ok;
+}
 function addDecision(id,label,effectText){ recordDecision(state,id,label,effectText); saveState(); }
 function addLedger(chapter,human,work,system,details=''){ recordLedger(state,chapter,human,work,system,details); saveState(); }
 function renderLedger(){ drawLedger(state,CHAPTERS,ledgerContent); }
@@ -76,20 +87,22 @@ function sceneHtml(content){
   updateBackdrop();
   const character=characterForScene(state.scene);
   const guidance=sceneGuidance(state.scene,state);
-  const notice=state.systemNotice?`<div class="alert" role="status"><strong>تحديث الحفظ المحلي</strong><span>${h(state.systemNotice)}</span></div>`:'';
-  router.html(`${notice}${characterCard(character)}${guidance}${content}`);
+  const savedNotice=state.systemNotice?`<div class="alert" role="status"><strong>تحديث الحفظ المحلي</strong><span>${h(state.systemNotice)}</span></div>`:'';
+  const failureNotice=storageWarning?`<div class="alert dangerish" role="status"><strong>تنبيه الحفظ المحلي</strong><span>${h(storageWarning)}</span></div>`:'';
+  router.html(`${savedNotice}${failureNotice}${characterCard(character)}${guidance}${content}`);
+  enhanceAuditScene(ctx);
   if(state.systemNotice){ state.systemNotice=''; saveState(); }
 }
 Object.assign(ctx,{html:sceneHtml,bind:router.bind,go:router.go});
 ctx.chapterIntro=(index,next)=>drawChapterIntro(ctx,index,next);
 ctx.abstraction=(humans,word,line,next)=>drawAbstraction(ctx,humans,word,line,next);
-ctx.resetGame=(goToIntro=false)=>{ replaceObjectContents(state,clone(DEFAULT_STATE)); saveState(); ledgerContent.innerHTML=''; ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close(); if(promptDialog.open)promptDialog.close(); if(goToIntro)router.go('intro'); else router.render(); };
+ctx.resetGame=(goToIntro=false)=>{ replaceObjectContents(state,clone(DEFAULT_STATE)); storageWarning=''; saveState(); ledgerContent.innerHTML=''; ledgerDialog.close(); settingsDialog.close(); confirmResetDialog.close(); if(promptDialog.open)promptDialog.close(); if(goToIntro)router.go('intro'); else router.render(); };
 [
   createIntroRoutes,createMiningRoutes,createFactoryRoutes,createDatacenterRoutes,createDataRoutes,
   createAnnotationRoutes,createTrainingRoutes,createEvaluationRoutes,createDeploymentRoutes,createEndingRoutes
 ].forEach(createRoutes=>router.register(createRoutes(ctx)));
 if(!router.routes[state.scene]){ state.scene='intro'; saveState(); }
 bindDialogs(ctx);
-for(const id of ['reduceMotion','highContrast','largeText','soundOn']){ $(`#${id}`).addEventListener('change',event=>{ settings[id]=event.target.checked; saveSettings(settings); applySettings(settings); }); }
+for(const id of ['reduceMotion','highContrast','largeText','soundOn']){ $(`#${id}`).addEventListener('change',event=>{ settings[id]=event.target.checked; saveCurrentSettings(); applySettings(settings); if(storageWarning) router.render(); }); }
 if(waitingPromptText)waitingPromptText.textContent=`«${DEMO_PROMPT}»`;
 applySettings(settings); updateBackdrop(); router.render();
