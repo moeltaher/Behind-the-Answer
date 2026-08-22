@@ -34,6 +34,14 @@ function escaped(ctx, value) {
   return ctx.h(String(value));
 }
 
+function hideActionHost(host) {
+  if (!host) return;
+  host.hidden = true;
+  host.style.display = 'none';
+  host.setAttribute('aria-hidden', 'true');
+  host.querySelectorAll('button, input, select, textarea, a[href]').forEach(element => { element.tabIndex = -1; });
+}
+
 function enhanceFactory(ctx) {
   if (ctx.state.scene !== 'factoryOutcome') return;
   const action = ctx.$('#toFactoryAbstract');
@@ -143,7 +151,7 @@ function enhanceReleaseGates(ctx) {
       return `<article class="card flat"><strong>${escaped(ctx, item?.title || `المادة ${index + 1}`)}</strong><p>غير محسوم: ${escaped(ctx, unresolved)}</p><div class="choice-grid"><button class="secondary-btn" data-data-resolve="${index}" type="button">أكمل المراجعة والمعالجة</button><button class="text-btn danger" data-data-exclude="${index}" type="button">استبعد المادة من هذه الجولة</button></div></article>`;
     }).join('')}`;
     actionHost.before(panel);
-    actionHost.hidden = true;
+    hideActionHost(actionHost);
     ctx.bind('[data-data-resolve]', 'click', event => {
       const index = Number(event.currentTarget.dataset.dataResolve);
       const check = ctx.state.flags.dataChecks[index];
@@ -166,7 +174,7 @@ function enhanceReleaseGates(ctx) {
 
   const allGates = RELEASE_GATES.every(([id]) => gateComplete(ctx, id));
   if (!allGates && actionHost) {
-    actionHost.hidden = true;
+    hideActionHost(actionHost);
     const note = document.createElement('div');
     note.className = 'alert dangerish';
     note.innerHTML = '<strong>قرار الإطلاق مقفول مؤقتًا</strong><span>راجع الأدلة في البوابات الأربع أولًا. عرض البوابات وحده لا يعني اجتيازها.</span>';
