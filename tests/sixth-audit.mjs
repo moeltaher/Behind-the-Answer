@@ -46,13 +46,13 @@ if(await page.locator('[data-task-panel][data-task-status="complete"]').count()!
 
 console.log('SIXTH_AUDIT:extra-checks-explain-cause');
 await load(page,{scene:'launchDecision',flags:{...advanced({trainingCheckpoint:'recent',trainingCompute:'8',trainingIncidentChoice:'continue',dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1})}});
-await page.getByText(/ظهر هذا الفحص لأنك اخترت checkpoint الأحدث/).waitFor({state:'visible'});
+await page.getByText(/ظهر هذا الفحص لأنك اخترت نقطة الحفظ الأحدث/).waitFor({state:'visible'});
 await page.getByText(/ظهر هذا الفحص لأنك خصصت 8 مجموعات/).waitFor({state:'visible'});
 
 console.log('SIXTH_AUDIT:n1-gap-needs-explicit-decision');
 await load(page,{scene:'deployLoad',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});
 for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
-await page.getByText('وصلت إلى أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});
+await page.getByText('كشفت الاختبارات أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});
 await page.getByText('اقبل فجوة المرونة وسجلها قبل المتابعة',{exact:true}).waitFor({state:'visible'});
 await click(page,'#finishFailover');
 state=await saved(page);
