@@ -7,7 +7,7 @@ const SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
 function stateWith(patch={}){
   const state=clone(DEFAULT_STATE);
   const merge=(target,source)=>Object.entries(source).forEach(([key,value])=>{
-    if(value&&typeof value==='object'&&!Array.isArray(value)){if(!target[key]||typeof target[key]!=='object'||Array.isArray(target[k]))target[key]={};merge(target[key],value);}else target[key]=value;
+    if(value&&typeof value==='object'&&!Array.isArray(value)){if(!target[key]||typeof target[key]!=='object'||Array.isArray(target[key]))target[key]={};merge(target[key],value);}else target[key]=value;
   });
   merge(state,patch);
   const r=state.flags.candidateRevision;
