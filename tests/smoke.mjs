@@ -13,7 +13,6 @@ function currentState(patch={}){
   const revision=state.flags.candidateRevision;
   if(revision>0){for(const decision of [{id:`training-compute-${state.flags.trainingCompute}-r${revision}`,label:'إعداد حوسبة',effectText:'fixture'},{id:`training-checkpoint-${state.flags.trainingCheckpoint}-r${revision}`,label:'إعداد نقطة حفظ',effectText:'fixture'}])if(!state.decisions.some(item=>item.id===decision.id))state.decisions.push(decision);}
   if(state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){const id=`deploy-resilience-risk-${state.flags.deployLoad.join('-')}`;if(!state.decisions.some(decision=>decision.id===id))state.decisions.push({id,label:'قبول فجوة المرونة',effectText:'fixture'});}
-  if(state.flags.deployRecovery&&!state.decisions.some(decision=>decision.id==='deploy-recovery-verified'))state.decisions.push({id:'deploy-recovery-verified',label:'تحقق الاستعادة',effectText:'fixture'});
   return state;
 }
 async function load(page,patch=null,settings=TEST_SETTINGS){await page.goto(BASE_URL,{waitUntil:'networkidle'});await page.evaluate(({storageKey,settingsKey,state,settingsValue})=>{localStorage.clear();if(settingsValue)localStorage.setItem(settingsKey,JSON.stringify(settingsValue));if(state)localStorage.setItem(storageKey,JSON.stringify(state));},{storageKey:STORAGE_KEY,settingsKey:SETTINGS_KEY,state:patch?currentState(patch):null,settingsValue:settings});await page.reload({waitUntil:'networkidle'});}
