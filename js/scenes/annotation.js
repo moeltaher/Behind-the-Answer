@@ -5,6 +5,14 @@ const PAY_PER_ACCEPTED_TASK = 0.08;
 const TASK_MINUTES = 4;
 const BREAK_MINUTES = 5;
 const APPEAL_MINUTES = 4;
+const ANNOTATION_REASON = [
+  'لا يظهر في النص تهديد أو إساءة أو مؤشر خطر واضح.',
+  'التهديد بكسر الهاتف تهديد مباشر بإتلاف ممتلكات، لذلك يطابق فئة العنف في دليل المشروع.',
+  'الإهانة مباشرة ولا تعتمد على انتماء محمي، لذلك تقع ضمن المضايقة أو الإساءة.',
+  'النص نفسه يقول إن المعنى يعتمد على سياق غير متاح، لذلك «غير واضح» قرار قابل للدفاع.',
+  'الإساءة مرتبطة صراحة بانتماء محمي، لذلك يطابق المثال تعريف خطاب الكراهية.',
+  'الجملة تعبر عن ضيق شديد لكنها لا تقدم وحدها إشارة واضحة إلى نية أو سلوك لإيذاء النفس؛ لذلك يبقى السياق غير كافٍ.'
+];
 
 function policyList() {
   return ANNOTATION_POLICY.map(([label, definition]) => `<li><strong>${label}</strong><span>${definition}</span></li>`).join('');
@@ -80,11 +88,20 @@ export function createAnnotationRoutes(ctx) {
     });
   }
 
+  function reviewExamplesMarkup() {
+    return `<details class="transition-details" open><summary>مراجعة اختياراتك مثالًا بمثال</summary><div class="evidence-results">${state.flags.annotationResults.map(result=>{
+      const task=ANNOTATION_TASKS[result.index];
+      const expected=task?.best??'—';
+      const status=result.choice===expected?'متسق مع الدليل':result.acceptedAsReasonable?'قابل للدفاع':'يحتاج مراجعة';
+      return `<article class="card flat"><strong>المثال ${result.index+1}: ${ctx.h(status)}</strong><p><b>اختيارك:</b> ${ctx.h(result.choice)} — <b>المرجع في السيناريو:</b> ${ctx.h(expected)}</p><p>${ctx.h(ANNOTATION_REASON[result.index]||'')}</p>${result.reviewRejected&&result.acceptedAsReasonable?'<p class="small muted">رغم اتساق اختيارك مع الدليل المعروض، رفضه المراجع؛ لذلك تفصل اللعبة بين تقييم أداء العامل وسلطة المراجعة.</p>':''}</article>`;
+    }).join('')}</div></details>`;
+  }
+
   function annotationReview() {
     const summary=annotationSummary();
     const rejectedCopy=summary.rejected===1?'مهمة واحدة مرفوضة':`${summary.rejected} مهام مرفوضة`;
     const disputeNote=summary.disputed?`<div class="alert annotation-rejected"><strong>رفض قابل للنزاع</strong><span>${summary.disputed===1?'إحدى المهام رُفضت رغم أن التصنيف اتبع دليل المشروع المعروض.':'بعض المهام رُفضت رغم أن التصنيف اتبع دليل المشروع المعروض.'} هذا يوضح أن سلطة المراجعة نفسها قد تكون محل خلاف، وليست مجرد كشف آلي لخطأ العامل.</span></div><div class="reality-note"><strong>من أين قد يأتي النزاع؟</strong> في منصات العمل قد ينشأ اختلاف المراجعة من نسخة أخرى من الدليل، أو gold label سابق، أو سياق لا يراه أحد الطرفين، أو قرار جودة بشري غير متسق. السيناريو لا يختار سببًا واحدًا من دون دليل؛ المهم أن الرفض ليس برهانًا تلقائيًا على خطأ العامل.</div>`:'';
-    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مراجعة الجودة</strong><span>هنا يُحسم جزء من الدفع</span></div><div class="annotation-body"><h1 class="annotation-review-title">${summary.rejected?`المراجع رفض ${summary.rejected===1?'مهمة واحدة':`${summary.rejected} مهام`}.`:'لم يرفض المراجع أي مهمة في هذه الجولة.'}</h1>${supportingRoleStrip(['dataReviewer'],'من دخل القرار الآن؟')}<p>الحالات «قيد المراجعة» لا تصبح مواد جاهزة تلقائيًا. كما أن قرار المراجع منفصل عن كون تصنيف العامل قابلًا للدفاع وفق الدليل الذي رأيته.</p><div class="annotation-stats"><span>مقبولة ومؤكدة: ${summary.accepted}</span><span>قيد المراجعة: ${summary.pending}</span><span>مرفوضة: ${summary.rejected}</span><span>الدخل المؤكد: ${confirmedEarnings()} وحدة</span><span>الوقت المتصل: ${summary.minutes} دقيقة</span></div>${disputeNote}${summary.rejected?`<div class="alert annotation-rejected"><strong>${rejectedCopy}</strong><span>يمكن الاعتراض، لكن نتيجة الاعتراض تقع خارج الزمن الذي تغطيه اللعبة.</span></div><div class="choice-grid"><button id="appeal" class="choice-btn annotation-light-choice"><strong>أرسل اعتراضًا</strong><small>يضيف ${APPEAL_MINUTES} دقائق غير مدفوعة، والنتيجة غير محسومة هنا.</small></button><button id="skipAppeal" class="choice-btn annotation-light-choice"><strong>لا تعترض</strong><small>أغلق الوردية مع بقاء الرفض كما هو.</small></button></div>`:'<div class="action-row"><button id="closeShift" class="primary-btn">أغلق الوردية</button></div>'}</div></div>`);
+    html(`<div class="annotation-shell"><div class="annotation-head"><strong>مراجعة الجودة</strong><span>هنا يُحسم جزء من الدفع</span></div><div class="annotation-body"><h1 class="annotation-review-title">${summary.rejected?`المراجع رفض ${summary.rejected===1?'مهمة واحدة':`${summary.rejected} مهام`}.`:'لم يرفض المراجع أي مهمة في هذه الجولة.'}</h1>${supportingRoleStrip(['dataReviewer'],'من دخل القرار الآن؟')}<p>الحالات «قيد المراجعة» لا تصبح مواد جاهزة تلقائيًا. كما أن قرار المراجع منفصل عن كون تصنيف العامل قابلًا للدفاع وفق الدليل الذي رأيته.</p><div class="annotation-stats"><span>مقبولة ومؤكدة: ${summary.accepted}</span><span>قيد المراجعة: ${summary.pending}</span><span>مرفوضة: ${summary.rejected}</span><span>الدخل المؤكد: ${confirmedEarnings()} وحدة</span><span>الوقت المتصل: ${summary.minutes} دقيقة</span></div>${reviewExamplesMarkup()}${disputeNote}${summary.rejected?`<div class="alert annotation-rejected"><strong>${rejectedCopy}</strong><span>يمكن الاعتراض، لكن نتيجة الاعتراض تقع خارج الزمن الذي تغطيه اللعبة.</span></div><div class="choice-grid"><button id="appeal" class="choice-btn annotation-light-choice"><strong>أرسل اعتراضًا</strong><small>يضيف ${APPEAL_MINUTES} دقائق غير مدفوعة، والنتيجة غير محسومة هنا.</small></button><button id="skipAppeal" class="choice-btn annotation-light-choice"><strong>لا تعترض</strong><small>أغلق الوردية مع بقاء الرفض كما هو.</small></button></div>`:'<div class="action-row"><button id="closeShift" class="primary-btn">أغلق الوردية</button></div>'}</div></div>`);
     $('#appeal')?.addEventListener('click',()=>{
       state.flags.annotationUnpaidMinutes+=APPEAL_MINUTES;
       addDecision('annotation-appeal',summary.disputed?'اعترضت على قرار مراجعة قابل للنزاع':`اعترضت على ${rejectedCopy}`,`أضاف الاعتراض ${APPEAL_MINUTES} دقائق غير مدفوعة من دون افتراض نجاحه.`);
