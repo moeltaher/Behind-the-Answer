@@ -34,7 +34,7 @@ if(!state.decisions.some(d=>d.id==='factory-debt-carried')||state.scene!=='abstr
 
 console.log('CAUSALITY_RESULTS:contextual-task-guidance');
 await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0,reason:'rights-evidence-found'},dataSort:{keep:0,remove:0,redact:0,review:1}}});
-await page.getByRole('heading',{name:'احسم مشكلة الخصوصية التي بقيت بعد مراجعة الحقوق',exact:true}).waitFor({state:'visible'});
+await page.getByRole('heading',{name:'افصل حق الاستخدام عن الخصوصية',exact:true}).waitFor({state:'visible'});
 await load(page,{scene:'trainingEval',flags:{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause'}});
 if(await page.locator('[data-task-panel][data-task-status="complete"]').count()!==1)throw new Error('Completed scene does not expose complete task status.');
 
