@@ -28,7 +28,6 @@ export const DEFAULT_STATE = {
     dataIndex: 0,
     dataReviewMinutes: 0,
     dataFollowup: null,
-    dataFollowupResolved: false,
     dataStatuses: [],
     dataChecks: [],
     dataFeedbackLabel: '',
@@ -78,50 +77,10 @@ export const DEFAULT_STATE = {
 };
 
 export function clone(value) { return JSON.parse(JSON.stringify(value)); }
-
-export function escapeHtml(value = '') {
-  const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
-  return String(value).replace(/[&<>'"]/g, character => entities[character]);
-}
-
-export function replaceObjectContents(target, source) {
-  for (const key of Object.keys(target)) delete target[key];
-  Object.assign(target, source);
-  return target;
-}
-
+export function escapeHtml(value = '') { const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }; return String(value).replace(/[&<>'"]/g, character => entities[character]); }
+export function replaceObjectContents(target, source) { for (const key of Object.keys(target)) delete target[key]; Object.assign(target, source); return target; }
 export function resetCandidateEvidence(state) {
   const f=state.flags;
-  f.trainingIncidentChoice=null;
-  f.trainingRecoveryStage='none';
-  f.evaluatorCalibrationComplete=false;
-  f.checkpointEvalComplete=false;
-  f.evalIndex=0;
-  f.evalCorrectCount=0;
-  f.evalFeedback=null;
-  f.safetyChoice=null;
-  f.safetyRemediated=false;
-  f.safetyRetested=false;
-  f.governanceEvidenceOpened=[];
-  f.releaseGates=[];
-  f.releaseCapacityStage='idle';
-  f.extraChecks=[];
-  f.deferredExtraChecks=[];
-  f.monitoringChecksCompleted=[];
-  f.launchChoice=null;
-  f.deployDraftLoad=null;
-  f.deployLoad=null;
-  f.deployFailoverChecks=[];
-  f.deployResilienceAccepted=false;
-  f.deployTrafficOpen=false;
-  f.deployMonitoringOpened=false;
-  f.deployTabs=[];
-  f.deployRecovery=null;
-  f.deployRecoveryVerifiedFor=null;
-  f.deployRecoveryDisposition=null;
-  f.supportIndex=0;
-  f.supportFeedbackLabel='';
-  f.supportFeedbackDetail='';
-  f.transferChoice=null;
+  f.trainingIncidentChoice=null;f.trainingRecoveryStage='none';f.evaluatorCalibrationComplete=false;f.checkpointEvalComplete=false;f.evalIndex=0;f.evalCorrectCount=0;f.evalFeedback=null;f.safetyChoice=null;f.safetyRemediated=false;f.safetyRetested=false;f.governanceEvidenceOpened=[];f.releaseGates=[];f.releaseCapacityStage='idle';f.extraChecks=[];f.deferredExtraChecks=[];f.monitoringChecksCompleted=[];f.launchChoice=null;f.deployDraftLoad=null;f.deployLoad=null;f.deployFailoverChecks=[];f.deployResilienceAccepted=false;f.deployTrafficOpen=false;f.deployMonitoringOpened=false;f.deployTabs=[];f.deployRecovery=null;f.deployRecoveryVerifiedFor=null;f.deployRecoveryDisposition=null;f.supportIndex=0;f.supportFeedbackLabel='';f.supportFeedbackDetail='';f.transferChoice=null;
   // decisions وledger يظلان تاريخًا لما حدث فعلًا، ولا يستخدمان كبديل عن حالة التشغيل الحالية.
 }
