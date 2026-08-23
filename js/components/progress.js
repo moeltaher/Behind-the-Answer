@@ -1,5 +1,8 @@
+import { SCENES_BY_STAGE } from '../data/stage-backgrounds.js';
+
 function chapterLabel(chapter){return chapter.shortTitle||chapter.title;}
 function miniMap(ctx,currentIndex){return ctx.chapters.map((chapter,index)=>{const stateClass=index===currentIndex?'current':index<currentIndex?'done':'',currentAttr=index===currentIndex?' aria-current="step"':'';return `<span class="mini-node ${stateClass}" title="${ctx.h(chapter.title)}"${currentAttr}><span aria-hidden="true">${chapter.icon}</span><small>${ctx.h(chapterLabel(chapter))}</small></span>`;}).join('');}
+function completionPercent(ctx,index){const chapter=ctx.chapters[index],scenes=SCENES_BY_STAGE[chapter.key]||[],sceneIndex=scenes.indexOf(ctx.state.scene);const local=scenes.length>1&&sceneIndex>=0?sceneIndex/(scenes.length-1):0;return((index+local)/ctx.chapters.length)*100;}
 
 export function renderJourneyProgress(ctx,index){
   const {progressEl,ledgerBtn,chapterLabel:chapterLabelEl,chapterTitle,progressFill,chapters}=ctx;
@@ -9,8 +12,8 @@ export function renderJourneyProgress(ctx,index){
     if(ledgerBtn)ledgerBtn.hidden=false;
     if(chapterLabelEl)chapterLabelEl.textContent=`المرحلة ${index+1} من ${chapters.length}`;
     if(chapterTitle)chapterTitle.textContent=chapterLabel(chapters[index]);
-    // الشريط يمثل المراحل المكتملة، لا مجرد دخول المرحلة الحالية؛ لذلك لا يصل إلى 100% عند بداية المرحلة الثامنة.
-    if(progressFill)progressFill.style.width=`${(index/chapters.length)*100}%`;
+    // التقدم يجمع المراحل المكتملة ونسبة التقدم داخل المرحلة الحالية؛ لا يصل إلى 100% إلا في abstract8.
+    if(progressFill)progressFill.style.width=`${completionPercent(ctx,index)}%`;
     if(miniJourney)miniJourney.innerHTML=miniMap(ctx,index);
     return;
   }
