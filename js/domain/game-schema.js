@@ -7,5 +7,5 @@ export const FACTORY_REMEDIATION_STAGES = ['none','diagnosed','repaired','verifi
 export const FACTORY_DISPOSITIONS = ['repair','carry'];
 export const MINING_INSPECTION_MODES = ['routine','forced'];
 export const RELEASE_CAPACITY_STAGES = ['idle','diagnosed','remediated','remeasured'];
-export const DC_COOLING_STAGES = ['open','repaired','verified'];
+export const DC_COOLING_STAGES = ['idle','open','repaired','verified'];
 export const TRAINING_RECOVERY_STAGES = ['none','repaired','verified'];
