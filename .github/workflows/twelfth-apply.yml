@@ -1,0 +1,135 @@
+name: Apply twelfth audit fixes
+
+on:
+  push:
+    branches: [twelfth-audit-clarity-full-coverage]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: twelfth-audit-clarity-full-coverage
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply precise source and documentation fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          def replace(path, old, new):
+              p=Path(path)
+              text=p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing replacement target in {path}: {old[:80]}')
+              p.write_text(text.replace(old,new))
+
+          replace('js/scenes/evaluation.js','طبّق تعديل السياسة ثم أعد الاختبار','طبّق تعديل السياسة وانتقل إلى إعادة الاختبار')
+          replace('js/scenes/evaluation.js','راجع الحق ونقح البيانات ثم أعد التدريب','راجع الحق ونقح البيانات ثم جهّز نسخة جديدة')
+          replace('js/scenes/evaluation.js','استبعد المادة وأعد التدريب','استبعد المادة ثم جهّز نسخة جديدة')
+          replace('js/scenes/evaluation.js','النسخة السابقة استخدمت الشكل القديم ولذلك يجب إعادة التدريب.','النسخة السابقة استخدمت الشكل القديم؛ لذلك أصبحت أدلتها تاريخية، وستحدث إعادة التدريب عند بدء النسخة التالية.')
+          replace('js/scenes/evaluation.js','أزيلت المادة من النسخة التالية.','أزيلت المادة من مدخلات النسخة التالية؛ إعادة التدريب ستحدث عند بدء الجولة الجديدة.')
+
+          replace('js/scenes/deployment.js','<strong>اقبل فجوة المرونة وتابع</strong><small>تُسجل كقيد معروف قبل فتح حركة المستخدمين.</small>',"<strong>${atMaximum?'سجّل القيد البنيوي وتابع':'اقبل فجوة المرونة الحالية وتابع'}</strong><small>${atMaximum?'بلغت أفضل مرونة تسمح بها سعات السيناريو؛ يسجل القيد بدل نسبته إلى اختيار توزيع ضعيف.':'يمكنك تحسين التوزيع أو قبول النتيجة الحالية كفجوة معروفة.'}</small>")
+          replace('js/scenes/deployment.js',"const resilient=survivableFailures(values);state.flags.deployResilienceAccepted=resilient<3;addDecision(`deploy-resilience-${values.join('-')}`,'اختبرت المرونة وسجلت الفجوة قبل فتح الخدمة',`التوزيع ${values.join(' / ')} يتحمل ${resilient}/3 حالات كاملة.`);", "const resilient=survivableFailures(values),atMaximum=resilient>=MAX_SURVIVABLE_FAILURES;state.flags.deployResilienceAccepted=resilient<3;addDecision(`deploy-resilience-${values.join('-')}`,atMaximum?'اختبرت المرونة وسجلت القيد البنيوي قبل فتح الخدمة':'اختبرت المرونة وقبلت الفجوة الحالية قبل فتح الخدمة',`التوزيع ${values.join(' / ')} يتحمل ${resilient}/3 حالات كاملة.`);")
+
+          replace('tests/smoke.mjs',"await click(page,'#mineStop');await click(page,'#finishMine');","await click(page,'#mineStop');await click(page,'#inspectMine');await click(page,'#repairMine');await click(page,'#verifyMine');await click(page,'#finishMine');")
+
+          package=Path('package.json')
+          data=json.loads(package.read_text())
+          data['scripts']['test:journey']='node tests/full-journey.mjs'
+          package.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+
+          validate=Path('.github/workflows/validate.yml')
+          workflow=validate.read_text()
+          marker='      - name: Run data governance regressions\n'
+          if 'Run full desktop and mobile journey' not in workflow:
+              if marker not in workflow: raise SystemExit('validate.yml insertion marker missing')
+              workflow=workflow.replace(marker,"      - name: Run full desktop and mobile journey\n        run: npm run test:journey\n"+marker)
+              validate.write_text(workflow)
+
+          replace('docs/GAME-DESIGN.md','يمكن أن تنتهي الحصة مع عمل صيانة مفتوح؛ اكتمال الحصة لا يعني أن الخطر اختفى.','يمكن أن تنتهي الحصة مع عمل صيانة مفتوح؛ اكتمال الحصة لا يعني أن الخطر اختفى. وإذا أُغلق القطاع، فالإغلاق لا يعالج الخطر تلقائيًا: يظهر الفحص ثم التشخيص ثم الإصلاح ثم إعادة اختبار الاهتزاز قبل اعتبار الخطر مغلقًا.')
+          replace('docs/METHODOLOGY.md','إذا انتهت الحصة مع فحص مؤجل يمكن أن تكون المهمة المباشرة مكتملة بينما يبقى عمل صيانة مفتوحًا.','إذا انتهت الحصة مع فحص مؤجل يمكن أن تكون المهمة المباشرة مكتملة بينما يبقى عمل صيانة مفتوحًا. وعند اختيار الإغلاق لا تحتسب اللعبة الفحص أو الإصلاح تلقائيًا؛ يجب تنفيذ الفحص وتشخيص السبب وإصلاحه ثم إعادة اختبار الاهتزاز قبل إغلاق الخطر.')
+          replace('docs/NARRATIVE.md','إيقاف خط المصنع لا يشخّص التنبيه ولا يصلحه، وإيقاف الاختبار لا يصلح التبريد، والتوقف في التدريب لا يعيد الحوسبة، وتشخيص الذاكرة لا يخفض القياس، وإجراء الاستعادة لا يثبت عودة الخدمة.','إغلاق قطاع التعدين لا يشخّص الاهتزاز ولا يصلحه، وإيقاف خط المصنع لا يشخّص التنبيه ولا يصلحه، وإيقاف الاختبار لا يصلح التبريد، والتوقف في التدريب لا يعيد الحوسبة، وتشخيص الذاكرة لا يخفض القياس، وإجراء الاستعادة لا يثبت عودة الخدمة.')
+          replace('docs/ARCHITECTURE.md','- `task-flow.js` — الحالات الحالية: active / decision / debt / complete فقط.','- `task-flow.js` — الحالات الحالية: active / decision / action / debt / complete؛ «قرار مطلوب» للمفاضلات الحقيقية و«تنفيذ مطلوب» للإصلاح أو القياس أو التحقق.')
+          replace('README.md','- **الإصلاح منفصل عن التحقق.** هذا مطبق في صيانة المصنع، تبريد مركز البيانات، استعادة التدريب، ومعالجة سعة الإصدار.','- **الإصلاح منفصل عن التحقق.** هذا مطبق في فحص قطاع التعدين، صيانة المصنع، تبريد مركز البيانات، استعادة التدريب، ومعالجة سعة الإصدار.')
+
+          history=Path('docs/AUDIT-HISTORY.md')
+          text=history.read_text()
+          if '## الجولة الثانية عشرة' not in text:
+              history.write_text(text.rstrip()+'''\n\n## الجولة الثانية عشرة — وضوح نوع العمل والتغطية الشاملة\n\n- فصل إغلاق قطاع التعدين عن الفحص والتشخيص والإصلاح وإعادة التحقق.\n- إضافة حالة `action` كي لا تستخدم شارة «قرار مطلوب» في خطوات التنفيذ أو القياس.\n- إضافة إرشاد مخصص للخاتمة وتحدي انتقال التعلم.\n- تصحيح نصوص الحوكمة والسلامة حتى لا تدعي تنفيذ إعادة التدريب أو إعادة الاختبار قبل حدوثهما.\n- التفريق بين فجوة مرونة ناتجة عن توزيع قابل للتحسين وبين القيد البنيوي عند بلوغ أفضل نتيجة ممكنة.\n- إضافة رحلة متصفح كاملة من البداية إلى النتائج على سطح المكتب والهاتف، مع فحوص وصول دورية وتشغيل الرحلة على Firefox وWebKit.\n- لم تظهر صفحة تشغيل قديمة جديدة للحذف؛ `index.html` تبقى صفحة التشغيل الوحيدة، وتظل migrations v2-v6 توافقًا مقصودًا وليست runtime قديمًا.\n''')
+      - name: Write full-journey regression
+        shell: bash
+        run: |
+          cat > tests/full-journey.mjs <<'EOF'
+          import { chromium, firefox, webkit } from 'playwright';
+          import AxeBuilder from '@axe-core/playwright';
+          import { BASE_URL } from './helpers/browser-fixtures.mjs';
+          import { STORAGE_KEY, DEFAULT_SETTINGS } from '../js/core/storage.js';
+
+          const SETTINGS={...DEFAULT_SETTINGS,reduceMotion:true};
+          const click=async(page,selector)=>{await page.locator(selector).waitFor({state:'visible'});await page.locator(selector).click();};
+          async function boot(page){await page.goto(BASE_URL,{waitUntil:'networkidle'});await page.evaluate(settings=>{localStorage.clear();localStorage.setItem('behindTheAnswerSettings',JSON.stringify(settings));},SETTINGS);await page.reload({waitUntil:'networkidle'});}
+          async function axe(page,label){const result=await new AxeBuilder({page}).analyze();if(result.violations.length)throw new Error(`${label}: accessibility violations ${result.violations.map(v=>v.id).join(', ')}`);}
+          async function setLoad(page,values){await page.evaluate(next=>next.forEach((value,index)=>{const input=document.querySelector(`#range${index}`);input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}),values);}
+          async function failover(page){for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);}
+          async function chooseTag(page,label){await page.getByRole('button',{name:label,exact:true}).click();}
+
+          async function runJourney(engine,{viewport,label,checkAxe=false}){
+            const browser=await engine.launch(),page=await browser.newPage({viewport}),errors=[];page.on('pageerror',error=>errors.push(error.message));await boot(page);if(checkAxe)await axe(page,`${label}:intro`);
+            await click(page,'#introSend');await click(page,'#descend');await click(page,'#chapterNext');await click(page,'#startMine');
+            await click(page,'[data-sector="b"]');await click(page,'[data-sector="b"]');await click(page,'#mineStop');
+            let state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);if(state.flags.miningInspectionCount!==0)throw new Error(`${label}: closing mining sector completed inspection early.`);
+            await click(page,'#inspectMine');if(await page.getByText('كشف الفحص ارتخاءً في دعامة داخل القطاع.',{exact:true}).count()!==1)throw new Error(`${label}: mining diagnosis not visible.`);
+            await click(page,'#repairMine');state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);if(state.flags.miningInspectionCount!==0)throw new Error(`${label}: mining repair completed verification early.`);
+            await click(page,'#verifyMine');state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);if(state.flags.miningInspectionCount!==1)throw new Error(`${label}: mining verification did not close inspection.`);await click(page,'#finishMine');
+            for(let index=0;index<4;index++)await click(page,'[data-sector="b"]');await click(page,'#mineAbstract');await click(page,'#abstractNext');
+            await click(page,'#chapterNext');await click(page,'#enterFab');await click(page,'#observeFab');await click(page,'#fabStop');await click(page,'#diagnoseFactory');await click(page,'#repairFactory');await click(page,'#verifyFactoryRepair');await click(page,'#resumeFactory');await click(page,'#toFactoryAbstract');await click(page,'#abstractNext');
+            await click(page,'#chapterNext');for(const step of ['rack','power','network','register'])await click(page,`[data-server-step="${step}"]`);await click(page,'#bootServer');await click(page,'#dcMove');await click(page,'#repairCooling');await click(page,'#verifyCooling');await click(page,'#dcAfterCooling');await click(page,'#dcReady');await click(page,'#abstractNext');if(checkAxe)await axe(page,`${label}:after-datacenter`);
+            await click(page,'#chapterNext');await click(page,'#toClean');for(const choice of ['remove','keep','review'])await click(page,`[data-sort="${choice}"]`);await click(page,'#followupRedact');await click(page,'[data-sort="review"]');await click(page,'[data-sort="review"]');await click(page,'#dataDone');await click(page,'#abstractNext');if(checkAxe)await axe(page,`${label}:data`);
+            await click(page,'#chapterNext');await click(page,'#startAnnot');for(const labelValue of ['آمن','عنف','مضايقة أو إساءة'])await chooseTag(page,labelValue);await click(page,'#skipBreak');for(const labelValue of ['غير واضح','خطاب كراهية','غير واضح'])await chooseTag(page,labelValue);await click(page,'#skipAppeal');await click(page,'#annotAbstract');await click(page,'#abstractNext');if(checkAxe)await axe(page,`${label}:annotation`);
+            await click(page,'#chapterNext');await click(page,'#trainStart');await click(page,'#trainPause');await click(page,'#repairTrainingCompute');await click(page,'#verifyTrainingCompute');await click(page,'#resumeTraining');await click(page,'#sendHuman');await click(page,'#abstractNext');if(checkAxe)await axe(page,`${label}:training`);
+            await click(page,'#chapterNext');for(const choice of ['a','b','bad']){await click(page,`[data-eval="${choice}"]`);await click(page,'#nextEval');}await click(page,'#confirmCalibration');for(const select of await page.locator('[data-checkpoint-sample]').all())await select.selectOption('a');await click(page,'#checkCheckpoint');await click(page,'#toSafety');await click(page,'[data-safety="details"]');await page.getByRole('button',{name:'طبّق تعديل السياسة وانتقل إلى إعادة الاختبار',exact:true}).waitFor({state:'visible'});await click(page,'#remediateSafety');await click(page,'#confirmSafetyRetest');await click(page,'#toReleaseGates');
+            await click(page,'[data-gate-pass="regression"]');await click(page,'[data-gate-investigate="capacity"]');await click(page,'[data-gate-remediate="capacity"]');await click(page,'[data-gate-remeasure="capacity"]');await click(page,'[data-gate-pass="capacity"]');await click(page,'[data-gate-pass="risk"]');await click(page,'[data-gate-pass="rollback"]');await click(page,'#toLaunchDecision');await click(page,'#launchReady');await click(page,'#finishEval');await click(page,'#abstractNext');if(checkAxe)await axe(page,`${label}:evaluation`);
+            await click(page,'#chapterNext');await click(page,'#testLoad');await failover(page);await click(page,'#retryLoad');await setLoad(page,[45,30,25]);await click(page,'#testLoad');await failover(page);await page.getByRole('button',{name:/سجّل القيد البنيوي وتابع/}).waitFor({state:'visible'});await click(page,'#finishFailover');await click(page,'#openTraffic');for(const tab of ['network','compute','model'])await click(page,`[data-tab="${tab}"]`);await click(page,'#rollback');await click(page,'#verifyRecovery');await click(page,'#toSupport');await click(page,'#supportInvestigate');await click(page,'#supportInvestigate');await click(page,'#uptimeAbstract');await click(page,'#abstractNext');if(checkAxe)await axe(page,`${label}:deployment`);
+            await click(page,'#backPrompt');await click(page,'#transferFromAnswer');const transfer={weights:'build',retrieval:'request',inference:'request',monitoring:'continuous',maintenance:'continuous'};for(const [id,value] of Object.entries(transfer))await page.selectOption(`[data-transfer-item="${id}"]`,value);await click(page,'#transferSubmit');await click(page,'#transferContinue');await page.getByText('نتيجة رحلتك',{exact:false}).waitFor({state:'visible'});if(checkAxe)await axe(page,`${label}:results`);
+            state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);if(state.scene!=='results'||state.flags.transferChoice!=='build-use')throw new Error(`${label}: journey did not reach results.`);if(errors.length)throw new Error(`${label}: ${errors.join(' | ')}`);await browser.close();console.log(`Full journey passed: ${label}`);
+          }
+
+          await runJourney(chromium,{viewport:{width:1280,height:900},label:'Chromium desktop',checkAxe:true});
+          await runJourney(chromium,{viewport:{width:390,height:844},label:'Chromium mobile'});
+          await runJourney(firefox,{viewport:{width:1280,height:900},label:'Firefox desktop'});
+          await runJourney(webkit,{viewport:{width:1280,height:900},label:'WebKit desktop'});
+          console.log('Full journey, mobile, accessibility and cross-browser coverage passed.');
+          EOF
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Audit dependencies
+        run: npm run audit:ci
+      - name: Static checks
+        run: npm run check:syntax && npm run check:lint && npm run check:static && npm run check:storage && npm run check:css
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Start server
+        run: python3 -m http.server 4173 >/tmp/behind-answer-http.log 2>&1 & echo $! > /tmp/behind-answer-http.pid
+      - name: Existing browser and regression suite
+        run: npm run test:browser && npm run test:regression:data-governance && npm run test:regression:revisions-failover && npm run test:regression:guidance-history && npm run test:regression:causality-results && npm run test:regression:state-roles && npm run test:regression:clarity-remediation
+      - name: Full journey suite
+        run: npm run test:journey
+      - name: Commit fixes
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add js tests css docs README.md package.json .github/workflows/validate.yml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'الجولة الثانية عشرة: استكمال الوضوح والتغطية الشاملة'
+          git push origin HEAD:twelfth-audit-clarity-full-coverage
