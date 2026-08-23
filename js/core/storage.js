@@ -27,8 +27,8 @@ import {
 export const STORAGE_KEY='behindTheAnswerGame';
 export const SETTINGS_KEY='behindTheAnswerSettings';
 export const DEFAULT_SETTINGS={reduceMotion:false,highContrast:false,largeText:false,soundOn:false};
-const SCENES=SCENE_ORDER;
-const SCENE_SET=new Set(SCENES);
+
+const SCENES=SCENE_ORDER,SCENE_SET=new Set(SCENES);
 const SERVER_STEPS=new Set(['rack','power','network','register']);
 const DATA_STATUSES=new Set(['ready','pending','excluded']);
 const CHECK_VALUES=new Set(['clear','unresolved','na']);
@@ -62,37 +62,34 @@ const ENDING_OR_LATER=from('pipelineAssemble');
 const RESULTS_OR_LATER=from('results');
 const REWIND_FOR_PRE_V6=from('ch6Intro');
 
-function isPlainObject(v){return Boolean(v)&&typeof v==='object'&&!Array.isArray(v);}
-function exactKeys(v,keys){return isPlainObject(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));}
-function uniqueAllowedStrings(v,a){return Array.isArray(v)&&new Set(v).size===v.length&&v.every(i=>typeof i==='string'&&a.has(i));}
-function uniqueIndices(v,max){return Array.isArray(v)&&new Set(v).size===v.length&&v.every(i=>Number.isInteger(i)&&i>=0&&i<max);}
-function validDecision(v){return exactKeys(v,['id','label','effectText'])&&['id','label','effectText'].every(k=>typeof v[k]==='string');}
-function validLedger(v){return exactKeys(v,['chapter','human','work','system','details'])&&Number.isInteger(v.chapter)&&v.chapter>=0&&v.chapter<8&&['human','work','system','details'].every(k=>typeof v[k]==='string');}
-function validCheck(v){return exactKeys(v,['rights','privacy','fitness'])&&[v.rights,v.privacy,v.fitness].every(i=>CHECK_VALUES.has(i));}
-function validAnnotationResult(v){return exactKeys(v,['index','choice','acceptedAsReasonable','pending','reviewRejected','disputed'])&&Number.isInteger(v.index)&&v.index>=0&&v.index<6&&ANNOTATION_CHOICE_SET.has(v.choice)&&['acceptedAsReasonable','pending','reviewRejected','disputed'].every(k=>typeof v[k]==='boolean');}
-function validNullableChoice(v,a){return v===null||a.includes(v);}
-function validNullableSetChoice(v,a){return v===null||a.has(v);}
-function validServerSequence(steps){if(!uniqueAllowedStrings(steps,SERVER_STEPS))return false;if(!steps.length)return true;if(steps[0]!=='rack')return false;const r=steps.indexOf('register');if(r!==-1&&(r!==steps.length-1||!steps.includes('power')||!steps.includes('network')))return false;if(steps.includes('power')&&steps.indexOf('power')===0)return false;if(steps.includes('network')&&steps.indexOf('network')===0)return false;return true;}
-function validLoad(values){return values===null||(Array.isArray(values)&&values.length===3&&values.every(v=>Number.isInteger(v)&&v>=0&&v<=100)&&values.reduce((s,v)=>s+v,0)===100);}
+function isPlainObject(value){return Boolean(value)&&typeof value==='object'&&!Array.isArray(value);}
+function exactKeys(value,keys){return isPlainObject(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));}
+function uniqueAllowedStrings(value,allowed){return Array.isArray(value)&&new Set(value).size===value.length&&value.every(item=>typeof item==='string'&&allowed.has(item));}
+function uniqueIndices(value,max){return Array.isArray(value)&&new Set(value).size===value.length&&value.every(item=>Number.isInteger(item)&&item>=0&&item<max);}
+function validNullableChoice(value,allowed){return value===null||allowed.includes(value);}
+function validNullableSetChoice(value,allowed){return value===null||allowed.has(value);}
+function validDecision(value){return exactKeys(value,['id','label','effectText'])&&['id','label','effectText'].every(key=>typeof value[key]==='string');}
+function validLedger(value){return exactKeys(value,['chapter','human','work','system','details'])&&Number.isInteger(value.chapter)&&value.chapter>=0&&value.chapter<8&&['human','work','system','details'].every(key=>typeof value[key]==='string');}
+function validCheck(value){return exactKeys(value,['rights','privacy','fitness'])&&[value.rights,value.privacy,value.fitness].every(item=>CHECK_VALUES.has(item));}
+function validAnnotationResult(value){return exactKeys(value,['index','choice','acceptedAsReasonable','pending','reviewRejected','disputed'])&&Number.isInteger(value.index)&&value.index>=0&&value.index<6&&ANNOTATION_CHOICE_SET.has(value.choice)&&['acceptedAsReasonable','pending','reviewRejected','disputed'].every(key=>typeof value[key]==='boolean');}
+function validServerSequence(steps){if(!uniqueAllowedStrings(steps,SERVER_STEPS))return false;if(!steps.length)return true;if(steps[0]!=='rack')return false;const register=steps.indexOf('register');if(register!==-1&&(register!==steps.length-1||!steps.includes('power')||!steps.includes('network')))return false;return !(steps.includes('power')&&steps.indexOf('power')===0)&&!(steps.includes('network')&&steps.indexOf('network')===0);}
+function validLoad(values){return values===null||(Array.isArray(values)&&values.length===3&&values.every(value=>Number.isInteger(value)&&value>=0&&value<=100)&&values.reduce((sum,value)=>sum+value,0)===100);}
+function sceneAtOrAfter(scene,threshold){return SCENES.indexOf(scene)>=SCENES.indexOf(threshold);}
 
 function sceneConsistent(state){
   const f=state.flags,s=state.scene;
   if(FACTORY_DONE_OR_LATER.has(s)&&(!f.factoryProductionComplete||f.factoryDisposition===null||(f.factoryMaintenanceDebt&&f.factoryDisposition!=='carry')))return false;
   if(DC_WORKERS_OR_LATER.has(s)&&f.dcCoolingStage!=='verified')return false;
-  if(TRAINING_OR_LATER.has(s)&&f.candidateRevision<1)return false;
-  if(TRAINING_OR_LATER.has(s)&&f.dataCurrentTrainingUsed.length===0&&confirmedAnnotations(f)===0)return false;
-  if(AFTER_TRAINING.has(s)&&f.trainingIncidentChoice===null)return false;
-  if(AFTER_TRAINING.has(s)&&f.trainingIncidentChoice==='pause'&&f.trainingRecoveryStage!=='verified')return false;
-  if(CHECKPOINT_OR_LATER.has(s)&&f.evalIndex<3)return false;
-  if(CHECKPOINT_OR_LATER.has(s)&&!f.evaluatorCalibrationComplete)return false;
+  if(TRAINING_OR_LATER.has(s)&&(f.candidateRevision<1||(f.dataCurrentTrainingUsed.length===0&&confirmedAnnotations(f)===0)))return false;
+  if(AFTER_TRAINING.has(s)&&(f.trainingIncidentChoice===null||(f.trainingIncidentChoice==='pause'&&f.trainingRecoveryStage!=='verified')))return false;
+  if(CHECKPOINT_OR_LATER.has(s)&&(f.evalIndex<3||!f.evaluatorCalibrationComplete))return false;
   if(SAFETY_OR_LATER.has(s)&&!f.checkpointEvalComplete)return false;
   if(SAFETY_OUTCOME_OR_LATER.has(s)&&f.safetyChoice===null)return false;
   if(SAFETY_RETEST_OR_LATER.has(s)&&!f.safetyRemediated)return false;
   if(READINESS_OR_LATER.has(s)&&!f.safetyRetested)return false;
   if(LAUNCHED_OR_LATER.has(s)&&f.launchChoice===null)return false;
   if(TRAFFIC_OPEN_OR_LATER.has(s)&&!f.deployTrafficOpen)return false;
-  if(DEPLOY_INCIDENT_OR_LATER.has(s)&&(!f.deployLoad||f.deployFailoverChecks.length!==3||!hasResilienceResolution(state)))return false;
-  if(DEPLOY_INCIDENT_OR_LATER.has(s)&&f.deferredExtraChecks.some(id=>!f.monitoringChecksCompleted.includes(id)))return false;
+  if(DEPLOY_INCIDENT_OR_LATER.has(s)&&(!f.deployLoad||f.deployFailoverChecks.length!==3||!hasResilienceResolution(state)||f.deferredExtraChecks.some(id=>!f.monitoringChecksCompleted.includes(id))))return false;
   if(ONCALL_OR_LATER.has(s)&&f.deployRecovery===null)return false;
   if(SUPPORT_OR_LATER.has(s)&&!recoveryDispositionComplete(state))return false;
   if(ENDING_OR_LATER.has(s)&&(!recoveryDispositionComplete(state)||f.supportIndex<2))return false;
@@ -106,10 +103,10 @@ function validStateInvariants(state){
   if(f.dataStatuses.length!==f.dataIndex||f.dataChecks.length!==f.dataIndex)return false;
   if(f.dataFollowup&&f.dataFollowup.index!==f.dataIndex)return false;
   const sortActions=f.dataSort.keep+f.dataSort.remove+f.dataSort.redact+f.dataSort.review;
-  const expectedSortActions=f.dataIndex+(f.dataFollowup?1:0)+(f.dataFollowupResolved?1:0);
-  if(sortActions!==expectedSortActions)return false;
-  const annotationIndices=f.annotationResults.map(r=>r.index);
-  if(new Set(annotationIndices).size!==annotationIndices.length||!annotationIndices.every((v,i)=>v===i))return false;
+  if(f.dataFollowup){if(sortActions!==f.dataIndex+1)return false;}
+  else if(sortActions!==f.dataIndex&&sortActions!==f.dataIndex+1)return false;
+  const annotationIndices=f.annotationResults.map(result=>result.index);
+  if(new Set(annotationIndices).size!==annotationIndices.length||!annotationIndices.every((value,index)=>value===index))return false;
   if(f.evalCorrectCount>f.evalIndex+(f.evalFeedback?.correct?1:0))return false;
   if(f.safetyRetested&&(!f.safetyRemediated||f.safetyChoice===null))return false;
   if(f.miningForcedInspection&&!f.miningWarning)return false;
@@ -124,10 +121,9 @@ function validStateInvariants(state){
   if(f.dcCoolingChoice!==null&&f.dcCoolingStage==='idle')return false;
   if(f.trainingIncidentChoice!=='pause'&&f.trainingRecoveryStage!=='none')return false;
   if(f.releaseGates.includes('capacity')&&f.releaseCapacityStage!=='remeasured')return false;
-  if(f.deployDraftLoad!==null&&!validLoad(f.deployDraftLoad))return false;
-  if(f.deployLoad!==null&&!validLoad(f.deployLoad))return false;
-  if(f.deployLoad&&f.deployLoad.some((v,i)=>v>DEPLOY_CAPACITY_LIMITS[i]))return false;
-  if(f.deployDraftLoad&&f.deployDraftLoad.some((v,i)=>v>DEPLOY_CAPACITY_LIMITS[i]))return false;
+  if(!validLoad(f.deployDraftLoad)||!validLoad(f.deployLoad))return false;
+  if(f.deployLoad&&f.deployLoad.some((value,index)=>value>DEPLOY_CAPACITY_LIMITS[index]))return false;
+  if(f.deployDraftLoad&&f.deployDraftLoad.some((value,index)=>value>DEPLOY_CAPACITY_LIMITS[index]))return false;
   if(f.deployLoad!==null&&f.launchChoice===null)return false;
   if(f.deployResilienceAccepted&&(!f.deployLoad||f.deployFailoverChecks.length!==3))return false;
   if(f.deployTrafficOpen&&(!f.deployLoad||!hasResilienceResolution(state)))return false;
@@ -140,16 +136,16 @@ function validStateInvariants(state){
   if(f.supportIndex>0&&!recoveryDispositionComplete(state))return false;
   if(f.transferChoice!==null&&(!recoveryDispositionComplete(state)||f.supportIndex<2))return false;
   const allDataRefs=[...f.dataTrainingUsed,...f.dataTrainingApproved,...f.dataCurrentTrainingUsed,...f.dataTrainingHeld,...f.governanceEvidenceOpened];
-  if(allDataRefs.some(i=>i>=f.dataIndex))return false;
-  if(f.dataCurrentTrainingUsed.some(i=>!f.dataTrainingUsed.includes(i)||f.dataStatuses[i]!=='ready'||f.dataTrainingHeld.includes(i)))return false;
-  if(f.dataTrainingApproved.some(i=>f.dataTrainingHeld.includes(i)||f.dataStatuses[i]!=='ready'))return false;
-  if(f.dataTrainingHeld.some(i=>f.dataStatuses[i]!=='ready'||!hasUnresolved(f.dataChecks[i])))return false;
+  if(allDataRefs.some(index=>index>=f.dataIndex))return false;
+  if(f.dataCurrentTrainingUsed.some(index=>!f.dataTrainingUsed.includes(index)||f.dataStatuses[index]!=='ready'||f.dataTrainingHeld.includes(index)))return false;
+  if(f.dataTrainingApproved.some(index=>f.dataTrainingHeld.includes(index)||f.dataStatuses[index]!=='ready'))return false;
+  if(f.dataTrainingHeld.some(index=>f.dataStatuses[index]!=='ready'||!hasUnresolved(f.dataChecks[index])))return false;
   const unresolved=unresolvedReadyIndices(f),reviewed=new Set([...f.dataTrainingApproved,...f.dataTrainingHeld]);
-  if(f.candidateRevision>0&&unresolved.some(i=>!reviewed.has(i)))return false;
+  if(f.candidateRevision>0&&unresolved.some(index=>!reviewed.has(index)))return false;
   if(f.safetyChoice!==null&&!f.checkpointEvalComplete)return false;
   if(f.releaseGates.includes('risk')&&exposedCurrentUnresolvedIndices(f).length)return false;
   const needed=neededExtraChecks(f);
-  if(f.launchChoice!==null){if(!f.safetyRetested||f.releaseGates.length!==RELEASE_GATE_SET.size)return false;if(exposedCurrentUnresolvedIndices(f).length)return false;}
+  if(f.launchChoice!==null&&( !f.safetyRetested||f.releaseGates.length!==RELEASE_GATE_SET.size||exposedCurrentUnresolvedIndices(f).length))return false;
   if(f.launchChoice==='delay'&&needed.some(id=>!f.extraChecks.includes(id)))return false;
   if(f.launchChoice==='fast'){
     const pending=needed.filter(id=>!f.extraChecks.includes(id));
@@ -164,20 +160,20 @@ function validState(state){
   if(!exactKeys(state,['schemaVersion','systemNotice','scene','decisions','ledger','flags'])||state.schemaVersion!==STATE_SCHEMA_VERSION||typeof state.systemNotice!=='string')return false;
   if(!SCENE_SET.has(state.scene)||!Array.isArray(state.decisions)||!state.decisions.every(validDecision)||!Array.isArray(state.ledger)||!state.ledger.every(validLedger))return false;
   const f=state.flags;
-  const keys=['miningCount','miningMinutes','miningBUses','miningWarning','miningIncidentChoice','miningRiskLevel','miningForcedInspection','miningInspectionCount','miningInspectionMode','factoryChoice','factoryMaintenanceDebt','factoryRemediationStage','factoryDisposition','factoryProductionComplete','serverSteps','dcCoolingChoice','dcCoolingStage','dataOrigins','dataIndex','dataReviewMinutes','dataFollowup','dataFollowupResolved','dataStatuses','dataChecks','dataFeedbackLabel','dataFeedbackDetail','dataSort','dataTrainingApproved','dataTrainingUsed','dataCurrentTrainingUsed','dataTrainingHeld','governanceEvidenceOpened','annotationResults','annotationUnpaidMinutes','breakDecisionMade','candidateRevision','trainingCheckpoint','trainingIncidentChoice','trainingRecoveryStage','evaluatorCalibrationComplete','checkpointEvalComplete','evalIndex','evalCorrectCount','evalFeedback','safetyChoice','safetyRemediated','safetyRetested','releaseGates','releaseCapacityStage','extraChecks','deferredExtraChecks','monitoringChecksCompleted','launchChoice','deployDraftLoad','deployLoad','deployFailoverChecks','deployResilienceAccepted','deployTrafficOpen','deployMonitoringOpened','deployTabs','deployRecovery','deployRecoveryVerifiedFor','deployRecoveryDisposition','supportIndex','supportFeedbackLabel','supportFeedbackDetail','transferChoice'];
+  const keys=['miningCount','miningMinutes','miningBUses','miningWarning','miningIncidentChoice','miningRiskLevel','miningForcedInspection','miningInspectionCount','miningInspectionMode','factoryChoice','factoryMaintenanceDebt','factoryRemediationStage','factoryDisposition','factoryProductionComplete','serverSteps','dcCoolingChoice','dcCoolingStage','dataOrigins','dataIndex','dataReviewMinutes','dataFollowup','dataStatuses','dataChecks','dataFeedbackLabel','dataFeedbackDetail','dataSort','dataTrainingApproved','dataTrainingUsed','dataCurrentTrainingUsed','dataTrainingHeld','governanceEvidenceOpened','annotationResults','annotationUnpaidMinutes','breakDecisionMade','candidateRevision','trainingCheckpoint','trainingIncidentChoice','trainingRecoveryStage','evaluatorCalibrationComplete','checkpointEvalComplete','evalIndex','evalCorrectCount','evalFeedback','safetyChoice','safetyRemediated','safetyRetested','releaseGates','releaseCapacityStage','extraChecks','deferredExtraChecks','monitoringChecksCompleted','launchChoice','deployDraftLoad','deployLoad','deployFailoverChecks','deployResilienceAccepted','deployTrafficOpen','deployMonitoringOpened','deployTabs','deployRecovery','deployRecoveryVerifiedFor','deployRecoveryDisposition','supportIndex','supportFeedbackLabel','supportFeedbackDetail','transferChoice'];
   if(!exactKeys(f,keys))return false;
   const integers=[f.miningCount,f.miningMinutes,f.miningBUses,f.miningRiskLevel,f.miningInspectionCount,f.dataIndex,f.dataReviewMinutes,f.annotationUnpaidMinutes,f.candidateRevision,f.evalIndex,f.evalCorrectCount,f.supportIndex];
   if(!integers.every(Number.isInteger))return false;
   if(f.candidateRevision<0||f.miningCount<0||f.miningCount>12||f.miningMinutes<0||f.miningBUses<0||f.miningRiskLevel<0||f.miningRiskLevel>2||f.miningInspectionCount<0||f.miningInspectionCount>1)return false;
-  if(![f.miningWarning,f.miningForcedInspection,f.factoryMaintenanceDebt,f.factoryProductionComplete,f.dataFollowupResolved,f.breakDecisionMade,f.evaluatorCalibrationComplete,f.checkpointEvalComplete,f.safetyRemediated,f.safetyRetested,f.deployResilienceAccepted,f.deployTrafficOpen,f.deployMonitoringOpened].every(v=>typeof v==='boolean'))return false;
+  if(![f.miningWarning,f.miningForcedInspection,f.factoryMaintenanceDebt,f.factoryProductionComplete,f.breakDecisionMade,f.evaluatorCalibrationComplete,f.checkpointEvalComplete,f.safetyRemediated,f.safetyRetested,f.deployResilienceAccepted,f.deployTrafficOpen,f.deployMonitoringOpened].every(value=>typeof value==='boolean'))return false;
   if(!validNullableChoice(f.miningIncidentChoice,['stop','continue'])||!validNullableSetChoice(f.miningInspectionMode,MINING_INSPECTION_MODE_SET)||!validNullableChoice(f.factoryChoice,['stop','continue'])||!FACTORY_REMEDIATION_SET.has(f.factoryRemediationStage)||!validNullableSetChoice(f.factoryDisposition,FACTORY_DISPOSITION_SET)||!validNullableChoice(f.dcCoolingChoice,['move','stop'])||!DC_COOLING_STAGE_SET.has(f.dcCoolingStage))return false;
   if(!validServerSequence(f.serverSteps)||!uniqueAllowedStrings(f.dataOrigins,DATA_ORIGIN_SET))return false;
   if(f.dataIndex<0||f.dataIndex>5||f.dataReviewMinutes<0)return false;
   if(f.dataFollowup!==null&&!(exactKeys(f.dataFollowup,['index'])&&Number.isInteger(f.dataFollowup.index)&&f.dataFollowup.index>=0&&f.dataFollowup.index<5))return false;
-  if(!Array.isArray(f.dataStatuses)||f.dataStatuses.length>5||!f.dataStatuses.every(s=>DATA_STATUSES.has(s)))return false;
-  if(!Array.isArray(f.dataChecks)||f.dataChecks.length>5||!f.dataChecks.every(v=>v===null||validCheck(v))||f.dataChecks.length!==f.dataStatuses.length)return false;
+  if(!Array.isArray(f.dataStatuses)||f.dataStatuses.length>5||!f.dataStatuses.every(status=>DATA_STATUSES.has(status)))return false;
+  if(!Array.isArray(f.dataChecks)||f.dataChecks.length>5||!f.dataChecks.every(value=>value===null||validCheck(value))||f.dataChecks.length!==f.dataStatuses.length)return false;
   if(typeof f.dataFeedbackLabel!=='string'||typeof f.dataFeedbackDetail!=='string')return false;
-  if(!exactKeys(f.dataSort,['keep','remove','redact','review'])||!Object.values(f.dataSort).every(v=>Number.isInteger(v)&&v>=0))return false;
+  if(!exactKeys(f.dataSort,['keep','remove','redact','review'])||!Object.values(f.dataSort).every(value=>Number.isInteger(value)&&value>=0))return false;
   if(!uniqueIndices(f.dataTrainingApproved,5)||!uniqueIndices(f.dataTrainingUsed,5)||!uniqueIndices(f.dataCurrentTrainingUsed,5)||!uniqueIndices(f.dataTrainingHeld,5)||!uniqueIndices(f.governanceEvidenceOpened,5))return false;
   if(!Array.isArray(f.annotationResults)||f.annotationResults.length>6||!f.annotationResults.every(validAnnotationResult)||f.annotationUnpaidMinutes<0)return false;
   if(!['validated','recent'].includes(f.trainingCheckpoint)||!validNullableChoice(f.trainingIncidentChoice,['pause','continue'])||!TRAINING_RECOVERY_STAGE_SET.has(f.trainingRecoveryStage))return false;
@@ -193,14 +189,13 @@ function validState(state){
 }
 
 function copyCommonFlags(target,savedFlags){for(const key of Object.keys(target.flags))if(Object.hasOwn(savedFlags,key))target.flags[key]=clone(savedFlags[key]);}
-function decisionExists(state,id){return state.decisions.some(d=>d.id===id);}
-function decisionStarts(state,prefix){return state.decisions.some(d=>d.id.startsWith(prefix));}
-function sceneAtOrAfter(scene,threshold){return SCENES.indexOf(scene)>=SCENES.indexOf(threshold);}
+function decisionExists(state,id){return state.decisions.some(decision=>decision.id===id);}
+function decisionStarts(state,prefix){return state.decisions.some(decision=>decision.id.startsWith(prefix));}
 function normalizePreTraining(target){
   const f=target.flags;
   f.dataTrainingApproved=[];f.dataTrainingUsed=[];f.dataCurrentTrainingUsed=[];f.dataTrainingHeld=[];f.governanceEvidenceOpened=[];f.candidateRevision=0;f.trainingCheckpoint='validated';f.trainingIncidentChoice=null;f.trainingRecoveryStage='none';f.evaluatorCalibrationComplete=false;f.checkpointEvalComplete=false;f.evalIndex=0;f.evalCorrectCount=0;f.evalFeedback=null;f.safetyChoice=null;f.safetyRemediated=false;f.safetyRetested=false;f.releaseGates=[];f.releaseCapacityStage='idle';f.extraChecks=[];f.deferredExtraChecks=[];f.monitoringChecksCompleted=[];f.launchChoice=null;f.deployDraftLoad=null;f.deployLoad=null;f.deployFailoverChecks=[];f.deployResilienceAccepted=false;f.deployTrafficOpen=false;f.deployMonitoringOpened=false;f.deployTabs=[];f.deployRecovery=null;f.deployRecoveryVerifiedFor=null;f.deployRecoveryDisposition=null;f.supportIndex=0;f.supportFeedbackLabel='';f.supportFeedbackDetail='';f.transferChoice=null;
-  target.decisions=target.decisions.filter(d=>!(/^(training-|train-|evaluator-|checkpoint-|safety-|revision-superseded-|data-retrain-plan-|release-|extra-check-|launch-|monitoring-|deploy-|support-)/.test(d.id)));
-  target.ledger=target.ledger.filter(e=>e.chapter<5);
+  target.decisions=target.decisions.filter(decision=>!(/^(training-|train-|evaluator-|checkpoint-|safety-|revision-superseded-|data-retrain-plan-|release-|extra-check-|launch-|monitoring-|deploy-|support-)/.test(decision.id)));
+  target.ledger=target.ledger.filter(entry=>entry.chapter<5);
 }
 function migrateFactoryState(migrated,saved){
   const f=migrated.flags;
@@ -216,19 +211,20 @@ function migrateFactoryState(migrated,saved){
   if(decisionExists(migrated,'factory-debt-carried')||sceneAtOrAfter(saved.scene,'abstract2')){f.factoryDisposition='carry';f.factoryRemediationStage='none';f.factoryMaintenanceDebt=true;return;}
   if(decisionExists(migrated,'factory-maintenance-started')||f.factoryRemediationStage!=='none')f.factoryDisposition='repair';
 }
-function migrateV6DerivedState(migrated,saved){
+function deriveCompatibilityState(migrated,saved){
   const f=migrated.flags;
   if(saved.flags.dataFollowup&&Number.isInteger(saved.flags.dataFollowup.index))f.dataFollowup={index:saved.flags.dataFollowup.index};
-  f.dataFollowupResolved=decisionExists(migrated,'data-pii-redact-after-review')||decisionExists(migrated,'data-pii-keep-after-review');
-  f.governanceEvidenceOpened=migrated.decisions.flatMap(d=>{const m=d.id.match(/^data-license-review-opened-(\d+)-r/);return m?[Number(m[1])]:[];}).filter(i=>i<f.dataIndex);
-  if(f.dcCoolingChoice===null)f.dcCoolingStage='idle';else f.dcCoolingStage=saved.flags.dcCoolingRestored?'verified':'open';
+  f.governanceEvidenceOpened=migrated.decisions.flatMap(decision=>{const match=decision.id.match(/^data-license-review-opened-(\d+)-r/);return match?[Number(match[1])]:[];}).filter(index=>index<f.dataIndex);
+  const oldCoolingRestored=saved.flags.dcCoolingRestored===true;
+  f.dcCoolingStage=f.dcCoolingChoice?(oldCoolingRestored?'verified':'open'):'idle';
   f.trainingRecoveryStage=f.trainingIncidentChoice==='pause'?'verified':'none';
   f.releaseCapacityStage=f.releaseGates.includes('capacity')?'remeasured':decisionStarts(migrated,'release-capacity-remediated-')?'remeasured':decisionStarts(migrated,'release-capacity-investigated-')?'diagnosed':'idle';
   f.deployDraftLoad=null;
-  f.deployResilienceAccepted=decisionStarts(migrated,'deploy-resilience-risk-');
+  f.deployResilienceAccepted=decisionStarts(migrated,'deploy-resilience-risk-')||decisionStarts(migrated,'deploy-failover-review-');
   f.deployTrafficOpen=sceneAtOrAfter(saved.scene,'deployMonitoring');
   f.deployMonitoringOpened=decisionStarts(migrated,'deploy-monitoring-window-')||(f.deployTrafficOpen&&f.deferredExtraChecks.length>0&&sceneAtOrAfter(saved.scene,'deployIncident'));
-  if(decisionExists(migrated,'deploy-recovery-verified-rollback'))f.deployRecoveryVerifiedFor='rollback';else if(decisionExists(migrated,'deploy-recovery-verified-restart'))f.deployRecoveryVerifiedFor='restart';
+  if(decisionExists(migrated,'deploy-recovery-verified-rollback'))f.deployRecoveryVerifiedFor='rollback';
+  else if(decisionExists(migrated,'deploy-recovery-verified-restart'))f.deployRecoveryVerifiedFor='restart';
 }
 function migrateOldState(defaultState,saved){
   if(!isPlainObject(saved)||![6,5,4,3,2,undefined].includes(saved.schemaVersion)||!isPlainObject(saved.flags))return null;
@@ -239,19 +235,14 @@ function migrateOldState(defaultState,saved){
     migrated.ledger=Array.isArray(saved.ledger)&&saved.ledger.every(validLedger)?clone(saved.ledger):[];
     copyCommonFlags(migrated,saved.flags);
     if(saved.schemaVersion===undefined){
-      const oldStatuses=Array.isArray(saved.flags.dataStatuses)?saved.flags.dataStatuses.filter(s=>DATA_STATUSES.has(s)).slice(0,5):[];
+      const oldStatuses=Array.isArray(saved.flags.dataStatuses)?saved.flags.dataStatuses.filter(status=>DATA_STATUSES.has(status)).slice(0,5):[];
       migrated.flags.dataStatuses=oldStatuses;
-      migrated.flags.dataChecks=oldStatuses.map(s=>s==='excluded'?{rights:'na',privacy:'na',fitness:'na'}:{rights:'unresolved',privacy:'unresolved',fitness:'unresolved'});
+      migrated.flags.dataChecks=oldStatuses.map(status=>status==='excluded'?{rights:'na',privacy:'na',fitness:'na'}:{rights:'unresolved',privacy:'unresolved',fitness:'unresolved'});
       migrated.flags.dataIndex=oldStatuses.length;
     }
     migrateFactoryState(migrated,saved);
-    if(saved.schemaVersion===6)migrateV6DerivedState(migrated,saved);
-    else{
-      if(saved.schemaVersion===5&&migrated.scene==='dcCoolingOutcome'&&migrated.flags.dcCoolingChoice===null&&migrated.decisions.some(d=>d.id==='dc-stop'))migrated.flags.dcCoolingChoice='stop';
-      migrated.flags.dcCoolingStage=migrated.flags.dcCoolingChoice?((saved.flags.dcCoolingRestored||saved.schemaVersion===undefined&&saved.flags.dcCoolingChoice==='stop')?'verified':'open'):'idle';
-      const rewound=REWIND_FOR_PRE_V6.has(migrated.scene);
-      if(rewound){migrated.scene='trainingSetup';normalizePreTraining(migrated);}
-    }
+    deriveCompatibilityState(migrated,saved);
+    if(saved.schemaVersion!==6&&REWIND_FOR_PRE_V6.has(migrated.scene)){migrated.scene='trainingSetup';normalizePreTraining(migrated);}
     if(migrated.flags.miningInspectionCount>1)migrated.flags.miningInspectionCount=1;
     if(migrated.flags.miningRiskLevel>2)migrated.flags.miningRiskLevel=2;
     if(migrated.flags.miningInspectionCount===1)migrated.flags.miningInspectionMode=decisionExists(migrated,'mine-forced-inspection')?'forced':'routine';
@@ -265,6 +256,6 @@ function withResetNotice(defaultState){const fresh=clone(defaultState);fresh.sys
 export function loadState(defaultState){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return clone(defaultState);const saved=JSON.parse(raw);if(validState(saved))return saved;return migrateOldState(defaultState,saved)||withResetNotice(defaultState);}catch{return withResetNotice(defaultState);}}
 export function saveState(state){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return true;}catch{return false;}}
 function systemDefaultSettings(){const reduceMotion=typeof globalThis.matchMedia==='function'&&globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;return{...DEFAULT_SETTINGS,reduceMotion};}
-function validSettings(value){return exactKeys(value,Object.keys(DEFAULT_SETTINGS))&&Object.values(value).every(i=>typeof i==='boolean');}
+function validSettings(value){return exactKeys(value,Object.keys(DEFAULT_SETTINGS))&&Object.values(value).every(item=>typeof item==='boolean');}
 export function loadSettings(){const defaults=systemDefaultSettings();try{const raw=localStorage.getItem(SETTINGS_KEY);if(!raw)return defaults;const saved=JSON.parse(raw);return validSettings(saved)?saved:defaults;}catch{return defaults;}}
 export function saveSettings(settings){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));return true;}catch{return false;}}
