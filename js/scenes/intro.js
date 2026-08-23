@@ -15,7 +15,7 @@ export function createIntroRoutes(ctx) {
           <label class="kicker" for="introPrompt">الطلب التجريبي الثابت</label>
           <textarea id="introPrompt" class="prompt-input" readonly>${h(DEMO_PROMPT)}</textarea>
           <p class="small muted">لن نعرض الإجابة فورًا. ستعود أولًا عبر الأجهزة والبيانات والعمل البشري الذي جعل الخدمة ممكنة، ثم ترجع إلى الطلب نفسه في النهاية.</p>
-          <div class="reality-note"><strong>بنهاية الرحلة ستختبر قدرتك على</strong><div class="view-list"><span>فصل ما بُني قبل الطلب عما يحدث لحظة الاستخدام.</span><span>تحديد العمل البشري والمادي الذي تختصره الواجهة في كلمات تقنية.</span><span>تمييز مرور قرار داخل workflow عن حسم مخاطره أو حقوقه فعليًا.</span><span>نقل هذا النموذج التحليلي إلى منتج ذكاء اصطناعي مختلف.</span></div></div>
+          <div class="reality-note"><strong>بنهاية الرحلة ستختبر قدرتك على</strong><div class="view-list"><span>فصل ما بُني قبل الطلب عما يحدث لحظة الاستخدام.</span><span>تحديد العمل البشري والمادي الذي تختصره الواجهة في كلمات تقنية.</span><span>تمييز مرور قرار داخل مسار العمل عن حسم مخاطره أو حقوقه فعليًا.</span><span>نقل هذا النموذج التحليلي إلى منتج ذكاء اصطناعي مختلف.</span></div></div>
           <div class="chat-send"><button id="introSend" class="primary-btn" type="button">افتح ما وراء الإجابة ←</button></div>
         </div>
         <p class="small muted centered intro-privacy-note">جميع الشخصيات والأرقام التشغيلية في اللعبة خيالية ومركبة لأغراض تعليمية. اللعبة تعمل داخل متصفحك ولا ترسل الطلب إلى خادم خارجي.</p>
