@@ -1,4 +1,4 @@
-export const STATE_SCHEMA_VERSION = 6;
+export const STATE_SCHEMA_VERSION = 7;
 
 export const DEFAULT_STATE = {
   schemaVersion: STATE_SCHEMA_VERSION,
@@ -15,9 +15,12 @@ export const DEFAULT_STATE = {
     miningRiskLevel: 0,
     miningForcedInspection: false,
     miningInspectionCount: 0,
+    miningInspectionMode: null,
     factoryChoice: null,
     factoryMaintenanceDebt: false,
     factoryRemediationStage: 'none',
+    factoryDisposition: null,
+    factoryProductionComplete: false,
     serverSteps: [],
     dcCoolingChoice: null,
     dcCoolingRestored: false,
@@ -25,6 +28,7 @@ export const DEFAULT_STATE = {
     dataIndex: 0,
     dataReviewMinutes: 0,
     dataFollowup: null,
+    dataFollowupResolved: false,
     dataStatuses: [],
     dataChecks: [],
     dataFeedbackLabel: '',
@@ -34,9 +38,9 @@ export const DEFAULT_STATE = {
     dataTrainingUsed: [],
     dataCurrentTrainingUsed: [],
     dataTrainingHeld: [],
+    governanceEvidenceOpened: [],
     annotationResults: [],
     annotationUnpaidMinutes: 0,
-    tookBreak: false,
     breakDecisionMade: false,
     candidateRevision: 0,
     trainingCheckpoint: 'validated',
@@ -50,14 +54,20 @@ export const DEFAULT_STATE = {
     safetyRemediated: false,
     safetyRetested: false,
     releaseGates: [],
+    releaseCapacityStage: 'idle',
     extraChecks: [],
     deferredExtraChecks: [],
     monitoringChecksCompleted: [],
     launchChoice: null,
+    deployDraftLoad: null,
     deployLoad: null,
     deployFailoverChecks: [],
+    deployResilienceAccepted: false,
+    deployTrafficOpen: false,
+    deployMonitoringOpened: false,
     deployTabs: [],
     deployRecovery: null,
+    deployRecoveryVerifiedFor: null,
     deployRecoveryDisposition: null,
     supportIndex: 0,
     supportFeedbackLabel: '',
@@ -90,20 +100,26 @@ export function resetCandidateEvidence(state) {
   f.safetyChoice=null;
   f.safetyRemediated=false;
   f.safetyRetested=false;
+  f.governanceEvidenceOpened=[];
   f.releaseGates=[];
+  f.releaseCapacityStage='idle';
   f.extraChecks=[];
   f.deferredExtraChecks=[];
   f.monitoringChecksCompleted=[];
   f.launchChoice=null;
+  f.deployDraftLoad=null;
   f.deployLoad=null;
   f.deployFailoverChecks=[];
+  f.deployResilienceAccepted=false;
+  f.deployTrafficOpen=false;
+  f.deployMonitoringOpened=false;
   f.deployTabs=[];
   f.deployRecovery=null;
+  f.deployRecoveryVerifiedFor=null;
   f.deployRecoveryDisposition=null;
   f.supportIndex=0;
   f.supportFeedbackLabel='';
   f.supportFeedbackDetail='';
   f.transferChoice=null;
-  // decisions وledger تاريخ لما حدث فعلًا؛ تصفير هذه الحقول يمنع إعادة استخدام
-  // أدلة نسخة سابقة في نسخة جديدة. إنشاء النسخة نفسها يحدث فقط عند بدء جولة التدريب.
+  // decisions وledger يظلان تاريخًا لما حدث فعلًا، ولا يستخدمان كبديل عن حالة التشغيل الحالية.
 }
