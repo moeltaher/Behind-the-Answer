@@ -61,6 +61,9 @@ jobs:
       - name: Run complete browser, causality, migration, accessibility and cross-browser suite
         run: npm run test:browser
 
+      - name: Run full desktop, mobile, accessibility and cross-browser journey
+        run: npm run test:journey
+
       - name: Run data governance regressions
         run: npm run test:regression:data-governance
 

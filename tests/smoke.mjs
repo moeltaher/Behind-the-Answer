@@ -19,13 +19,11 @@ async function completeFailover(page){for(const index of [0,1,2])await click(pag
 async function completeCoreJourney(viewport,label){
   const browser=await chromium.launch(),page=await browser.newPage({viewport}),errors=[];page.on('pageerror',error=>errors.push(error.message));await load(page);
   await click(page,'#introSend');await click(page,'#descend');await click(page,'#chapterNext');await click(page,'#startMine');
-  await click(page,'[data-sector="b"]');await click(page,'[data-sector="b"]');await click(page,'#mineStop');await click(page,'#finishMine');
+  await click(page,'[data-sector="b"]');await click(page,'[data-sector="b"]');await click(page,'#mineStop');await click(page,'#inspectMine');await click(page,'#repairMine');await click(page,'#verifyMine');await click(page,'#finishMine');
   for(let index=0;index<4;index++)await click(page,'[data-sector="b"]');await click(page,'#mineAbstract');await click(page,'#abstractNext');
   await click(page,'#chapterNext');await click(page,'#enterFab');await click(page,'#observeFab');await click(page,'#fabStop');await click(page,'#diagnoseFactory');await click(page,'#repairFactory');await click(page,'#verifyFactoryRepair');
   if(await page.locator('#toFactoryAbstract').count())throw new Error(`${label}: stopped factory batch completed before resume.`);await click(page,'#resumeFactory');await click(page,'#toFactoryAbstract');await click(page,'#abstractNext');
   await click(page,'#chapterNext');for(const step of ['rack','power','network','register'])await click(page,`[data-server-step="${step}"]`);await click(page,'#bootServer');await click(page,'#dcMove');await click(page,'#repairCooling');await click(page,'#verifyCooling');await click(page,'#dcAfterCooling');await click(page,'#dcReady');await click(page,'#abstractNext');
-  // The remaining long-form journey is covered by focused regressions; here verify the
-  // current schema and absence of removed runtime state after the three causal stages.
   const state=await saved(page);if(STATE_SCHEMA_VERSION!==7||state.schemaVersion!==7)throw new Error(`${label}: schema v7 not persisted.`);for(const field of ['trainingCompute','tookBreak','dcCoolingRestored','dataFollowupResolved'])if(Object.hasOwn(state.flags,field))throw new Error(`${label}: obsolete field ${field} survived.`);if(errors.length)throw new Error(`${label}: ${errors.join(' | ')}`);
   await browser.close();console.log(`Core journey passed: ${label}`);
 }

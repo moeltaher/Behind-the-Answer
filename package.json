@@ -16,6 +16,7 @@
     "check:css": "node tests/css-integrity.mjs",
     "audit:ci": "npm audit --audit-level=high",
     "test:browser": "node tests/smoke.mjs",
+    "test:journey": "node tests/full-journey.mjs",
     "test:regression:data-governance": "node tests/regression-data-governance.mjs",
     "test:regression:revisions-failover": "node tests/regression-revisions-failover.mjs",
     "test:regression:guidance-history": "node tests/regression-guidance-history.mjs",

@@ -4,6 +4,7 @@ function statusMeta(status) {
   return {
     active: ['●', 'المهمة جارية'],
     decision: ['!', 'قرار مطلوب'],
+    action: ['→', 'تنفيذ مطلوب'],
     debt: ['↗', 'اكتملت مع عمل مفتوح'],
     complete: ['✓', 'المهمة مكتملة']
   }[status] || ['●', 'المهمة جارية'];
