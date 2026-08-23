@@ -38,7 +38,9 @@ const gameplaySources=[...runtimeText.entries()].filter(([file])=>file!==statePa
 for(const field of Object.keys(DEFAULT_STATE.flags)){
   const anyRef=new RegExp(`\\.${field}\\b`);
   if(!anyRef.test(gameplaySources)){failures.push(`Unused gameplay state flag: DEFAULT_STATE.flags.${field}`);continue;}
-  const sourceWithoutDirectWrites=gameplaySources.replace(new RegExp(`\\.${field}\\s*(?:=|\\+=|-=|\\+\\+|--)`,'g'),'');
+  // Strip actual writes only. The negative lookahead prevents === / == comparisons
+  // from being mistaken for assignment and producing false write-only warnings.
+  const sourceWithoutDirectWrites=gameplaySources.replace(new RegExp(`\\.${field}\\s*(?:=(?!=)|\\+=|-=|\\+\\+|--)`,'g'),'');
   if(!anyRef.test(sourceWithoutDirectWrites))failures.push(`Write-only gameplay state flag: DEFAULT_STATE.flags.${field}`);
 }
 for(const file of runtimeSources){const source=runtimeText.get(normalize(file));if(source.includes('setChapter'))failures.push(`Manual chapter progress API found in ${relative(file)}.`);}
