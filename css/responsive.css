@@ -3,7 +3,6 @@
   .journey-progress { grid-column:1 / -1; grid-row:2; }
   .scene { min-height:calc(100dvh - 98px); padding-top:24px; justify-content:flex-start; }
   .rack-board, .sort-layout, .training-board { grid-template-columns:1fr; }
-  .montage { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .data-cloud { grid-template-columns:repeat(4,minmax(0,1fr)); }
   .annotation-tags { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -32,7 +31,6 @@
   .monitor { grid-template-columns:1fr 1fr; }
   .data-cloud { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .data-bit--label { min-height:112px; align-content:start; text-align:right; }
-  .montage { grid-template-columns:1fr 1fr; }
   .annotation-shell { border-radius:16px; margin-inline:-2px; }
   .annotation-head { font-size:.78rem; }
   .annotation-tags { grid-template-columns:1fr 1fr; }
@@ -49,7 +47,6 @@
   .icon-btn { padding:5px 6px; }
   .btn-text { font-size:.6rem; }
   .monitor { grid-template-columns:1fr; }
-  .montage { grid-template-columns:1fr; }
   .annotation-tags { grid-template-columns:1fr; }
   .data-cloud { grid-template-columns:1fr; }
 }
