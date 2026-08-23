@@ -51,30 +51,15 @@ export function survivableFailures(values) {
   return [0,1,2].filter(index=>failoverCase(index,values).survivable).length;
 }
 
-export function resilienceRiskDecisionId(values) {
-  return `deploy-resilience-risk-${values.join('-')}`;
-}
-
 export function hasResilienceResolution(state) {
   const flags=state.flags;
   if(!Array.isArray(flags.deployLoad)||flags.deployFailoverChecks.length!==3) return false;
-  if(survivableFailures(flags.deployLoad)===3) return true;
-  return state.decisions.some(decision=>decision.id===resilienceRiskDecisionId(flags.deployLoad));
-}
-
-export function recoveryVerificationDecisionId(recovery) {
-  return recovery==='restart'?'deploy-recovery-verified-restart':'deploy-recovery-verified-rollback';
-}
-
-export function hasRecoveryVerification(state,recovery=state.flags.deployRecovery) {
-  if(!recovery) return false;
-  const id=recoveryVerificationDecisionId(recovery);
-  return state.decisions.some(decision=>decision.id===id);
+  return survivableFailures(flags.deployLoad)===3 || flags.deployResilienceAccepted===true;
 }
 
 export function recoveryDispositionComplete(state) {
   const flags=state.flags;
-  if(flags.deployRecovery==='rollback') return hasRecoveryVerification(state,'rollback');
-  if(flags.deployRecovery==='restart') return hasRecoveryVerification(state,'restart')&&flags.deployRecoveryDisposition==='monitor';
+  if(flags.deployRecovery==='rollback') return flags.deployRecoveryVerifiedFor==='rollback'&&flags.deployRecoveryDisposition==='cleared';
+  if(flags.deployRecovery==='restart') return flags.deployRecoveryVerifiedFor==='restart'&&flags.deployRecoveryDisposition==='monitor';
   return false;
 }
