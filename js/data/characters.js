@@ -1,4 +1,5 @@
 import { stageForScene } from './stage-backgrounds.js';
+import { supportingActor } from './supporting-actors.js';
 
 const CHARACTERS = {
   user: { name: 'أنت', role: 'المستخدم', image: './assets/images/characters/user.svg', tagline: 'تبدأ الرحلة من طلب بسيط على شاشة تبدو فورية.' },
@@ -14,27 +15,22 @@ const CHARACTERS = {
 };
 
 const STORY_CHARACTER_IDS = ['moussa','layla','carlos','noor','amani','david','reem','hana','samer'];
-const STAGE_CHARACTER = {
-  mining:'moussa',factory:'layla',datacenter:'carlos',data:'noor',annotation:'amani',training:'david',evaluation:'reem',deployment:'hana'
-};
-const OVERRIDES={intro:'user',finalAnswer:'user',supportTask:'samer'};
-const HIDE_CHARACTER=new Set([
-  'zoomOut','ch1Intro','ch2Intro','ch3Intro','ch4Intro','ch5Intro','ch6Intro','ch7Intro','ch8Intro',
-  'abstract1','abstract2','abstract3','abstract4','abstract5','abstract6','abstract7','abstract8',
-  'pipelineAssemble','transferChallenge','results'
-]);
+const STAGE_CHARACTER = {mining:'moussa',factory:'layla',datacenter:'carlos',data:'noor',annotation:'amani',training:'david',evaluation:'reem',deployment:'hana'};
+const MAIN_OVERRIDES={intro:'user',finalAnswer:'user',supportTask:'samer'};
+const SUPPORT_OVERRIDES={safetyTest:'safetyTester',safetyOutcome:'safetyTester',safetyRetest:'safetyTester',governanceReview:'rightsReviewer',releaseGateReview:'releaseManager',launchDecision:'releaseManager',launchOutcome:'releaseManager'};
+const HIDE_CHARACTER=new Set(['zoomOut','ch1Intro','ch2Intro','ch3Intro','ch4Intro','ch5Intro','ch6Intro','ch7Intro','ch8Intro','abstract1','abstract2','abstract3','abstract4','abstract5','abstract6','abstract7','abstract8','pipelineAssemble','transferChallenge','results']);
+function withTagline(actor,tagline){return actor?{...actor,tagline}:null;}
 
 export function characterForScene(sceneId) {
-  if(OVERRIDES[sceneId])return CHARACTERS[OVERRIDES[sceneId]];
+  if(MAIN_OVERRIDES[sceneId])return CHARACTERS[MAIN_OVERRIDES[sceneId]];
+  if(SUPPORT_OVERRIDES[sceneId]){
+    const actor=supportingActor(SUPPORT_OVERRIDES[sceneId]);
+    const tagline=sceneId.startsWith('safety')?'يقود اختبار السلامة وإثبات إغلاق الخلل.':sceneId==='governanceReview'?'يفحص دليل الحقوق والترخيص وحواجز البيانات للنسخة الحالية.':'يمتلك مسؤولية مراجعة أدلة الإصدار وتثبيت قرار الموعد.';
+    return withTagline(actor,tagline);
+  }
   if(HIDE_CHARACTER.has(sceneId))return null;
   const characterId=STAGE_CHARACTER[stageForScene(sceneId)];
   return characterId?CHARACTERS[characterId]:null;
 }
-
-export function characterByName(name) {
-  return Object.values(CHARACTERS).find(character => character.name === name) || null;
-}
-
-export function storyCharacters() {
-  return STORY_CHARACTER_IDS.map(id => CHARACTERS[id]);
-}
+export function characterByName(name){return Object.values(CHARACTERS).find(character=>character.name===name)||null;}
+export function storyCharacters(){return STORY_CHARACTER_IDS.map(id=>CHARACTERS[id]);}
