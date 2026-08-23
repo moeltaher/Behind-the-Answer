@@ -1,4 +1,4 @@
-export const STATE_SCHEMA_VERSION = 5;
+export const STATE_SCHEMA_VERSION = 6;
 
 export const DEFAULT_STATE = {
   schemaVersion: STATE_SCHEMA_VERSION,
@@ -17,6 +17,7 @@ export const DEFAULT_STATE = {
     miningInspectionCount: 0,
     factoryChoice: null,
     factoryMaintenanceDebt: false,
+    factoryRemediationStage: 'none',
     serverSteps: [],
     dcCoolingChoice: null,
     dcCoolingRestored: false,
@@ -38,7 +39,6 @@ export const DEFAULT_STATE = {
     tookBreak: false,
     breakDecisionMade: false,
     candidateRevision: 0,
-    trainingCompute: '12',
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
     evaluatorCalibrationComplete: false,
@@ -58,6 +58,7 @@ export const DEFAULT_STATE = {
     deployFailoverChecks: [],
     deployTabs: [],
     deployRecovery: null,
+    deployRecoveryDisposition: null,
     supportIndex: 0,
     supportFeedbackLabel: '',
     supportFeedbackDetail: '',
@@ -98,10 +99,11 @@ export function resetCandidateEvidence(state) {
   f.deployFailoverChecks=[];
   f.deployTabs=[];
   f.deployRecovery=null;
+  f.deployRecoveryDisposition=null;
   f.supportIndex=0;
   f.supportFeedbackLabel='';
   f.supportFeedbackDetail='';
   f.transferChoice=null;
   // decisions وledger تاريخ لما حدث فعلًا؛ تصفير هذه الحقول يمنع إعادة استخدام
-  // أدلة revision سابقة في نسخة جديدة. إنشاء revision نفسها يحدث فقط عند بدء trainingRun.
+  // أدلة نسخة سابقة في نسخة جديدة. إنشاء النسخة نفسها يحدث فقط عند بدء جولة التدريب.
 }
