@@ -23,7 +23,7 @@ export const DEFAULT_STATE = {
     factoryProductionComplete: false,
     serverSteps: [],
     dcCoolingChoice: null,
-    dcCoolingRestored: false,
+    dcCoolingStage: 'idle',
     dataOrigins: [],
     dataIndex: 0,
     dataReviewMinutes: 0,
@@ -45,6 +45,7 @@ export const DEFAULT_STATE = {
     candidateRevision: 0,
     trainingCheckpoint: 'validated',
     trainingIncidentChoice: null,
+    trainingRecoveryStage: 'none',
     evaluatorCalibrationComplete: false,
     checkpointEvalComplete: false,
     evalIndex: 0,
@@ -92,6 +93,7 @@ export function replaceObjectContents(target, source) {
 export function resetCandidateEvidence(state) {
   const f=state.flags;
   f.trainingIncidentChoice=null;
+  f.trainingRecoveryStage='none';
   f.evaluatorCalibrationComplete=false;
   f.checkpointEvalComplete=false;
   f.evalIndex=0;
