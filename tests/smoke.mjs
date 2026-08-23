@@ -39,7 +39,7 @@ async function causalChecks(){
   await browser.close();console.log('Causal checks passed.');
 }
 
-async function accessibilityCheck(){const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:900}});await load(page);const results=await new AxeBuilder({page}).analyze();if(results.violations.length)throw new Error(`Accessibility violations: ${results.violations.map(item=>item.id).join(', ')}`);await browser.close();console.log('Accessibility check passed.');}
+async function accessibilityCheck(){const browser=await chromium.launch(),context=await browser.newContext({viewport:{width:1280,height:900}}),page=await context.newPage();await load(page);const results=await new AxeBuilder({page}).analyze();if(results.violations.length)throw new Error(`Accessibility violations: ${results.violations.map(item=>item.id).join(', ')}`);await context.close();await browser.close();console.log('Accessibility check passed.');}
 async function engineSmoke(engine,name){const browser=await engine.launch(),page=await browser.newPage();await load(page);await click(page,'#introSend');await page.getByRole('heading',{name:'الإجابة هي آخر نقطة مرئية في سلسلة أطول.',exact:true}).waitFor({state:'visible'});await browser.close();console.log(`${name} smoke passed.`);}
 
 await completeCoreJourney({width:1280,height:900},'desktop');
