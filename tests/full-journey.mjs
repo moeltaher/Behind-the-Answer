@@ -12,7 +12,7 @@ async function failover(page){for(const index of [0,1,2])await click(page,`[data
 async function chooseTag(page,label){await page.getByRole('button',{name:label,exact:true}).click();}
 
 async function runJourney(engine,{viewport,label,checkAxe=false}){
-  const browser=await engine.launch(),page=await browser.newPage({viewport}),errors=[];
+  const browser=await engine.launch(),context=await browser.newContext({viewport}),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   await boot(page);
   if(checkAxe)await axe(page,`${label}:intro`);
@@ -59,6 +59,7 @@ async function runJourney(engine,{viewport,label,checkAxe=false}){
   state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);
   if(state.scene!=='results'||state.flags.transferChoice!=='build-use')throw new Error(`${label}: journey did not reach results.`);
   if(errors.length)throw new Error(`${label}: ${errors.join(' | ')}`);
+  await context.close();
   await browser.close();
   console.log(`Full journey passed: ${label}`);
 }
