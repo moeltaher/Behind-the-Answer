@@ -44,8 +44,8 @@ const confirmResetDialog=$('#confirmResetDialog');
 const state=loadState(DEFAULT_STATE);
 const settings=loadSettings();
 let storageWarning='';
-function saveState(){const ok=persistState(state);if(!ok)storageWarning='تعذر حفظ التقدم محليًا. يمكنك متابعة الجلسة الحالية، لكن قد لا يمكن استئنافها بعد إغلاق الصفحة أو إعادة تحميلها.';return ok;}
-function saveCurrentSettings(){const ok=saveSettings(settings);if(!ok)storageWarning='تعذر حفظ إعدادات الوصول محليًا. ستظل الإعدادات فعالة في الجلسة الحالية فقط.';return ok;}
+function saveState(){const ok=persistState(state);storageWarning=ok?'':'تعذر حفظ التقدم محليًا. يمكنك متابعة الجلسة الحالية، لكن قد لا يمكن استئنافها بعد إغلاق الصفحة أو إعادة تحميلها.';return ok;}
+function saveCurrentSettings(){const ok=saveSettings(settings);storageWarning=ok?'':'تعذر حفظ إعدادات الوصول محليًا. ستظل الإعدادات فعالة في الجلسة الحالية فقط.';return ok;}
 function addDecision(id,label,effectText){recordDecision(state,id,label,effectText);saveState();}
 function addLedger(chapter,human,work,system,details=''){recordLedger(state,chapter,human,work,system,details);saveState();}
 function renderLedger(){drawLedger(state,CHAPTERS,ledgerContent);}
