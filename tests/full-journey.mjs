@@ -49,7 +49,7 @@ async function runJourney(engine,{viewport,label,checkAxe=false}){
   if(checkAxe)await axe(page,`${label}:evaluation`);
 
   await click(page,'#chapterNext');await click(page,'#testLoad');await failover(page);await click(page,'#retryLoad');await setLoad(page,[45,30,25]);await click(page,'#testLoad');await failover(page);await click(page,'#finishFailover');await click(page,'#openTraffic');for(const tab of ['network','compute','model'])await click(page,`[data-tab="${tab}"]`);await click(page,'#rollback');await click(page,'#verifyRecovery');await click(page,'#toSupport');await click(page,'#supportInvestigate');await click(page,'#supportInvestigate');await click(page,'#uptimeAbstract');await click(page,'#abstractNext');
-  if(checkAxe)await axe(page,`${label}:deployment`);
+  if(checkAxe)await axe(page,`${label}:ending-assembly`);
 
   await click(page,'#backPrompt');await click(page,'#transferFromAnswer');
   const transfer={weights:'build',retrieval:'request',inference:'request',monitoring:'continuous',maintenance:'continuous'};
