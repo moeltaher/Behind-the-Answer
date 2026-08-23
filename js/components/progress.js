@@ -9,7 +9,8 @@ export function renderJourneyProgress(ctx,index){
     if(ledgerBtn)ledgerBtn.hidden=false;
     if(chapterLabelEl)chapterLabelEl.textContent=`المرحلة ${index+1} من ${chapters.length}`;
     if(chapterTitle)chapterTitle.textContent=chapterLabel(chapters[index]);
-    if(progressFill)progressFill.style.width=`${((index+1)/chapters.length)*100}%`;
+    // الشريط يمثل المراحل المكتملة، لا مجرد دخول المرحلة الحالية؛ لذلك لا يصل إلى 100% عند بداية المرحلة الثامنة.
+    if(progressFill)progressFill.style.width=`${(index/chapters.length)*100}%`;
     if(miniJourney)miniJourney.innerHTML=miniMap(ctx,index);
     return;
   }
