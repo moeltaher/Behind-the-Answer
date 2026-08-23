@@ -1,5 +1,6 @@
 import { DATA_ITEMS } from '../data/content-tasks.js';
 import { supportingRoleStrip } from '../components/supporting-role-strip.js';
+import { hasUnresolved } from '../domain/game-rules.js';
 
 const DATA_ORIGINS = [
   ['writer', 'مقالات ومحتوى مكتوب', 'راجع الترخيص وسياق النشر وحقوق المؤلف.'],
@@ -36,94 +37,58 @@ function checksFor(item, choice) {
   return base;
 }
 
-function hasUnresolved(check) { return check && Object.values(check).includes('unresolved'); }
-
 function statusCounts(state) {
   const statuses=state.flags.dataStatuses;
-  let clearPassed=0;
-  let passedWithIssues=0;
-  statuses.forEach((status,index)=>{
-    if(status!=='ready') return;
-    if(hasUnresolved(state.flags.dataChecks[index])) passedWithIssues+=1;
-    else clearPassed+=1;
-  });
-  return { passed: statuses.filter(status=>status==='ready').length, clearPassed, passedWithIssues, pending: statuses.filter(status=>status==='pending').length, excluded: statuses.filter(status=>status==='excluded').length };
+  let clearPassed=0,passedWithIssues=0;
+  statuses.forEach((status,index)=>{if(status!=='ready')return;if(hasUnresolved(state.flags.dataChecks[index]))passedWithIssues+=1;else clearPassed+=1;});
+  return {passed:statuses.filter(status=>status==='ready').length,clearPassed,passedWithIssues,pending:statuses.filter(status=>status==='pending').length,excluded:statuses.filter(status=>status==='excluded').length};
 }
 
-function feedbackMarkup(state, h) {
+function feedbackMarkup(state,h) {
   if (!state.flags.dataFeedbackLabel) return '';
   return `<div class="decision-feedback-inline" role="status"><strong>${h(state.flags.dataFeedbackLabel)}</strong><span>${h(state.flags.dataFeedbackDetail)}</span></div>`;
 }
 
 function checksMarkup(check) {
-  if(!check) return '';
+  if(!check)return'';
   const label=value=>value==='clear'?'محسوم':value==='na'?'غير منطبق':'غير محسوم';
   return `<div class="hud-grid"><div class="hud-item"><span>الحقوق</span><strong>${label(check.rights)}</strong></div><div class="hud-item"><span>الخصوصية</span><strong>${label(check.privacy)}</strong></div><div class="hud-item"><span>الملاءمة</span><strong>${label(check.fitness)}</strong></div></div>`;
 }
 
 export function createDataRoutes(ctx) {
-  const $ = ctx.$;
-  const state = ctx.state;
-  const { chapterIntro, html, go, bind, saveState, addDecision, addLedger } = ctx;
-  const abstraction = (humans, word, line, next) => ctx.abstraction(humans, word, line, next);
-
-  function ch4Intro() { chapterIntro(3, 'dataOrigins'); }
+  const $=ctx.$,state=ctx.state;
+  const {chapterIntro,html,go,bind,saveState,addDecision,addLedger}=ctx;
+  const abstraction=(humans,word,line,next)=>ctx.abstraction(humans,word,line,next);
+  function ch4Intro(){chapterIntro(3,'dataOrigins');}
 
   function dataOrigins() {
-    const cards = DATA_ORIGINS.map(([id,label,detail]) => {
-      const revealed = state.flags.dataOrigins.includes(id);
-      if (revealed) return `<article class="data-bit data-bit--label revealed data-bit--static"><strong>${ctx.h(label)}</strong><small>${ctx.h(detail)}</small></article>`;
-      return `<button class="data-bit data-bit--label" data-origin="${id}"><strong>${ctx.h(label)}</strong><small>استكشاف اختياري</small></button>`;
-    }).join('');
-    const keepOpen = state.flags.dataOrigins.length ? ' open' : '';
-    html(`<div><span class="eyebrow">من المحتوى إلى مواد البيانات</span><h1 class="scene-title">قبل أن تصبح المادة «بيانات»، كانت محتوى له مصدر وسياق.</h1><p class="scene-subtitle">المهمة الأساسية هي مراجعة الدفعة. يمكنك البدء فورًا، أو فتح أمثلة المصادر إذا أردت معرفة الأسئلة التي تثيرها.</p><div class="reality-note"><strong>فرق مهم</strong> حالة المسار وحالة الدليل منفصلتان. قد تصبح المادة معلقة للمراجعة مع بقاء بعض الحقائق عنها محسومة أصلًا.</div><div class="action-row"><button id="toClean" class="primary-btn">ابدأ مراجعة الدفعة</button></div><details class="optional-source-details"${keepOpen}><summary>استكشف أمثلة لمصادر البيانات — اختياري</summary><div class="data-cloud data-cloud--labels">${cards}</div></details></div>`);
+    const cards=DATA_ORIGINS.map(([id,label,detail])=>{const revealed=state.flags.dataOrigins.includes(id);if(revealed)return `<article class="data-bit data-bit--label revealed data-bit--static"><strong>${ctx.h(label)}</strong><small>${ctx.h(detail)}</small></article>`;return `<button class="data-bit data-bit--label" data-origin="${id}"><strong>${ctx.h(label)}</strong><small>استكشاف اختياري</small></button>`;}).join('');
+    const keepOpen=state.flags.dataOrigins.length?' open':'';
+    html(`<div><span class="eyebrow">من المحتوى إلى مواد البيانات</span><h1 class="scene-title">قبل أن تصبح المادة «بيانات»، كانت محتوى له مصدر وسياق.</h1>${supportingRoleStrip(['contentCreators'],'من يقف قبل مرحلة تجهيز البيانات؟')}<p class="scene-subtitle">المهمة الأساسية هي مراجعة الدفعة. يمكنك البدء فورًا، أو فتح أمثلة المصادر إذا أردت معرفة الأسئلة التي تثيرها.</p><div class="reality-note"><strong>فرق مهم</strong> حالة المسار وحالة الدليل منفصلتان. قد تصبح المادة معلقة للمراجعة مع بقاء بعض الحقائق عنها محسومة أصلًا.</div><div class="action-row"><button id="toClean" class="primary-btn">ابدأ مراجعة الدفعة</button></div><details class="optional-source-details"${keepOpen}><summary>استكشف أمثلة لمصادر البيانات — اختياري</summary><div class="data-cloud data-cloud--labels">${cards}</div></details></div>`);
     bind('[data-origin]','click',event=>{state.flags.dataOrigins.push(event.currentTarget.dataset.origin);saveState();dataOrigins();});
     $('#toClean')?.addEventListener('click',()=>go('dataClean'));
   }
 
   function dataFollowup() {
-    const followup=state.flags.dataFollowup;
-    if(!followup){ go('dataClean'); return; }
-    const item=DATA_ITEMS[followup.index];
+    const followup=state.flags.dataFollowup;if(!followup){go('dataClean');return;}const item=DATA_ITEMS[followup.index];
     html(`<div><span class="eyebrow">نتيجة مراجعة الحقوق</span><h1 class="scene-title">ظهر دليل يسمح بالاستخدام، لكن مشكلة الخصوصية ما زالت قائمة.</h1>${supportingRoleStrip(['rightsReviewer'],'من راجع دليل الاستخدام؟')}<div class="card flat"><p><strong>المادة:</strong> ${ctx.h(item.title)}</p><p><strong>الدليل:</strong> صفحة المصدر تربط المادة بترخيص يسمح بإعادة الاستخدام للغرض الممثل في هذه الدفعة.</p><p><strong>ما حُسم:</strong> حق الاستخدام في هذا المثال فقط.</p><p><strong>ما لم يُحسم:</strong> بيانات الاتصال لا يحتاجها غرض الدفعة.</p></div><div class="choice-grid"><button id="followupRedact" class="choice-btn"><strong>نقّح بيانات الاتصال</strong><small>احتفظ بالمحتوى المفيد بعد إزالة المعلومات التي لا يحتاجها الغرض.</small></button><button id="followupKeep" class="choice-btn"><strong>احتفظ بها كما هي</strong><small>تمر المادة، لكن مشكلة الخصوصية تظل مسجلة.</small></button></div></div>`);
-    $('#followupRedact').addEventListener('click',()=>{state.flags.dataSort.redact+=1;state.flags.dataStatuses[followup.index]='ready';state.flags.dataChecks[followup.index]={ rights:'clear', privacy:'clear', fitness:'clear' };state.flags.dataFeedbackLabel='مرّت المادة بعد حسم المشكلتين';state.flags.dataFeedbackDetail='ظهر دليل يسمح بالاستخدام، ثم أزال التنقيح بيانات الاتصال غير اللازمة.';addDecision('data-pii-redact-after-review','نقحت البيانات بعد مراجعة دليل الحقوق','راجع فريق الحقوق دليل الاستخدام أولًا، ثم أزلت بيانات الاتصال التي لا يحتاجها غرض الدفعة.');state.flags.dataFollowup=null;state.flags.dataIndex+=1;saveState();go('dataClean');});
-    $('#followupKeep').addEventListener('click',()=>{state.flags.dataSort.keep+=1;state.flags.dataStatuses[followup.index]='ready';state.flags.dataChecks[followup.index]={ rights:'clear', privacy:'unresolved', fitness:'clear' };state.flags.dataFeedbackLabel='مرّت المادة، لكن مشكلة الخصوصية بقيت';state.flags.dataFeedbackDetail='حق الاستخدام حُسم، لكن بيانات الاتصال غير اللازمة بقيت.';addDecision('data-pii-keep-after-review','مررت مادة مع مشكلة خصوصية غير محسومة','ظهر دليل يسمح بالاستخدام، لكن بيانات الاتصال بقيت رغم أن غرض الدفعة لا يحتاجها.');state.flags.dataFollowup=null;state.flags.dataIndex+=1;saveState();go('dataClean');});
+    $('#followupRedact').addEventListener('click',()=>{state.flags.dataSort.redact+=1;state.flags.dataStatuses[followup.index]='ready';state.flags.dataChecks[followup.index]={rights:'clear',privacy:'clear',fitness:'clear'};state.flags.dataFeedbackLabel='مرّت المادة بعد حسم المشكلتين';state.flags.dataFeedbackDetail='ظهر دليل يسمح بالاستخدام، ثم أزال التنقيح بيانات الاتصال غير اللازمة.';addDecision('data-pii-redact-after-review','نقحت البيانات بعد مراجعة دليل الحقوق','راجع فريق الحقوق دليل الاستخدام أولًا، ثم أزلت بيانات الاتصال التي لا يحتاجها غرض الدفعة.');state.flags.dataFollowup=null;state.flags.dataIndex+=1;saveState();go('dataClean');});
+    $('#followupKeep').addEventListener('click',()=>{state.flags.dataSort.keep+=1;state.flags.dataStatuses[followup.index]='ready';state.flags.dataChecks[followup.index]={rights:'clear',privacy:'unresolved',fitness:'clear'};state.flags.dataFeedbackLabel='مرّت المادة، لكن مشكلة الخصوصية بقيت';state.flags.dataFeedbackDetail='حق الاستخدام حُسم، لكن بيانات الاتصال غير اللازمة بقيت.';addDecision('data-pii-keep-after-review','مررت مادة مع مشكلة خصوصية غير محسومة','ظهر دليل يسمح بالاستخدام، لكن بيانات الاتصال بقيت رغم أن غرض الدفعة لا يحتاجها.');state.flags.dataFollowup=null;state.flags.dataIndex+=1;saveState();go('dataClean');});
   }
 
   function dataClean() {
-    if(state.flags.dataFollowup){ go('dataFollowup'); return; }
-    const index=state.flags.dataIndex;
-    if(index>=DATA_ITEMS.length){ go('dataCleanSummary'); return; }
-    const item=DATA_ITEMS[index];
-    const counts=statusCounts(state);
-    const feedback=feedbackMarkup(state,ctx.h);
+    if(state.flags.dataFollowup){go('dataFollowup');return;}
+    const index=state.flags.dataIndex;if(index>=DATA_ITEMS.length){go('dataCleanSummary');return;}const item=DATA_ITEMS[index],counts=statusCounts(state),feedback=feedbackMarkup(state,ctx.h);
     html(`<div><span class="eyebrow">دفعة بيانات رقم 18</span><h1 class="scene-title">أنت الآن نور، متخصصة تجهيز بيانات.</h1>${feedback}<div class="reality-note"><strong>سياسة الدفعة الافتراضية</strong> «المرور/التعليق/الاستبعاد» يصف حالة المسار فقط. الحقوق والخصوصية والملاءمة تسجل كأدلة مستقلة ولا تتغير لمجرد أن المادة أُرسلت للمراجعة.</div><div class="hud-grid"><div class="hud-item"><span>العنصر</span><strong>${index+1}/${DATA_ITEMS.length}</strong></div><div class="hud-item"><span>وقت المراجعة الإضافي</span><strong>${state.flags.dataReviewMinutes} دقيقة</strong></div><div class="hud-item"><span>مرّت / معلقة</span><strong>${counts.passed} / ${counts.pending}</strong></div></div><div class="sort-layout"><div class="data-item card"><span class="kicker">${ctx.h(item.title)}</span><div class="data-preview">${ctx.h(item.body)}</div><div class="card flat"><p><strong>المصدر:</strong> ${ctx.h(item.source)}</p><p><strong>حالة الحقوق:</strong> ${ctx.h(item.rights)}</p><p><strong>الخصوصية:</strong> ${ctx.h(item.privacy)}</p></div></div><div class="sort-actions"><button data-sort="keep" class="choice-btn"><strong>مرّر كما هو</strong><small>يمر إلى المسار التالي؛ أي مشكلة غير محسومة ستظل مسجلة.</small></button><button data-sort="redact" class="choice-btn"><strong>نقّح البيانات غير اللازمة</strong><small>يعالج المعلومات المباشرة فقط ولا يحسم الحقوق أو إعادة التعرف تلقائيًا.</small></button><button data-sort="review" class="choice-btn"><strong>أوقفه للمراجعة</strong><small>يضيف 4 دقائق ويبقي المادة معلقة، مع الاحتفاظ بالأدلة المعروفة عنها.</small></button><button data-sort="remove" class="choice-btn"><strong>استبعد</strong><small>لا يدخل هذه الدفعة.</small></button></div></div></div>`);
-    bind('[data-sort]','click',event=>{
-      const choice=event.currentTarget.dataset.sort;
-      const [label,effectText]=choiceEffect(item,choice);
-      state.flags.dataSort[choice]+=1;
-      if(choice==='review') state.flags.dataReviewMinutes+=4;
-      addDecision(`data-${item.type}-${choice}`,label,effectText);
-      if(item.followup && choice===item.recommended){state.flags.dataFollowup={index,reason:'rights-evidence-found'};state.flags.dataFeedbackLabel='';state.flags.dataFeedbackDetail='';saveState();go('dataFollowup');return;}
-      const status=choice==='review'?'pending':choice==='remove'?'excluded':'ready';
-      const checks=checksFor(item,choice);
-      state.flags.dataStatuses[index]=status;
-      state.flags.dataChecks[index]=checks;
-      state.flags.dataFeedbackLabel=label;
-      state.flags.dataFeedbackDetail=`${effectText}${status==='ready'&&hasUnresolved(checks)?' المادة مرّت، لكن توجد مسألة واحدة على الأقل ما زالت غير محسومة.':''}`;
-      state.flags.dataIndex+=1;saveState();dataClean();
-    });
+    bind('[data-sort]','click',event=>{const choice=event.currentTarget.dataset.sort,[label,effectText]=choiceEffect(item,choice);state.flags.dataSort[choice]+=1;if(choice==='review')state.flags.dataReviewMinutes+=4;addDecision(`data-${item.type}-${choice}`,label,effectText);if(item.followup&&choice===item.recommended){state.flags.dataFollowup={index,reason:'rights-evidence-found'};state.flags.dataFeedbackLabel='';state.flags.dataFeedbackDetail='';saveState();go('dataFollowup');return;}const status=choice==='review'?'pending':choice==='remove'?'excluded':'ready',checks=checksFor(item,choice);state.flags.dataStatuses[index]=status;state.flags.dataChecks[index]=checks;state.flags.dataFeedbackLabel=label;state.flags.dataFeedbackDetail=`${effectText}${status==='ready'&&hasUnresolved(checks)?' المادة مرّت، لكن توجد مسألة واحدة على الأقل ما زالت غير محسومة.':''}`;state.flags.dataIndex+=1;saveState();dataClean();});
   }
 
   function dataCleanSummary() {
-    const counts=statusCounts(state);
-    const unresolvedNote=counts.passedWithIssues?`${counts.passedWithIssues} من المواد التي مرّت تحمل مسائل غير محسومة؛ مرورها لا يمحو هذه المسائل.`:'كل المواد التي مرّت في هذا المسار حُسمت مسائلها المعروضة.';
+    const counts=statusCounts(state),unresolvedNote=counts.passedWithIssues?`${counts.passedWithIssues} من المواد التي مرّت تحمل مسائل غير محسومة؛ مرورها لا يمحو هذه المسائل.`:'كل المواد التي مرّت في هذا المسار حُسمت مسائلها المعروضة.';
     addLedger(3,'منتجو المحتوى + نور + مراجعة الحقوق','إنتاج مواد أصلية ثم جمع وفرز وتنقيح ومراجعة الحقوق والخصوصية والملاءمة',`${counts.passed} مواد مرّت + ${counts.pending} معلقة`,unresolvedNote);
     html(`<div><span class="eyebrow">انتهت مراجعة الدفعة</span><h1 class="scene-title">ماذا أنتجت هذه المرحلة؟</h1>${feedbackMarkup(state,ctx.h)}<div class="stage-output"><strong>${counts.passed} مواد مرّت إلى المسار التالي</strong>${counts.pending?`${counts.pending} مواد ما زالت معلقة ولن تمر في هذه الجولة.`:'لا توجد مواد معلقة في نهاية هذه الجولة.'}</div><div class="hud-grid"><div class="hud-item"><span>مرّت وكل مسائلها محسومة</span><strong>${counts.clearPassed}</strong></div><div class="hud-item"><span>مرّت مع مسائل غير محسومة</span><strong>${counts.passedWithIssues}</strong></div><div class="hud-item"><span>معلقة</span><strong>${counts.pending}</strong></div><div class="hud-item"><span>مستبعدة</span><strong>${counts.excluded}</strong></div></div><div class="alert ${counts.passedWithIssues?'dangerish':'goodish'}"><strong>الفصل بين المسار والدليل</strong><span>${unresolvedNote}</span></div><details class="transition-details"><summary>حالة كل مادة</summary>${state.flags.dataStatuses.map((status,index)=>`<div class="card flat"><strong>${ctx.h(DATA_ITEMS[index]?.title||`المادة ${index+1}`)}</strong><p>المسار: ${status==='ready'?'مرّت':status==='pending'?'معلقة':'مستبعدة'}</p>${checksMarkup(state.flags.dataChecks[index])}</div>`).join('')}</details><div class="action-row"><button id="dataAbstract" class="primary-btn">شاهد كيف يختصر النظام هذا العمل</button></div></div>`);
     $('#dataAbstract').addEventListener('click',()=>go('abstract4'));
   }
-
   function abstract4(){const counts=statusCounts(state);abstraction([['كتّاب ومستخدمون','إنتاج المحتوى','✎'],['نور','تجهيز مواد البيانات','◫'],['مراجعة الحقوق','فحص دليل الاستخدام','◎']],`${counts.passed} مرّت + ${counts.pending} معلقة`,'يختصر النظام إنتاج المحتوى وقرارات الجمع والتنقيح والمراجعة في حالات بيانات؛ وما بقي غير محسوم يظل غير محسوم.','ch5Intro');}
-
-  return { ch4Intro,dataOrigins,dataClean,dataFollowup,dataCleanSummary,abstract4 };
+  return {ch4Intro,dataOrigins,dataClean,dataFollowup,dataCleanSummary,abstract4};
 }
