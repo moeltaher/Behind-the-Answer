@@ -27,13 +27,11 @@ body[data-stage] .scene-character { border-inline-start: 3px solid rgba(var(--st
 body[data-stage="factory"] .process-strip{font-family:inherit}
 body[data-stage="factory"] .process-step>span{border-radius:7px}
 body[data-stage="datacenter"] .connect-step{border-radius:8px}
-body[data-stage="training"] .training-log{border:1px solid rgba(82,220,190,.18)}
 body[data-stage="evaluation"] .compare-card{gap:16px}
 body[data-stage="deployment"] .incident-tabs button{border-radius:8px}
 
 .optional-source-details,
 .secondary-labor-details,
-.methodology-details,
 .full-evidence-details {
   margin-top: 18px;
   border: 1px solid var(--line);
@@ -43,12 +41,10 @@ body[data-stage="deployment"] .incident-tabs button{border-radius:8px}
 }
 .optional-source-details > summary,
 .secondary-labor-details > summary,
-.methodology-details > summary,
 .full-evidence-details > summary { cursor: pointer; font-weight: 850; color: var(--text); }
 .epilogue-screen .abstraction-summary { justify-content: center; margin-top: 20px; }
 .epilogue-chat .dual-view { margin-top: 18px; }
 .reality-note--wide { max-width: 820px; }
-.methodology-card { margin-top: 14px; }
 .verification-bundles { display: grid; gap: 10px; margin: 16px 0; }
 .journey-highlights {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0 22px}
 .journey-highlight {display:grid;gap:4px;padding:14px 16px;border:1px solid rgba(var(--stage-accent),.28);border-radius:16px;background:rgba(10,18,32,.78)}
