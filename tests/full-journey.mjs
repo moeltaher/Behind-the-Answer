@@ -54,7 +54,7 @@ async function runJourney(engine,{viewport,label,checkAxe=false}){
   await click(page,'#backPrompt');await click(page,'#transferFromAnswer');
   const transfer={weights:'build',retrieval:'request',inference:'request',monitoring:'continuous',maintenance:'continuous'};
   for(const [id,value] of Object.entries(transfer))await page.selectOption(`[data-transfer-item="${id}"]`,value);
-  await click(page,'#transferSubmit');await click(page,'#transferContinue');await page.getByText('نتيجة رحلتك',{exact:false}).waitFor({state:'visible'});
+  await click(page,'#transferSubmit');await click(page,'#transferContinue');await page.getByText('نتيجة رحلتك',{exact:true}).waitFor({state:'visible'});
   if(checkAxe)await axe(page,`${label}:results`);
   state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);
   if(state.scene!=='results'||state.flags.transferChoice!=='build-use')throw new Error(`${label}: journey did not reach results.`);
