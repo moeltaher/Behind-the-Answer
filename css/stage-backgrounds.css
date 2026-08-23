@@ -14,7 +14,7 @@ body[data-stage="evaluation"]{--stage-accent:181,148,255}
 body[data-stage="deployment"]{--stage-accent:245,184,70}
 body[data-stage="ending"]{--stage-accent:104,225,193}
 
-.scene .card,.scene .journey-node,.scene .stage-output,.scene .reality-note,.scene .scene-character,.scene .view-panel,.scene .response-card,.scene .load-card,.scene .hud-item,.scene .work-node,.scene .connect-step,.scene .worker-person,.scene .montage-card,.scene .data-bit,.scene .config-panel,.scene .chart-panel,.scene .evidence-card{background-color:rgba(10,18,32,.77);border-color:rgba(var(--stage-accent),.24);box-shadow:0 12px 30px rgba(0,0,0,.22);backdrop-filter:blur(7px) saturate(1.04)}
+.scene .card,.scene .journey-node,.scene .stage-output,.scene .reality-note,.scene .scene-character,.scene .view-panel,.scene .response-card,.scene .load-card,.scene .hud-item,.scene .work-node,.scene .connect-step,.scene .worker-person,.scene .data-bit,.scene .config-panel,.scene .evidence-card{background-color:rgba(10,18,32,.77);border-color:rgba(var(--stage-accent),.24);box-shadow:0 12px 30px rgba(0,0,0,.22);backdrop-filter:blur(7px) saturate(1.04)}
 .scene .card.flat{background:rgba(10,18,32,.74)}
 .scene .reality-note,.scene .scene-character__copy p,.scene .view-panel,.scene .evidence-card{color:#d9e2ef}
 .scene .muted,.scene small{color:#b8c5d6}
@@ -31,7 +31,7 @@ body[data-stage="datacenter"] .server-rack,body[data-stage="datacenter"] .connec
 body[data-stage="datacenter"] .task-panel{background:linear-gradient(135deg,rgba(58,112,202,.20),rgba(8,18,35,.80))}
 body[data-stage="data"] .data-item,body[data-stage="data"] .data-bit{background:linear-gradient(145deg,rgba(41,38,31,.88),rgba(18,23,29,.81))}
 body[data-stage="data"] .task-panel{background:linear-gradient(135deg,rgba(192,166,96,.16),rgba(22,25,29,.82))}
-body[data-stage="training"] .config-panel,body[data-stage="training"] .chart-panel{background:linear-gradient(180deg,rgba(5,27,29,.90),rgba(5,18,26,.83))}
+body[data-stage="training"] .config-panel{background:linear-gradient(180deg,rgba(5,27,29,.90),rgba(5,18,26,.83))}
 body[data-stage="training"] .task-panel{background:linear-gradient(135deg,rgba(50,180,151,.16),rgba(5,25,29,.82))}
 body[data-stage="evaluation"] .response-card,body[data-stage="evaluation"] .view-panel{background:linear-gradient(145deg,rgba(35,27,54,.88),rgba(17,19,34,.83))}
 body[data-stage="evaluation"] .task-panel{background:linear-gradient(135deg,rgba(132,91,204,.18),rgba(25,19,40,.82))}
@@ -42,5 +42,5 @@ body[data-stage="ending"] .view-panel,body[data-stage="ending"] .evidence-card{b
 body.high-contrast .stage-backdrop{opacity:.22;filter:grayscale(.8) contrast(1.15)}
 body.reduced-motion .stage-backdrop{transition:none}
 
-@media(max-width:850px){.stage-backdrop{inset:96px 0 0;opacity:.54;background-position:center top;filter:saturate(.9) contrast(1.03)}.stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.18),rgba(8,13,24,.28) 70%,rgba(8,13,24,.48))}.stage-backdrop::after{background:rgba(8,13,24,.07)}.scene .card,.scene .journey-node,.scene .stage-output,.scene .reality-note,.scene .scene-character,.scene .view-panel,.scene .response-card,.scene .load-card,.scene .hud-item,.scene .work-node,.scene .connect-step,.scene .worker-person,.scene .montage-card,.scene .data-bit,.scene .config-panel,.scene .chart-panel,.scene .evidence-card{background-color:rgba(10,18,32,.83);backdrop-filter:blur(6px) saturate(1.03)}}
+@media(max-width:850px){.stage-backdrop{inset:96px 0 0;opacity:.54;background-position:center top;filter:saturate(.9) contrast(1.03)}.stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.18),rgba(8,13,24,.28) 70%,rgba(8,13,24,.48))}.stage-backdrop::after{background:rgba(8,13,24,.07)}.scene .card,.scene .journey-node,.scene .stage-output,.scene .reality-note,.scene .scene-character,.scene .view-panel,.scene .response-card,.scene .load-card,.scene .hud-item,.scene .work-node,.scene .connect-step,.scene .worker-person,.scene .data-bit,.scene .config-panel,.scene .evidence-card{background-color:rgba(10,18,32,.83);backdrop-filter:blur(6px) saturate(1.03)}}
 @media(max-width:620px){.stage-backdrop{opacity:.50;background-position:center top}.stage-backdrop::before{background:linear-gradient(180deg,rgba(8,13,24,.12),rgba(8,13,24,.22) 58%,rgba(8,13,24,.43))}.stage-backdrop::after{background:rgba(8,13,24,.04)}.scene .stage-output,.scene .reality-note,.scene .scene-character,.scene .card,.scene .view-panel,.scene .evidence-card{background-color:rgba(9,17,30,.87)}.scene .reality-note,.scene .scene-character__copy p,.scene .muted,.scene small{color:#d2dbea}}

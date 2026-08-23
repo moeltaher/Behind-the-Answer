@@ -1,0 +1,11 @@
+export const ANNOTATION_CHOICES = ['آمن','عنف','مضايقة أو إساءة','خطاب كراهية','إيذاء النفس','غير واضح'];
+export const DATA_ORIGIN_IDS = ['writer','photo','code','research','forum','translate','docs','qa','web','comment','manual','news'];
+export const DEPLOY_TAB_IDS = ['network','compute','model'];
+export const RELEASE_GATE_IDS = ['regression','capacity','risk','rollback'];
+export const EXTRA_CHECK_IDS = ['checkpoint','stability'];
+export const FACTORY_REMEDIATION_STAGES = ['none','diagnosed','repaired','verified'];
+export const FACTORY_DISPOSITIONS = ['repair','carry'];
+export const MINING_INSPECTION_MODES = ['routine','forced'];
+export const RELEASE_CAPACITY_STAGES = ['idle','diagnosed','remediated','remeasured'];
+export const DC_COOLING_STAGES = ['idle','open','repaired','verified'];
+export const TRAINING_RECOVERY_STAGES = ['none','repaired','verified'];

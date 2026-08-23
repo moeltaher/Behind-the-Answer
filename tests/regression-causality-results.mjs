@@ -2,68 +2,28 @@ import { chromium } from 'playwright';
 import { addLedger } from '../js/core/ledger.js';
 import { load, click, saved } from './helpers/browser-fixtures.mjs';
 
-function advanced(extra={}){return{dataIndex:2,dataStatuses:['excluded','ready'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:1,redact:0,review:0},dataTrainingUsed:[0,1],dataCurrentTrainingUsed:[1],candidateRevision:2,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',...extra};}
-function released(extra={}){return advanced({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,transferChoice:'build-use',...extra});}
+function advanced(extra={}){return{dataIndex:2,dataStatuses:['excluded','ready'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:1,redact:0,review:0},dataTrainingUsed:[0,1],dataCurrentTrainingUsed:[1],candidateRevision:2,trainingIncidentChoice:'pause',trainingRecoveryStage:'verified',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,releaseGates:['regression','capacity','risk','rollback'],releaseCapacityStage:'remeasured',launchChoice:'ready',...extra};}
+function released(extra={}){return advanced({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployResilienceAccepted:true,deployTrafficOpen:true,deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryVerifiedFor:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,transferChoice:'build-use',...extra});}
 
 console.log('CAUSALITY_RESULTS:ledger-keeps-multiple-revisions');
-const ledgerState={ledger:[]};
-addLedger(ledgerState,5,'ديفيد','تدريب','revision 1','قديم');
-addLedger(ledgerState,5,'ديفيد','تدريب','revision 2','حالي');
-addLedger(ledgerState,5,'ديفيد','تدريب','revision 2','حالي');
-if(ledgerState.ledger.length!==2)throw new Error('Ledger did not preserve distinct revision records idempotently.');
-
-const browser=await chromium.launch();
-const page=await browser.newPage({viewport:{width:1280,height:900}});
-await load(page,{scene:'results',ledger:[{chapter:5,human:'ديفيد',work:'جولة قديمة',system:'revision 1',details:'سجل قديم'},{chapter:5,human:'ديفيد',work:'جولة حالية',system:'revision 2',details:'سجل حالي'}],flags:released()});
-await click(page,'#resultsLedger');
-await page.getByText('revision 2',{exact:true}).waitFor({state:'visible'});
-await page.getByText('عرض 1 سجل تاريخي سابق',{exact:true}).waitFor({state:'visible'});
+const ledgerState={ledger:[]};addLedger(ledgerState,5,'ديفيد','تدريب','revision 1','قديم');addLedger(ledgerState,5,'ديفيد','تدريب','revision 2','حالي');addLedger(ledgerState,5,'ديفيد','تدريب','revision 2','حالي');if(ledgerState.ledger.length!==2)throw new Error('Ledger did not preserve distinct revision records idempotently.');
+const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:900}});
+await load(page,{scene:'results',ledger:[{chapter:5,human:'ديفيد',work:'جولة قديمة',system:'revision 1',details:'سجل قديم'},{chapter:5,human:'ديفيد',work:'جولة حالية',system:'revision 2',details:'سجل حالي'}],flags:released()});await click(page,'#resultsLedger');await page.getByText('revision 2',{exact:true}).waitFor({state:'visible'});await page.getByText('عرض 1 سجل تاريخي سابق',{exact:true}).waitFor({state:'visible'});
 
 console.log('CAUSALITY_RESULTS:factory-debt-close-or-carry');
-await load(page,{scene:'factoryOutcome',decisions:[{id:'factory-continue',label:'واصلت',effectText:'دين مفتوح'}],flags:{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none'}});
-await click(page,'#startFactoryMaintenance');
-await click(page,'#diagnoseFactory');
-let state=await saved(page);
-if(state.flags.factoryRemediationStage!=='diagnosed'||!state.flags.factoryMaintenanceDebt)throw new Error('Factory diagnosis was treated as repair.');
-await click(page,'#verifyFactoryRepair');
-state=await saved(page);
-if(state.flags.factoryMaintenanceDebt||state.flags.factoryRemediationStage!=='verified')throw new Error('Factory maintenance debt remained open after repair and remeasurement.');
-if(!state.decisions.some(d=>d.id==='factory-maintenance-verified'))throw new Error('Factory repair verification was not recorded.');
-await page.locator('#toFactoryAbstract').waitFor({state:'visible'});
-await load(page,{scene:'factoryOutcome',decisions:[{id:'factory-continue',label:'واصلت',effectText:'دين مفتوح'}],flags:{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none'}});
-await click(page,'#carryFactoryDebt');
-await click(page,'#toFactoryAbstract');
-state=await saved(page);
-if(!state.decisions.some(d=>d.id==='factory-debt-carried')||state.scene!=='abstract2'||!state.flags.factoryMaintenanceDebt)throw new Error('Factory continuation did not preserve carried maintenance debt.');
+await load(page,{scene:'factoryOutcome',flags:{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none',factoryProductionComplete:true}});await click(page,'#startFactoryMaintenance');await click(page,'#diagnoseFactory');let state=await saved(page);if(state.flags.factoryRemediationStage!=='diagnosed'||!state.flags.factoryMaintenanceDebt)throw new Error('Factory diagnosis was treated as repair.');await click(page,'#repairFactory');state=await saved(page);if(state.flags.factoryRemediationStage!=='repaired'||!state.flags.factoryMaintenanceDebt)throw new Error('Factory repair was treated as verification.');await click(page,'#verifyFactoryRepair');state=await saved(page);if(state.flags.factoryMaintenanceDebt||state.flags.factoryRemediationStage!=='verified')throw new Error('Factory verification did not close maintenance debt.');await page.locator('#toFactoryAbstract').waitFor({state:'visible'});
+await load(page,{scene:'factoryOutcome',flags:{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none',factoryProductionComplete:true}});await click(page,'#carryFactoryDebt');state=await saved(page);if(state.flags.factoryDisposition!=='carry')throw new Error('Factory debt disposition was not stored explicitly.');if(await page.locator('[data-task-panel][data-task-status="debt"]').count()!==1)throw new Error('Carried debt is not shown as open work.');await click(page,'#toFactoryAbstract');
 
 console.log('CAUSALITY_RESULTS:contextual-task-guidance');
-await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0,reason:'rights-evidence-found'},dataSort:{keep:0,remove:0,redact:0,review:1}}});
-await page.getByRole('heading',{name:'افصل حق الاستخدام عن الخصوصية',exact:true}).waitFor({state:'visible'});
-await load(page,{scene:'trainingEval',flags:{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause'}});
-if(await page.locator('[data-task-panel][data-task-status="complete"]').count()!==1)throw new Error('Completed scene does not expose complete task status.');
+await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0},dataSort:{keep:0,remove:0,redact:0,review:1}}});await page.getByRole('heading',{name:'افصل حق الاستخدام عن الخصوصية',exact:true}).waitFor({state:'visible'});
+await load(page,{scene:'trainingEval',flags:{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',trainingRecoveryStage:'verified'}});if(await page.locator('[data-task-panel][data-task-status="complete"]').count()!==1)throw new Error('Completed scene does not expose complete task status.');
 
 console.log('CAUSALITY_RESULTS:extra-checks-explain-cause');
-await load(page,{scene:'launchDecision',flags:{...advanced({trainingCheckpoint:'recent',trainingIncidentChoice:'continue',dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1})}});
-await page.getByText(/ظهر لأن نقطة الحفظ الأحدث حسنت النبرة/).waitFor({state:'visible'});
-await page.getByText(/ظهر لأنك واصلت جولة التدريب بعد العطل عند الحد الأدنى/).waitFor({state:'visible'});
+await load(page,{scene:'launchDecision',flags:{...advanced({trainingCheckpoint:'recent',trainingIncidentChoice:'continue',trainingRecoveryStage:'none',dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1})}});await page.getByText(/ظهر لأن نقطة الحفظ الأحدث حسنت النبرة/).waitFor({state:'visible'});await page.getByText(/ظهر لأنك واصلت جولة التدريب بعد العطل عند الحد الأدنى/).waitFor({state:'visible'});
 
-console.log('CAUSALITY_RESULTS:n1-gap-needs-explicit-decision');
-await load(page,{scene:'deployFailover',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});
-for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);
-await page.getByText('وصلت إلى أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});
-await page.getByText('اقبل فجوة المرونة وسجلها',{exact:true}).waitFor({state:'visible'});
-await click(page,'#finishFailover');
-state=await saved(page);
-if(state.scene!=='deployFailover'||!state.decisions.some(d=>d.id==='deploy-resilience-risk-45-30-25'))throw new Error('Resilience gap was not explicitly recorded before progression.');
-await click(page,'#finishFailover');
-state=await saved(page);
-if(state.scene!=='deployIncident')throw new Error('Resolved resilience gate did not allow incident progression.');
+console.log('CAUSALITY_RESULTS:failover-gap-single-decision-and-traffic-gate');
+await load(page,{scene:'deployFailover',flags:{...advanced({deployLoad:[45,30,25],deployFailoverChecks:[]})}});for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);await page.getByText('وصلت إلى أفضل مرونة ممكنة بهذه الثوابت.',{exact:true}).waitFor({state:'visible'});await click(page,'#finishFailover');state=await saved(page);if(state.scene!=='deployGoLive'||!state.flags.deployResilienceAccepted)throw new Error('Failover acceptance did not progress in one explicit decision.');if(state.flags.deployTrafficOpen)throw new Error('Failover acceptance opened traffic implicitly.');await click(page,'#openTraffic');state=await saved(page);if(!state.flags.deployTrafficOpen||state.scene!=='deployIncident')throw new Error('Traffic gate did not open service explicitly.');
 
 console.log('CAUSALITY_RESULTS:results-prefer-newest-match');
-await load(page,{scene:'results',decisions:[{id:'data-retrain-plan-without-0-after-r1',label:'إعادة تدريب قديمة',effectText:'قديم'},{id:'data-retrain-plan-without-1-after-r2',label:'إعادة تدريب أحدث',effectText:'أحدث'}],flags:released({candidateRevision:3})});
-const materialCard=page.locator('.journey-highlight').nth(1);
-await materialCard.getByText('إعادة تدريب أحدث',{exact:true}).waitFor({state:'visible'});
-if(await materialCard.getByText('إعادة تدريب قديمة',{exact:true}).count())throw new Error('Results highlight selected an older matching decision.');
-
-await browser.close();
-console.log('Causality and results regression checks passed.');
+await load(page,{scene:'results',decisions:[{id:'data-retrain-plan-without-0-after-r1',label:'إعادة تدريب قديمة',effectText:'قديم'},{id:'data-retrain-plan-without-1-after-r2',label:'إعادة تدريب أحدث',effectText:'أحدث'}],flags:released({candidateRevision:3})});const materialCard=page.locator('.journey-highlight').nth(1);await materialCard.getByText('إعادة تدريب أحدث',{exact:true}).waitFor({state:'visible'});if(await materialCard.getByText('إعادة تدريب قديمة',{exact:true}).count())throw new Error('Results highlight selected an older matching decision.');
+await browser.close();console.log('Causality and results regression checks passed.');
