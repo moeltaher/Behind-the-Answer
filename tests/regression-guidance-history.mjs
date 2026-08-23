@@ -9,7 +9,7 @@ const page=await browser.newPage({viewport:{width:1280,height:900}});
 
 console.log('GUIDANCE_HISTORY:history-preserved-when-revision-changes');
 const historical=[{id:'checkpoint-evidence-reviewed-r1',label:'دليل قديم',effectText:'حدث فعلًا'},{id:'release-gate-regression-r1',label:'بوابة قديمة',effectText:'خاصة بالنسخة 1'}];
-await load(page,{scene:'launchDecision',decisions:historical,ledger:[{chapter:6,human:'ريم',work:'تقييم النسخة 1',system:'جاهزية',details:'تاريخ فعلي'}],flags:{...advanced({releaseGates:['regression','capacity','rollback']})}});
+await load(page,{scene:'governanceReview',decisions:historical,ledger:[{chapter:6,human:'ريم',work:'تقييم النسخة 1',system:'جاهزية',details:'تاريخ فعلي'}],flags:{...advanced({releaseGates:['regression','capacity','rollback']})}});
 await click(page,'[data-governance-remediate="0"]');
 let state=await saved(page);
 if(!state.decisions.some(d=>d.id==='revision-superseded-r1'))throw new Error('Superseded revision was not explicitly recorded.');
@@ -41,8 +41,8 @@ for(const [scene,flags] of [
  ['dataFollowup',{dataIndex:0,dataFollowup:{index:0,reason:'rights-evidence-found'},dataSort:{keep:0,remove:0,redact:0,review:1}}],
  ['annotationReview',{annotationResults}],
  ['safetyRetest',{...advanced()}],
- ['transferChallenge',{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2})}],
- ['results',{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'})}]
+ ['transferChallenge',{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2})}],
+ ['results',{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,transferChoice:'build-use'})}]
 ]){
   await load(page,{scene,flags});
   const persisted=await saved(page);

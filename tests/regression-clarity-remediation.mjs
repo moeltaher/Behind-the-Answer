@@ -3,7 +3,7 @@ import { load, click, saved } from './helpers/browser-fixtures.mjs';
 
 function candidate(extra={}){return{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra};}
 function released(extra={}){return candidate({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',...extra});}
-function ending(extra={}){return released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,...extra});}
+function ending(extra={}){return released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,...extra});}
 
 const browser=await chromium.launch();
 const page=await browser.newPage({viewport:{width:1280,height:900}});
@@ -31,7 +31,7 @@ await load(page,{scene:'mineEnd',flags:{miningCount:12,miningMinutes:42,miningBU
 if(await page.locator('[data-task-panel][data-task-status="debt"] .task-status--debt').count()!==1)throw new Error('Mining end hides unresolved maintenance risk behind complete status.');
 
 console.log('CLARITY_REMEDIATION:capacity-diagnose-remediate-measure');
-await load(page,{scene:'launchDecision',flags:{...candidate({releaseGates:[]})}});
+await load(page,{scene:'releaseGateReview',flags:{...candidate({releaseGates:[]})}});
 await click(page,'[data-gate-investigate="capacity"]');
 if(await page.getByText('84%',{exact:false}).count())throw new Error('Capacity reached 84% immediately after diagnosis.');
 await page.getByText('نتيجة التشخيص',{exact:true}).waitFor({state:'visible'});
@@ -40,7 +40,7 @@ await page.getByText('84%',{exact:false}).waitFor({state:'visible'});
 if(await page.locator('[data-gate-pass="capacity"]').count()!==1)throw new Error('Capacity gate did not become reviewable after remeasurement.');
 
 console.log('CLARITY_REMEDIATION:license-evidence-before-clear');
-await load(page,{scene:'launchDecision',flags:{...candidate({dataIndex:4,dataStatuses:['excluded','excluded','excluded','ready'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:3,redact:0,review:0},dataTrainingApproved:[3],dataTrainingUsed:[3],dataCurrentTrainingUsed:[3],releaseGates:['regression','capacity','rollback']})}});
+await load(page,{scene:'governanceReview',flags:{...candidate({dataIndex:4,dataStatuses:['excluded','excluded','excluded','ready'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:3,redact:0,review:0},dataTrainingApproved:[3],dataTrainingUsed:[3],dataCurrentTrainingUsed:[3],releaseGates:['regression','capacity','rollback']})}});
 await click(page,'[data-governance-remediate="3"]');
 state=await saved(page);
 if(state.flags.dataChecks[3].rights!=='unresolved')throw new Error('Opening license evidence silently cleared rights.');

@@ -14,15 +14,16 @@ let state=await saved(page);
 if(!state.flags.dataTrainingApproved.includes(0)||state.flags.dataTrainingUsed.includes(0))throw new Error('Eligibility must record approval before historical use.');
 
 console.log('DATA_GOVERNANCE:held-material-does-not-block-release');
-await load(page,{scene:'launchDecision',flags:{...baseAdvanced(),dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],dataTrainingHeld:[1]}});
-if(await page.getByText('حاجب إصدار: بيانات النسخة الحالية',{exact:true}).count())throw new Error('Held material blocked release as if it were in current candidate.');
+await load(page,{scene:'governanceReview',flags:{...baseAdvanced(),dataIndex:2,dataStatuses:['ready','ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'unresolved',privacy:'clear',fitness:'clear'}],dataSort:{keep:2,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],dataTrainingHeld:[1]}});
+await page.locator('#toReleaseGates').waitFor({state:'visible'});
+if(await page.locator('[data-governance-remediate="1"]').count())throw new Error('Held material blocked the current candidate as if it were used by it.');
 
 console.log('DATA_GOVERNANCE:checkpoint-evidence');
 await load(page,{scene:'checkpointEval',flags:{...baseAdvanced({checkpointEvalComplete:false,safetyChoice:null,safetyRemediated:false,safetyRetested:false,releaseGates:[]})}});
 if(await page.locator('[data-checkpoint-sample]').count()!==3)throw new Error('Checkpoint comparison no longer has three samples.');
 
 console.log('DATA_GOVERNANCE:capacity-evidence');
-await load(page,{scene:'launchDecision',flags:{...baseAdvanced({releaseGates:[]})}});
+await load(page,{scene:'releaseGateReview',flags:{...baseAdvanced({releaseGates:[]})}});
 if(await page.locator('[data-gate-pass="capacity"]').count())throw new Error('Capacity gate passed before investigation.');
 await click(page,'[data-gate-investigate="capacity"]');
 await page.getByText('نتيجة التشخيص',{exact:true}).waitFor({state:'visible'});
@@ -36,7 +37,7 @@ if(scripts.some(src=>src.includes('audit-enhancements')))throw new Error('Obsole
 
 console.log('DATA_GOVERNANCE:full-decision-record');
 const decisions=[{id:'mine-stop',label:'mine',effectText:'x'},{id:'checkpoint-evidence-reviewed-r1',label:'checkpoint',effectText:'x'},{id:'release-gate-regression-r1',label:'gate',effectText:'x'},{id:'future-unknown-id',label:'fallback',effectText:'x'}];
-await load(page,{scene:'results',decisions,flags:{...baseAdvanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',supportIndex:2,transferChoice:'build-use'})}});
+await load(page,{scene:'results',decisions,flags:{...baseAdvanced({releaseGates:['regression','capacity','risk','rollback'],launchChoice:'ready',deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,transferChoice:'build-use'})}});
 const fullRecord=page.locator('.full-evidence-details');
 await fullRecord.waitFor({state:'visible'});
 if(!(await fullRecord.getAttribute('open')))await fullRecord.locator('summary').click();

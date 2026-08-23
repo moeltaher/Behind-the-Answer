@@ -43,13 +43,25 @@ for (const token of bannedRuntimeTokens) {
 }
 
 const actorPath = join(ROOT, 'js/data/supporting-actors.js');
+const endingPath = join(ROOT, 'js/scenes/ending.js');
 const actorSource = await readFile(actorPath, 'utf8');
-const objectBody = actorSource.match(/const SUPPORTING_ACTORS = \{([\s\S]*?)\n\};/)?.[1] ?? '';
+const actorObjectMatch = actorSource.match(/const SUPPORTING_ACTORS = \{([\s\S]*?)\n\};/);
+const objectBody = actorObjectMatch?.[1] ?? '';
 const actorIds = [...objectBody.matchAll(/^\s{2}([A-Za-z][A-Za-z0-9]*):/gm)].map(match => match[1]);
-const allRuntimeSource = runtimeSources.map(([, source]) => source).join('\n');
+
+// A role is live only when gameplay references it. The registry definition itself and
+// the ending summary must not be allowed to keep an otherwise dead role alive.
+// DATACENTER_WORKERS remains part of the gameplay source because it is the operational
+// mapping consumed by the datacenter scene, not a result-only summary.
+const actorOperationalSource = actorObjectMatch ? actorSource.replace(actorObjectMatch[0], '') : actorSource;
+const gameplaySource = [
+  actorOperationalSource,
+  ...runtimeSources
+    .filter(([path]) => path !== actorPath && path !== endingPath)
+    .map(([, source]) => source)
+].join('\n');
 for (const id of actorIds) {
-  const occurrences = [...allRuntimeSource.matchAll(new RegExp(`\\b${id}\\b`, 'g'))].length;
-  if (occurrences < 2) failures.push(`supporting actor registry entry has no runtime reference: ${id}`);
+  if (!new RegExp(`\\b${id}\\b`).test(gameplaySource)) failures.push(`supporting actor registry entry has no in-game reference outside results: ${id}`);
 }
 
 if (failures.length) {
@@ -57,4 +69,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Legacy cleanup guard passed: ${removedPaths.length} paths, ${bannedRuntimeTokens.length} runtime tokens, ${actorIds.length} supporting actors.`);
+console.log(`Legacy cleanup guard passed: ${removedPaths.length} paths, ${bannedRuntimeTokens.length} runtime tokens, ${actorIds.length} supporting actors with in-game references.`);

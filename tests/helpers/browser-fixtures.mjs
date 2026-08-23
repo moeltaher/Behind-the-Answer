@@ -16,13 +16,21 @@ export function stateWith(patch={}){
   const revision=state.flags.candidateRevision;
   if(revision>0){
     for(const decision of [
-      {id:`training-compute-${state.flags.trainingCompute}-r${revision}`,label:'إعداد حوسبة',effectText:'fixture'},
+      {id:`training-compute-8-r${revision}`,label:'إعداد حوسبة',effectText:'fixture'},
       {id:`training-checkpoint-${state.flags.trainingCheckpoint}-r${revision}`,label:'إعداد نقطة حفظ',effectText:'fixture'}
     ]) if(!state.decisions.some(item=>item.id===decision.id))state.decisions.push(decision);
   }
-  if(state.flags.deployRecovery&&state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){
+  if(state.flags.deployLoad&&state.flags.deployFailoverChecks.length===3){
     const id=`deploy-resilience-risk-${state.flags.deployLoad.join('-')}`;
     if(!state.decisions.some(decision=>decision.id===id))state.decisions.push({id,label:'قبول فجوة المرونة',effectText:'fixture'});
+  }
+  if(state.flags.deployRecovery==='rollback'&&state.flags.deployRecoveryDisposition==='cleared'){
+    const id='deploy-recovery-verified-rollback';
+    if(!state.decisions.some(decision=>decision.id===id))state.decisions.push({id,label:'تحقق الاستعادة',effectText:'fixture'});
+  }
+  if(state.flags.deployRecovery==='restart'&&state.flags.deployRecoveryDisposition==='monitor'){
+    const id='deploy-recovery-verified-restart';
+    if(!state.decisions.some(decision=>decision.id===id))state.decisions.push({id,label:'تحقق الاستعادة المؤقتة',effectText:'fixture'});
   }
   return state;
 }
