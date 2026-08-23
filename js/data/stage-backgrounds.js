@@ -7,7 +7,7 @@ export const SCENES_BY_STAGE = {
   annotation: ['ch5Intro','annotationIntro','annotationTask','annotationReview','annotationEnd','abstract5'],
   training: ['ch6Intro','trainingSetup','trainingRun','trainingRecovery','trainingEval','abstract6'],
   evaluation: ['ch7Intro','evalTask','checkpointEval','safetyTest','safetyOutcome','safetyRetest','governanceReview','releaseGateReview','launchDecision','launchOutcome','abstract7'],
-  deployment: ['ch8Intro','deployLoad','deployFailover','deployMonitoring','deployIncident','onCall','supportTask','deployEnd','abstract8'],
+  deployment: ['ch8Intro','deployLoad','deployFailover','deployGoLive','deployMonitoring','deployIncident','onCall','supportTask','deployEnd','abstract8'],
   ending: ['pipelineAssemble','finalAnswer','transferChallenge','results']
 };
 
