@@ -1,0 +1,167 @@
+name: Apply fourteenth audit fixes
+
+on:
+  push:
+    branches: [fourteenth-audit-causality-accessibility-cleanup]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message != 'الجولة الرابعة عشرة: السببية والوصول والتنظيف'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fourteenth-audit-causality-accessibility-cleanup
+          fetch-depth: 0
+
+      - name: Apply audited fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=1):
+              p=Path(path)
+              text=p.read_text()
+              found=text.count(old)
+              if found < count:
+                  raise SystemExit(f'{path}: expected at least {count} occurrence(s), found {found}: {old[:120]!r}')
+              text=text.replace(old,new,count)
+              p.write_text(text)
+
+          # Preserve the player's checkpoint choice when governance remediation creates a new candidate.
+          replace('js/scenes/evaluation.js',
+              "state.flags.dataCurrentTrainingUsed=[];resetCandidateEvidence(state);state.flags.trainingCheckpoint='validated';return oldRevision;",
+              "state.flags.dataCurrentTrainingUsed=[];resetCandidateEvidence(state);return oldRevision;")
+
+          # Mining quota boundary: never show '+0 وحدتان', and make completed quota visibly non-extractable while a hazard is pending.
+          replace('js/scenes/mining.js',
+              "function ch1YieldLabel(id,count){const gain=ch1Yield(id,count);return `+${gain} ${gain===1?'وحدة':'وحدتان'}`;}",
+              "function ch1YieldLabel(id,count){const gain=ch1Yield(id,count);if(gain===0)return'الحصة مكتملة';return `+${gain} ${gain===1?'وحدة':'وحدتان'}`;}")
+          replace('js/scenes/mining.js',
+              "late=minutes>SHIFT_LIMIT,riskNote=",
+              "late=minutes>SHIFT_LIMIT,quotaComplete=count>=12,quotaNote=quotaComplete&&warning?'<div class=\"alert\"><strong>الحصة اكتملت؛ لا استخراج إضافي الآن.</strong><span>احسم خطر القطاع ب قبل إنهاء الوردية.</span></div>':'',riskNote=")
+          replace('js/scenes/mining.js',
+              "${riskNote}<div class=\"work-area\">",
+              "${riskNote}${quotaNote}<div class=\"work-area\">")
+          replace('js/scenes/mining.js', 'class="work-node" data-sector="a">', 'class="work-node" data-sector="a" ${quotaComplete?\'disabled\':\'\'}>')
+          replace('js/scenes/mining.js', 'data-sector="b">', 'data-sector="b" ${quotaComplete?\'disabled\':\'\'}>')
+          replace('js/scenes/mining.js', 'class="work-node" data-sector="c">', 'class="work-node" data-sector="c" ${quotaComplete?\'disabled\':\'\'}>')
+          replace('js/scenes/mining.js',
+              "احتسبت ${INSPECTION_MINUTES} دقيقة بعد اكتمال الفحص والإصلاح والتحقق.</p>",
+              "احتسبت ${INSPECTION_MINUTES} دقيقة بعد اكتمال الفحص والإصلاح والتحقق. يعتبر هذا السيناريو العطل المحدد مغلقًا بعد هذا التحقق ولا يعيد توليده في الوردية نفسها.</p>")
+
+          # Keep the task panel visually prominent without placing an h2 before the scene h1.
+          replace('js/components/task-flow.js',
+              '<h2>${h(task.title)}</h2>',
+              '<div class="task-panel__title"><strong>${h(task.title)}</strong></div>')
+          p=Path('css/task-flow.css'); text=p.read_text().replace('.task-panel h2','.task-panel__title'); p.write_text(text)
+
+          # Remove remaining h1 -> h3 skips in datacenter dual views.
+          p=Path('js/scenes/datacenter.js'); text=p.read_text().replace('<h3>','<h2>').replace('</h3>','</h2>'); p.write_text(text)
+
+          # Tighten early-scene causal invariants for persisted state.
+          replace('js/core/storage.js',
+              "function sceneConsistent(state){\n  const f=state.flags,s=state.scene;",
+              "function sceneConsistent(state){\n  const f=state.flags,s=state.scene;\n  if(s==='mineEnd'&&(f.miningCount!==12||f.miningWarning))return false;\n  if(s==='mineTask'&&f.miningCount===12&&!f.miningWarning)return false;\n  if(['dcCooling','dcCoolingOutcome','dcWorkers'].includes(s)&&f.serverSteps.length!==4)return false;")
+
+          # Static dead-code detection must be reachability-based from js/app.js, not merely 'imported by something'.
+          replace('tests/static-integrity.mjs',
+              "runtimeSources=sourceFiles.filter(file=>relative(file).startsWith('js/')),failures=[],importedRuntimeFiles=new Set(),importedRuntimeNames=new Map(),referencedAssets=new Set(),runtimeText=new Map();",
+              "runtimeSources=sourceFiles.filter(file=>relative(file).startsWith('js/')),failures=[],runtimeImports=new Map(),importedRuntimeNames=new Map(),referencedAssets=new Set(),runtimeText=new Map();")
+          replace('tests/static-integrity.mjs',
+              "if(relative(file).startsWith('js/')&&relative(target).startsWith('js/'))importedRuntimeFiles.add(target);",
+              "if(relative(file).startsWith('js/')&&relative(target).startsWith('js/')){const fromFile=normalize(file),targets=runtimeImports.get(fromFile)||new Set();targets.add(normalize(target));runtimeImports.set(fromFile,targets);}")
+          replace('tests/static-integrity.mjs',
+              "for(const file of runtimeSources){if(relative(file)!=='js/app.js'&&!importedRuntimeFiles.has(normalize(file)))failures.push(`Unused runtime JavaScript file: ${relative(file)}`);",
+              "const runtimeEntry=normalize(join(ROOT,'js/app.js')),reachableRuntimeFiles=new Set([runtimeEntry]),runtimeQueue=[runtimeEntry];while(runtimeQueue.length){const current=runtimeQueue.shift();for(const target of runtimeImports.get(current)||[]){if(reachableRuntimeFiles.has(target))continue;reachableRuntimeFiles.add(target);runtimeQueue.push(target);}}\nfor(const file of runtimeSources){if(!reachableRuntimeFiles.has(normalize(file)))failures.push(`Unused runtime JavaScript file unreachable from js/app.js: ${relative(file)}`);")
+
+          # Storage regressions for impossible early scenes and the valid quota+hazard boundary.
+          replace('tests/storage-schema.mjs',
+              "  s=>{s.scene='finalMessage';}\n])",
+              "  s=>{s.scene='finalMessage';},\n  s=>{s.scene='mineEnd';s.flags.miningCount=11;},\n  s=>{s.scene='mineEnd';s.flags.miningWarning=true;},\n  s=>{s.scene='mineTask';s.flags.miningCount=12;s.flags.miningWarning=false;},\n  s=>{s.scene='dcCooling';s.flags.serverSteps=['rack'];}\n])")
+          replace('tests/storage-schema.mjs',
+              "const miningInProgress=clone(DEFAULT_STATE);",
+              "const quotaHazard=clone(DEFAULT_STATE);Object.assign(quotaHazard.flags,{miningCount:12,miningMinutes:42,miningBUses:2,miningWarning:true});quotaHazard.scene='mineTask';saveRaw(STORAGE_KEY,quotaHazard);assert.equal(loadState(DEFAULT_STATE).scene,'mineTask');\nconst miningInProgress=clone(DEFAULT_STATE);")
+
+          # Add checkpoint-preservation, quota-boundary and route-state accessibility coverage.
+          replace('tests/regression-clarity-remediation.mjs',
+              "import AxeBuilder from '@axe-core/playwright';\n",
+              "import AxeBuilder from '@axe-core/playwright';\n") if "import AxeBuilder from '@axe-core/playwright';" in Path('tests/regression-clarity-remediation.mjs').read_text() else replace('tests/regression-clarity-remediation.mjs',
+              "import { chromium } from 'playwright';",
+              "import { chromium } from 'playwright';\nimport AxeBuilder from '@axe-core/playwright';")
+
+          insert = r'''
+console.log('CLARITY_REMEDIATION:checkpoint-survives-governance-revision');
+await load(page,{scene:'governanceReview',flags:{...candidate({trainingCheckpoint:'recent',dataIndex:3,dataStatuses:['excluded','excluded','ready'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'unresolved',privacy:'unresolved',fitness:'clear'}],dataSort:{keep:0,remove:2,redact:0,review:1},dataTrainingApproved:[2],dataTrainingUsed:[2],dataCurrentTrainingUsed:[2]})}});await click(page,'[data-governance-remediate="2"]');state=await saved(page);if(state.scene!=='trainingSetup'||state.flags.trainingCheckpoint!=='recent')throw new Error('Governance remediation silently changed the checkpoint choice.');
+
+console.log('CLARITY_REMEDIATION:mining-quota-hazard-boundary');
+await load(page,{scene:'mineTask',flags:{miningCount:12,miningMinutes:42,miningBUses:2,miningWarning:true}});if(await page.locator('.work-node:not([disabled])').count())throw new Error('Quota-complete mining still exposes an enabled extraction action.');await page.getByText('الحصة اكتملت؛ لا استخراج إضافي الآن.',{exact:true}).waitFor({state:'visible'});if(await page.getByText(/\+0 وحدتان/).count())throw new Error('Quota boundary still renders a misleading +0 units label.');
+
+console.log('CLARITY_REMEDIATION:accessibility-state-matrix');
+const accessibilityCases=[
+  ['mining diagnosis',{scene:'mineInspection',flags:{miningCount:2,miningMinutes:14,miningBUses:2,miningIncidentChoice:'stop',miningInspectionMode:'routine',miningInspectionStage:'diagnosed'}}],
+  ['factory remediation',{scene:'factoryOutcome',flags:{factoryChoice:'stop',factoryMaintenanceDebt:true,factoryRemediationStage:'diagnosed',factoryDisposition:'repair',factoryProductionStage:'awaiting-completion'}}],
+  ['datacenter cooling',{scene:'dcCoolingOutcome',flags:{serverSteps:['rack','power','network','register'],dcCoolingChoice:'move',dcCoolingStage:'open'}}],
+  ['training recovery',{scene:'trainingRecovery',flags:{...candidate({trainingRecoveryStage:'repaired'})}}],
+  ['release capacity',{scene:'releaseGateReview',flags:{...candidate({releaseGates:[],releaseCapacityStage:'diagnosed'})}}],
+  ['deployment failover',{scene:'deployFailover',flags:{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2]})}}],
+  ['on-call recovery',{scene:'onCall',flags:{...ending()}}]
+];
+for(const [label,fixture] of accessibilityCases){await load(page,fixture);const firstHeading=await page.locator('#scene h1,#scene h2,#scene h3,#scene h4,#scene h5,#scene h6').first().evaluate(el=>el.tagName);if(firstHeading!=='H1')throw new Error(`${label}: first scene heading is ${firstHeading}, expected H1.`);const axe=await new AxeBuilder({page}).analyze();if(axe.violations.length)throw new Error(`${label}: accessibility violations ${axe.violations.map(v=>v.id).join(', ')}`);}
+'''
+          replace('tests/regression-clarity-remediation.mjs',
+              "await browser.close();console.log('Clarity and remediation regression checks passed.');",
+              insert + "\nawait browser.close();console.log('Clarity and remediation regression checks passed.');")
+
+          # Current documentation only: remove stale migration wording and document causal choices/reachability.
+          replace('docs/METHODOLOGY.md',
+              'كما أن العدد لم يعد حقلًا في الحالة الحالية؛ هو قاعدة مجال ثابتة، وتبقى القيم التاريخية محصورة في ترحيل ملفات الحفظ القديمة.',
+              'كما أن العدد لم يعد حقلًا في الحالة الحالية؛ هو قاعدة مجال ثابتة، ولا يحتفظ runtime الحالي بقيم أو مسارات ترحيل تاريخية لهذا الحقل.')
+          replace('docs/METHODOLOGY.md',
+              'اختيار نقطة الحفظ يظل قرارًا حقيقيًا لأنه يغير العينات والنتيجة: النقطة الأحدث تظهر تحسنًا مستهدفًا مع تراجع قانوني، ولذلك تنشئ تحققًا موسعًا.',
+              'اختيار نقطة الحفظ يظل قرارًا حقيقيًا لأنه يغير العينات والنتيجة: النقطة الأحدث تظهر تحسنًا مستهدفًا مع تراجع قانوني، ولذلك تنشئ تحققًا موسعًا. وإذا استلزمت معالجة مادة بيانات إنشاء نسخة مرشحة جديدة، تبقى نقطة الحفظ التي اختارها اللاعب كما هي ما لم يغيرها صراحة؛ إعادة ضبط الأدلة لا تعيد كتابة قرار مستقل.')
+          replace('docs/METHODOLOGY.md',
+              'إذا انتهت الحصة مع فحص مؤجل يمكن أن تكون المهمة المباشرة مكتملة بينما يبقى عمل صيانة مفتوحًا.',
+              'إذا انتهت الحصة مع فحص مؤجل يمكن أن تكون المهمة المباشرة مكتملة بينما يبقى عمل صيانة مفتوحًا. وإذا اكتملت الحصة في اللحظة نفسها التي يظهر فيها التحذير، يتوقف الاستخراج وتبقى معالجة الخطر هي الفعل الوحيد المتاح قبل إنهاء الوردية. وبعد إصلاح العطل المحدد والتحقق منه يعتبره السيناريو مغلقًا ولا يعيد توليده في الوردية نفسها.')
+          replace('docs/ARCHITECTURE.md',
+              '- hierarchy العناوين يُنشأ صحيحًا داخل المكونات والمشاهد نفسها؛ لا توجد طبقة post-render تعيد كتابة `h3/h4` بعد العرض.',
+              '- بنية العناوين تُنشأ داخل المشاهد نفسها: يبدأ محتوى كل مشهد بـ`h1`، ولا تستخدم لوحة المهمة عنوانًا دلاليًا يسبق عنوان المشهد، ولا توجد طبقة post-render تعيد كتابة العناوين بعد العرض.')
+          replace('docs/ARCHITECTURE.md',
+              'كما تكشف اختبارات static وCSS الملفات والـexports والصور والselectors غير المستخدمة.',
+              'كما تكشف اختبارات static وCSS الملفات والـexports والصور والselectors غير المستخدمة. ويُحسب استخدام JavaScript من قابلية الوصول الفعلية بدءًا من `js/app.js`، لذلك لا تستطيع مجموعة ملفات قديمة معزولة أن تبدو «مستخدمة» لمجرد أنها تستورد بعضها بعضًا.')
+          replace('docs/GAME-DESIGN.md',
+              'نقطة الحفظ تظل اختيارًا حقيقيًا لأنها تغير عينات المقارنة والنتيجة التعليمية.',
+              'نقطة الحفظ تظل اختيارًا حقيقيًا لأنها تغير عينات المقارنة والنتيجة التعليمية. إنشاء نسخة جديدة بسبب معالجة مادة لا يغير نقطة الحفظ تلقائيًا؛ الذي يُعاد ضبطه هو أدلة النسخة السابقة.')
+          replace('docs/GAME-DESIGN.md',
+              'يمكن أن تنتهي الحصة مع عمل صيانة مفتوح؛ اكتمال الحصة لا يعني أن الخطر اختفى.',
+              'يمكن أن تنتهي الحصة مع عمل صيانة مفتوح؛ اكتمال الحصة لا يعني أن الخطر اختفى. وإذا ظهر التحذير في النقرة التي تكمل 12/12، تتوقف أفعال الاستخراج ويجب حسم الخطر قبل إنهاء الوردية. وبعد التحقق من إصلاح هذا العطل المحدد لا يعيد السيناريو توليده في الوردية نفسها.')
+          replace('README.md',
+              'ومنها حارس يفرض وجود صفحة HTML واحدة ويمنع رجوع حقول ومهاجرات الإصدارات القديمة ويكشف الحالة التشغيلية التي تُكتب بلا قراءة.',
+              'ومنها حارس يفرض وجود صفحة HTML واحدة ويمنع رجوع حقول ومهاجرات الإصدارات القديمة ويكشف الحالة التشغيلية التي تُكتب بلا قراءة، ويتحقق من أن كل ملف JavaScript تشغيلي قابل للوصول فعليًا من `js/app.js` لا مجرد مستورد من ملف معزول آخر.')
+
+          # The temporary patch workflow is not part of the product/runtime and must not survive the implementation commit.
+          Path('.github/workflows/apply-fourteenth-audit.yml').unlink()
+          PY
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run fast validation
+        run: |
+          npm run check:syntax
+          npm run check:lint
+          npm run check:static
+          npm run check:storage
+          npm run check:css
+
+      - name: Commit audited fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "الجولة الرابعة عشرة: السببية والوصول والتنظيف"
+          git push origin HEAD:fourteenth-audit-causality-accessibility-cleanup
