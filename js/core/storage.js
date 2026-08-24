@@ -80,6 +80,9 @@ function validLoad(values){return values===null||(Array.isArray(values)&&values.
 
 function sceneConsistent(state){
   const f=state.flags,s=state.scene;
+  if(s==='mineEnd'&&(f.miningCount!==12||f.miningWarning))return false;
+  if(s==='mineTask'&&f.miningCount===12&&!f.miningWarning)return false;
+  if(['dcCooling','dcCoolingOutcome','dcWorkers'].includes(s)&&f.serverSteps.length!==4)return false;
   if(FACTORY_DONE_OR_LATER.has(s)&&(f.factoryProductionStage!=='inspected'||f.factoryDisposition===null||(f.factoryMaintenanceDebt&&f.factoryDisposition!=='carry')))return false;
   if(DC_WORKERS_OR_LATER.has(s)&&f.dcCoolingStage!=='verified')return false;
   if(TRAINING_OR_LATER.has(s)&&(f.candidateRevision<1||(f.dataCurrentTrainingUsed.length===0&&confirmedAnnotations(f)===0)))return false;

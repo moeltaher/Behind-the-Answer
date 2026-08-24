@@ -1,10 +1,11 @@
 import { chromium } from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
 import { load, click, saved } from './helpers/browser-fixtures.mjs';
 
 function candidate(extra={}){return{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',trainingRecoveryStage:'verified',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra};}
 function released(extra={}){return candidate({releaseGates:['regression','capacity','risk','rollback'],releaseCapacityStage:'remeasured',launchChoice:'ready',...extra});}
 function ending(extra={}){return released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployResilienceAccepted:true,deployTrafficOpen:true,deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryVerifiedFor:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,...extra});}
-const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:900}});
+const browser=await chromium.launch(),context=await browser.newContext({viewport:{width:1280,height:900}}),page=await context.newPage();
 
 console.log('CLARITY_REMEDIATION:single-task-panel');await load(page,{scene:'ch1Intro'});if(await page.locator('[data-task-panel]').count()!==1)throw new Error('Chapter intro renders more than one task panel.');
 
@@ -23,4 +24,23 @@ console.log('CLARITY_REMEDIATION:failover-ceiling-after-tests');
 await load(page,{scene:'deployLoad',flags:{...released()}});if(await page.getByText(/السقف الممكن.*1\/3/).count())throw new Error('Failover ceiling is revealed before tests.');for(const [selector,value] of [['#range0','45'],['#range1','30'],['#range2','25']])await page.locator(selector).evaluate((input,next)=>{input.value=next;input.dispatchEvent(new Event('input',{bubbles:true}));},value);await click(page,'#testLoad');for(const index of [0,1,2])await click(page,`[data-failover-check="${index}"]`);await page.getByText(/السقف الممكن.*1\/3/).waitFor({state:'visible'});
 
 console.log('CLARITY_REMEDIATION:answer-before-transfer-test');await load(page,{scene:'pipelineAssemble',flags:{...ending({transferChoice:null})}});await click(page,'#backPrompt');state=await saved(page);if(state.scene!=='finalAnswer'||state.flags.transferChoice!==null)throw new Error('Pipeline did not return to original answer before transfer test.');await page.getByText('الإجابة:',{exact:true}).waitFor({state:'visible'});await click(page,'#transferFromAnswer');if((await saved(page)).scene!=='transferChallenge')throw new Error('Transfer challenge is not after the answer payoff.');
-await browser.close();console.log('Clarity and remediation regression checks passed.');
+
+console.log('CLARITY_REMEDIATION:checkpoint-survives-governance-revision');
+await load(page,{scene:'governanceReview',flags:{...candidate({trainingCheckpoint:'recent',dataIndex:3,dataStatuses:['excluded','excluded','ready'],dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'na',privacy:'na',fitness:'na'},{rights:'unresolved',privacy:'unresolved',fitness:'clear'}],dataSort:{keep:0,remove:2,redact:0,review:1},dataTrainingApproved:[2],dataTrainingUsed:[2],dataCurrentTrainingUsed:[2]})}});await click(page,'[data-governance-remediate="2"]');state=await saved(page);if(state.scene!=='trainingSetup'||state.flags.trainingCheckpoint!=='recent')throw new Error('Governance remediation silently changed the checkpoint choice.');
+
+console.log('CLARITY_REMEDIATION:mining-quota-hazard-boundary');
+await load(page,{scene:'mineTask',flags:{miningCount:12,miningMinutes:42,miningBUses:2,miningWarning:true}});if(await page.locator('.work-node:not([disabled])').count())throw new Error('Quota-complete mining still exposes an enabled extraction action.');await page.getByText('الحصة اكتملت؛ لا استخراج إضافي الآن.',{exact:true}).waitFor({state:'visible'});if(await page.getByText(/\+0 وحدتان/).count())throw new Error('Quota boundary still renders a misleading +0 units label.');
+
+console.log('CLARITY_REMEDIATION:accessibility-state-matrix');
+const accessibilityCases=[
+  ['mining diagnosis',{scene:'mineInspection',flags:{miningCount:2,miningMinutes:14,miningBUses:2,miningIncidentChoice:'stop',miningInspectionMode:'routine',miningInspectionStage:'diagnosed'}}],
+  ['factory remediation',{scene:'factoryOutcome',flags:{factoryChoice:'stop',factoryMaintenanceDebt:true,factoryRemediationStage:'diagnosed',factoryDisposition:'repair',factoryProductionStage:'awaiting-completion'}}],
+  ['datacenter cooling',{scene:'dcCoolingOutcome',flags:{serverSteps:['rack','power','network','register'],dcCoolingChoice:'move',dcCoolingStage:'open'}}],
+  ['training recovery',{scene:'trainingRecovery',flags:{...candidate({trainingRecoveryStage:'repaired'})}}],
+  ['release capacity',{scene:'releaseGateReview',flags:{...candidate({releaseGates:[],releaseCapacityStage:'diagnosed'})}}],
+  ['deployment failover',{scene:'deployFailover',flags:{...released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2]})}}],
+  ['on-call recovery',{scene:'onCall',flags:{...ending()}}]
+];
+for(const [label,fixture] of accessibilityCases){await load(page,fixture);const firstHeading=await page.locator('#scene h1,#scene h2,#scene h3,#scene h4,#scene h5,#scene h6').first().evaluate(el=>el.tagName);if(firstHeading!=='H1')throw new Error(`${label}: first scene heading is ${firstHeading}, expected H1.`);const axe=await new AxeBuilder({page}).analyze();if(axe.violations.length)throw new Error(`${label}: accessibility violations ${axe.violations.map(v=>v.id).join(', ')}`);}
+
+await context.close();await browser.close();console.log('Clarity and remediation regression checks passed.');
