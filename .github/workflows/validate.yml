@@ -36,7 +36,7 @@ jobs:
       - name: Validate static architecture and references
         run: npm run check:static
 
-      - name: Validate versioned storage schema and invariants
+      - name: Validate current storage schema and invariants
         run: npm run check:storage
 
       - name: Detect unused CSS selectors and definitions
@@ -58,7 +58,7 @@ jobs:
           cat /tmp/behind-answer-server.log
           exit 1
 
-      - name: Run complete browser, causality, migration, accessibility and cross-browser suite
+      - name: Run browser, causality, accessibility and cross-browser suite
         run: npm run test:browser
 
       - name: Run full desktop, mobile, accessibility and cross-browser journey
