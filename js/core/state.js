@@ -1,4 +1,4 @@
-export const STATE_SCHEMA_VERSION = 7;
+export const STATE_SCHEMA_VERSION = 8;
 
 export const DEFAULT_STATE = {
   schemaVersion: STATE_SCHEMA_VERSION,
@@ -14,13 +14,13 @@ export const DEFAULT_STATE = {
     miningIncidentChoice: null,
     miningRiskLevel: 0,
     miningForcedInspection: false,
-    miningInspectionCount: 0,
     miningInspectionMode: null,
+    miningInspectionStage: 'idle',
     factoryChoice: null,
     factoryMaintenanceDebt: false,
     factoryRemediationStage: 'none',
     factoryDisposition: null,
-    factoryProductionComplete: false,
+    factoryProductionStage: 'idle',
     serverSteps: [],
     dcCoolingChoice: null,
     dcCoolingStage: 'idle',
