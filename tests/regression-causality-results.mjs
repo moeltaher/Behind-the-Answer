@@ -18,7 +18,7 @@ await load(page,{scene:'factoryOutcome',flags:{factoryChoice:'continue',factoryM
 await load(page,{scene:'factoryOutcome',flags:{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none',factoryDisposition:null,factoryProductionStage:'inspected'}});await click(page,'#carryFactoryDebt');state=await saved(page);if(state.flags.factoryDisposition!=='carry')throw new Error('Factory debt disposition was not stored explicitly.');if(await page.locator('[data-task-panel][data-task-status="debt"]').count()!==1)throw new Error('Carried debt is not shown as open work.');await click(page,'#toFactoryAbstract');
 
 console.log('CAUSALITY_RESULTS:contextual-task-guidance');
-await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0},dataSort:{keep:0,remove:0,redact:0,review:1}}});await page.getByRole('heading',{name:'احسم الخصوصية بعد مراجعة الحق',exact:true}).waitFor({state:'visible'});
+await load(page,{scene:'dataFollowup',flags:{dataIndex:0,dataFollowup:{index:0},dataSort:{keep:0,remove:0,redact:0,review:1}}});await page.locator('[data-task-panel] .task-panel__title').getByText('احسم الخصوصية بعد مراجعة الحق',{exact:true}).waitFor({state:'visible'});
 await load(page,{scene:'trainingEval',flags:{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',trainingRecoveryStage:'verified'}});if(await page.locator('[data-task-panel][data-task-status="complete"]').count()!==1)throw new Error('Completed scene does not expose complete task status.');
 
 console.log('CAUSALITY_RESULTS:extra-checks-explain-cause');
