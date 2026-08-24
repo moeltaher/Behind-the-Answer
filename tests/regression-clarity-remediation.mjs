@@ -5,7 +5,7 @@ import { load, click, saved } from './helpers/browser-fixtures.mjs';
 function candidate(extra={}){return{dataIndex:1,dataStatuses:['ready'],dataChecks:[{rights:'clear',privacy:'clear',fitness:'clear'}],dataSort:{keep:1,remove:0,redact:0,review:0},dataTrainingUsed:[0],dataCurrentTrainingUsed:[0],candidateRevision:1,trainingIncidentChoice:'pause',trainingRecoveryStage:'verified',evalIndex:3,evalCorrectCount:3,evaluatorCalibrationComplete:true,checkpointEvalComplete:true,safetyChoice:'details',safetyRemediated:true,safetyRetested:true,...extra};}
 function released(extra={}){return candidate({releaseGates:['regression','capacity','risk','rollback'],releaseCapacityStage:'remeasured',launchChoice:'ready',...extra});}
 function ending(extra={}){return released({deployLoad:[45,30,25],deployFailoverChecks:[0,1,2],deployResilienceAccepted:true,deployTrafficOpen:true,deployTabs:['network','compute','model'],deployRecovery:'rollback',deployRecoveryVerifiedFor:'rollback',deployRecoveryDisposition:'cleared',supportIndex:2,...extra});}
-const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:900}});
+const browser=await chromium.launch(),context=await browser.newContext({viewport:{width:1280,height:900}}),page=await context.newPage();
 
 console.log('CLARITY_REMEDIATION:single-task-panel');await load(page,{scene:'ch1Intro'});if(await page.locator('[data-task-panel]').count()!==1)throw new Error('Chapter intro renders more than one task panel.');
 
@@ -43,4 +43,4 @@ const accessibilityCases=[
 ];
 for(const [label,fixture] of accessibilityCases){await load(page,fixture);const firstHeading=await page.locator('#scene h1,#scene h2,#scene h3,#scene h4,#scene h5,#scene h6').first().evaluate(el=>el.tagName);if(firstHeading!=='H1')throw new Error(`${label}: first scene heading is ${firstHeading}, expected H1.`);const axe=await new AxeBuilder({page}).analyze();if(axe.violations.length)throw new Error(`${label}: accessibility violations ${axe.violations.map(v=>v.id).join(', ')}`);}
 
-await browser.close();console.log('Clarity and remediation regression checks passed.');
+await context.close();await browser.close();console.log('Clarity and remediation regression checks passed.');
