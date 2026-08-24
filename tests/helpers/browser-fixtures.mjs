@@ -13,7 +13,7 @@ export function stateWith(patch={}){
 
   // Fixtures for later scenes must represent a reachable journey rather than bypassing
   // prerequisites that the storage validator correctly requires from a real save.
-  if(atOrAfter(state.scene,'abstract2')&&!state.flags.factoryChoice)Object.assign(state.flags,{factoryChoice:'continue',factoryMaintenanceDebt:false,factoryRemediationStage:'verified',factoryDisposition:'repair',factoryProductionComplete:true});
+  if(atOrAfter(state.scene,'abstract2')&&!state.flags.factoryChoice)Object.assign(state.flags,{factoryChoice:'continue',factoryMaintenanceDebt:false,factoryRemediationStage:'verified',factoryDisposition:'repair',factoryProductionStage:'inspected'});
   if(atOrAfter(state.scene,'dcWorkers')&&!state.flags.dcCoolingChoice){state.flags.serverSteps=['rack','power','network','register'];state.flags.dcCoolingChoice='move';state.flags.dcCoolingStage='verified';}
 
   if(state.flags.candidateRevision>0){
@@ -23,9 +23,11 @@ export function stateWith(patch={}){
     ])if(!state.decisions.some(item=>item.id===decision.id))state.decisions.push(decision);
   }
   if(state.flags.factoryChoice){
-    if(state.flags.factoryRemediationStage==='verified'){state.flags.factoryDisposition='repair';state.flags.factoryMaintenanceDebt=false;state.flags.factoryProductionComplete=true;}
-    else if(state.flags.factoryChoice==='continue'&&state.flags.factoryMaintenanceDebt&&state.flags.factoryDisposition===null)state.flags.factoryProductionComplete=true;
+    if(state.flags.factoryRemediationStage==='verified'){state.flags.factoryDisposition='repair';state.flags.factoryMaintenanceDebt=false;if(state.flags.factoryProductionStage==='idle')state.flags.factoryProductionStage='inspected';}
+    else if(state.flags.factoryChoice==='continue'&&state.flags.factoryMaintenanceDebt&&state.flags.factoryDisposition===null&&state.flags.factoryProductionStage==='idle')state.flags.factoryProductionStage='inspected';
+    else if(state.flags.factoryProductionStage==='idle')state.flags.factoryProductionStage='awaiting-completion';
   }
+  if(state.flags.miningInspectionStage!=='idle'&&state.flags.miningInspectionMode===null)state.flags.miningInspectionMode='routine';
   if(state.flags.dcCoolingChoice&&state.flags.dcCoolingStage==='idle')state.flags.dcCoolingStage='verified';
   if(state.flags.trainingIncidentChoice==='pause'&&state.flags.trainingRecoveryStage==='none')state.flags.trainingRecoveryStage='verified';
   if(state.flags.releaseGates.includes('capacity')&&state.flags.releaseCapacityStage==='idle')state.flags.releaseCapacityStage='remeasured';

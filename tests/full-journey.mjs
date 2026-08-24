@@ -20,17 +20,22 @@ async function runJourney(engine,{viewport,label,checkAxe=false}){
   await click(page,'#introSend');await click(page,'#descend');await click(page,'#chapterNext');await click(page,'#startMine');
   await click(page,'[data-sector="b"]');await click(page,'[data-sector="b"]');await click(page,'#mineStop');
   let state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);
-  if(state.flags.miningInspectionCount!==0)throw new Error(`${label}: closing mining sector completed inspection early.`);
+  if(state.flags.miningInspectionStage!=='inspect')throw new Error(`${label}: closing mining sector did not enter inspection explicitly.`);
   await click(page,'#inspectMine');await page.getByText('كشف الفحص ارتخاءً في دعامة داخل القطاع.',{exact:true}).waitFor({state:'visible'});
   await click(page,'#repairMine');
   state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);
-  if(state.flags.miningInspectionCount!==0)throw new Error(`${label}: mining repair completed verification early.`);
+  if(state.flags.miningInspectionStage!=='repaired')throw new Error(`${label}: mining repair skipped or completed verification early.`);
   await click(page,'#verifyMine');
   state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);
-  if(state.flags.miningInspectionCount!==1)throw new Error(`${label}: mining verification did not close inspection.`);
+  if(state.flags.miningInspectionStage!=='verified')throw new Error(`${label}: mining verification did not close inspection.`);
   await click(page,'#finishMine');for(let index=0;index<4;index++)await click(page,'[data-sector="b"]');await click(page,'#mineAbstract');await click(page,'#abstractNext');
 
-  await click(page,'#chapterNext');await click(page,'#enterFab');await click(page,'#observeFab');await click(page,'#fabStop');await click(page,'#diagnoseFactory');await click(page,'#repairFactory');await click(page,'#verifyFactoryRepair');await click(page,'#resumeFactory');await click(page,'#toFactoryAbstract');await click(page,'#abstractNext');
+  await click(page,'#chapterNext');await click(page,'#enterFab');await click(page,'#observeFab');await click(page,'#fabStop');await click(page,'#diagnoseFactory');await click(page,'#repairFactory');await click(page,'#verifyFactoryRepair');
+  if(await page.locator('#toFactoryAbstract').count())throw new Error(`${label}: stopped factory batch finished before production and final inspection.`);
+  await click(page,'#completeFactoryBatch');
+  state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),STORAGE_KEY);if(state.flags.factoryProductionStage!=='complete')throw new Error(`${label}: factory production completion was not explicit.`);
+  if(await page.locator('#toFactoryAbstract').count())throw new Error(`${label}: factory batch finished before final inspection.`);
+  await click(page,'#inspectFactoryBatch');await click(page,'#toFactoryAbstract');await click(page,'#abstractNext');
 
   await click(page,'#chapterNext');for(const step of ['rack','power','network','register'])await click(page,`[data-server-step="${step}"]`);await click(page,'#bootServer');await click(page,'#dcMove');await click(page,'#repairCooling');await click(page,'#verifyCooling');await click(page,'#dcAfterCooling');await click(page,'#dcReady');await click(page,'#abstractNext');
   if(checkAxe)await axe(page,`${label}:after-datacenter`);

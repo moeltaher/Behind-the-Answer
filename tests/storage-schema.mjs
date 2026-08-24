@@ -11,8 +11,8 @@ function expectReset(value){saveRaw(STORAGE_KEY,value);const loaded=loadState(DE
 function completeState(){
   const s=clone(DEFAULT_STATE);s.scene='results';
   Object.assign(s.flags,{
-    miningCount:12,miningMinutes:47,miningBUses:2,miningIncidentChoice:'stop',miningInspectionCount:1,miningInspectionMode:'routine',
-    factoryChoice:'stop',factoryMaintenanceDebt:false,factoryRemediationStage:'verified',factoryDisposition:'repair',factoryProductionComplete:true,
+    miningCount:12,miningMinutes:47,miningBUses:2,miningIncidentChoice:'stop',miningInspectionMode:'routine',miningInspectionStage:'verified',
+    factoryChoice:'stop',factoryMaintenanceDebt:false,factoryRemediationStage:'verified',factoryDisposition:'repair',factoryProductionStage:'inspected',
     serverSteps:['rack','network','power','register'],dcCoolingChoice:'move',dcCoolingStage:'verified',
     dataIndex:5,dataReviewMinutes:4,dataStatuses:['excluded','ready','excluded','ready','excluded'],
     dataChecks:[{rights:'na',privacy:'na',fitness:'na'},{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'na',privacy:'na',fitness:'na'},{rights:'clear',privacy:'clear',fitness:'clear'},{rights:'na',privacy:'na',fitness:'na'}],
@@ -26,20 +26,30 @@ function completeState(){
   s.decisions=[{id:'fixture',label:'fixture',effectText:'fixture'}];return s;
 }
 
-assert.equal(STATE_SCHEMA_VERSION,7);
+assert.equal(STATE_SCHEMA_VERSION,8);
 const valid=completeState();saveRaw(STORAGE_KEY,valid);assert.deepEqual(loadState(DEFAULT_STATE),valid);
-for(const mutate of [s=>{s.flags.tookBreak=true;},s=>{s.flags.trainingCompute='12';},s=>{s.flags.dataFollowup={index:0,reason:'old'};},s=>{s.flags.miningInspectionCount=2;},s=>{s.flags.miningRiskLevel=3;},s=>{s.flags.deployTrafficOpen=false;},s=>{s.flags.deployRecoveryVerifiedFor=null;},s=>{s.flags.releaseCapacityStage='diagnosed';},s=>{s.scene='finalMessage';}]){const broken=clone(valid);mutate(broken);expectReset(broken);}
+for(const mutate of [
+  s=>{s.flags.tookBreak=true;},
+  s=>{s.flags.trainingCompute='12';},
+  s=>{s.flags.dataFollowup={index:0,reason:'old'};},
+  s=>{s.flags.miningInspectionStage='unknown';},
+  s=>{s.flags.miningInspectionMode='forced';s.flags.miningInspectionStage='idle';},
+  s=>{s.flags.factoryProductionStage='unknown';},
+  s=>{s.flags.deployTrafficOpen=false;},
+  s=>{s.flags.deployRecoveryVerifiedFor=null;},
+  s=>{s.flags.releaseCapacityStage='diagnosed';},
+  s=>{s.scene='finalMessage';}
+]){const broken=clone(valid);mutate(broken);expectReset(broken);}
 
-const factoryStopped=clone(DEFAULT_STATE);Object.assign(factoryStopped.flags,{factoryChoice:'stop',factoryMaintenanceDebt:true,factoryRemediationStage:'diagnosed',factoryDisposition:'repair',factoryProductionComplete:false});factoryStopped.scene='factoryOutcome';saveRaw(STORAGE_KEY,factoryStopped);assert.equal(loadState(DEFAULT_STATE).scene,'factoryOutcome');
-const factoryCarry=clone(DEFAULT_STATE);Object.assign(factoryCarry.flags,{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none',factoryDisposition:'carry',factoryProductionComplete:true});factoryCarry.scene='factoryOutcome';saveRaw(STORAGE_KEY,factoryCarry);assert.equal(loadState(DEFAULT_STATE).flags.factoryDisposition,'carry');
-const badFactory=clone(factoryStopped);badFactory.flags.factoryProductionComplete=true;expectReset(badFactory);
+const miningInProgress=clone(DEFAULT_STATE);Object.assign(miningInProgress.flags,{miningCount:6,miningMinutes:28,miningBUses:4,miningIncidentChoice:'continue',miningInspectionMode:'forced',miningInspectionStage:'diagnosed'});miningInProgress.scene='mineInspection';saveRaw(STORAGE_KEY,miningInProgress);assert.equal(loadState(DEFAULT_STATE).flags.miningInspectionStage,'diagnosed');
+const factoryStopped=clone(DEFAULT_STATE);Object.assign(factoryStopped.flags,{factoryChoice:'stop',factoryMaintenanceDebt:true,factoryRemediationStage:'diagnosed',factoryDisposition:'repair',factoryProductionStage:'awaiting-completion'});factoryStopped.scene='factoryOutcome';saveRaw(STORAGE_KEY,factoryStopped);assert.equal(loadState(DEFAULT_STATE).scene,'factoryOutcome');
+const factoryCarry=clone(DEFAULT_STATE);Object.assign(factoryCarry.flags,{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none',factoryDisposition:'carry',factoryProductionStage:'inspected'});factoryCarry.scene='factoryOutcome';saveRaw(STORAGE_KEY,factoryCarry);assert.equal(loadState(DEFAULT_STATE).flags.factoryDisposition,'carry');
+const badFactory=clone(factoryStopped);badFactory.flags.factoryProductionStage='inspected';expectReset(badFactory);
 
-const v6=clone(valid);v6.schemaVersion=6;delete v6.flags.miningInspectionMode;delete v6.flags.factoryDisposition;delete v6.flags.factoryProductionComplete;v6.flags.dcCoolingRestored=true;delete v6.flags.dcCoolingStage;delete v6.flags.governanceEvidenceOpened;v6.flags.tookBreak=true;delete v6.flags.trainingRecoveryStage;delete v6.flags.releaseCapacityStage;delete v6.flags.deployDraftLoad;delete v6.flags.deployResilienceAccepted;delete v6.flags.deployTrafficOpen;delete v6.flags.deployMonitoringOpened;delete v6.flags.deployRecoveryVerifiedFor;v6.decisions.push({id:'factory-maintenance-verified',label:'old factory',effectText:'fixture'},{id:'release-capacity-remediated-r1',label:'old capacity',effectText:'fixture'},{id:'deploy-resilience-risk-45-30-25',label:'old resilience',effectText:'fixture'},{id:'deploy-recovery-verified-rollback',label:'old recovery',effectText:'fixture'});saveRaw(STORAGE_KEY,v6);const migrated6=loadState(DEFAULT_STATE);assert.equal(migrated6.schemaVersion,7);assert.equal(migrated6.scene,'results');assert.equal(migrated6.flags.factoryProductionComplete,true);assert.equal(migrated6.flags.dcCoolingStage,'verified');assert.equal(migrated6.flags.deployTrafficOpen,true);assert.equal(migrated6.flags.deployRecoveryVerifiedFor,'rollback');assert.equal(Object.hasOwn(migrated6.flags,'tookBreak'),false);assert.match(migrated6.systemNotice,/الإصدار 6.*الإصدار 7/);
-
-// A reachable v5 save at chapter 6 must already contain the completed causal state of chapters 1-5.
-const v5=clone(valid);v5.schemaVersion=5;v5.scene='ch6Intro';v5.flags.trainingCompute='12';delete v5.flags.miningInspectionMode;delete v5.flags.factoryDisposition;delete v5.flags.factoryProductionComplete;v5.flags.dcCoolingRestored=true;delete v5.flags.dcCoolingStage;delete v5.flags.governanceEvidenceOpened;v5.flags.tookBreak=false;delete v5.flags.trainingRecoveryStage;delete v5.flags.releaseCapacityStage;delete v5.flags.deployDraftLoad;delete v5.flags.deployResilienceAccepted;delete v5.flags.deployTrafficOpen;delete v5.flags.deployMonitoringOpened;delete v5.flags.deployRecoveryVerifiedFor;saveRaw(STORAGE_KEY,v5);const migrated5=loadState(DEFAULT_STATE);assert.equal(migrated5.schemaVersion,7);assert.equal(migrated5.scene,'trainingSetup');assert.equal(migrated5.flags.factoryProductionComplete,true);assert.equal(migrated5.flags.dcCoolingStage,'verified');assert.match(migrated5.systemNotice,/الإصدار 5.*الإصدار 7/);
+const oldV7=clone(valid);oldV7.schemaVersion=7;delete oldV7.flags.miningInspectionStage;oldV7.flags.miningInspectionCount=1;delete oldV7.flags.factoryProductionStage;oldV7.flags.factoryProductionComplete=true;expectReset(oldV7);
+const oldUnversioned={scene:'mineTask',flags:{miningCount:4}};expectReset(oldUnversioned);
 
 saveRaw(SETTINGS_KEY,DEFAULT_SETTINGS);assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);saveRaw(SETTINGS_KEY,{...DEFAULT_SETTINGS,oldSetting:true});assert.deepEqual(loadSettings(),DEFAULT_SETTINGS);
 localStorage.clear();globalThis.matchMedia=query=>({matches:query.includes('prefers-reduced-motion')});assert.equal(loadSettings().reduceMotion,true);
 globalThis.localStorage=new ThrowingStorage();assert.equal(saveState(valid),false);assert.equal(saveSettings(DEFAULT_SETTINGS),false);delete globalThis.matchMedia;
-console.log('Storage v7 validates explicit operational state, removes obsolete fields, migrates v6 and older saves, and handles storage failures.');
+console.log('Storage v8 validates explicit operational state, rejects obsolete schemas, and handles storage failures.');
