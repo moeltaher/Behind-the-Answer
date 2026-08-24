@@ -21,11 +21,11 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import textwrap
           workflow=Path('.github/workflows/apply-fourteenth-audit.yml').read_text()
           marker="python3 - <<'PY'\n"
           body=workflow.split(marker,1)[1].split("\n          PY",1)[0]
-          exec(textwrap.dedent(body),{'__name__':'__main__'})
+          body='\n'.join(line[10:] if line.startswith('          ') else line for line in body.splitlines())
+          exec(body,{'__name__':'__main__'})
           PY
           rm -f .github/workflows/apply-fourteenth-audit-pr.yml
 
