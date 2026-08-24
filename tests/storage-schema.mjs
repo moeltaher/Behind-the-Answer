@@ -38,9 +38,14 @@ for(const mutate of [
   s=>{s.flags.deployTrafficOpen=false;},
   s=>{s.flags.deployRecoveryVerifiedFor=null;},
   s=>{s.flags.releaseCapacityStage='diagnosed';},
-  s=>{s.scene='finalMessage';}
+  s=>{s.scene='finalMessage';},
+  s=>{s.scene='mineEnd';s.flags.miningCount=11;},
+  s=>{s.scene='mineEnd';s.flags.miningWarning=true;},
+  s=>{s.scene='mineTask';s.flags.miningCount=12;s.flags.miningWarning=false;},
+  s=>{s.scene='dcCooling';s.flags.serverSteps=['rack'];}
 ]){const broken=clone(valid);mutate(broken);expectReset(broken);}
 
+const quotaHazard=clone(DEFAULT_STATE);Object.assign(quotaHazard.flags,{miningCount:12,miningMinutes:42,miningBUses:2,miningWarning:true});quotaHazard.scene='mineTask';saveRaw(STORAGE_KEY,quotaHazard);assert.equal(loadState(DEFAULT_STATE).scene,'mineTask');
 const miningInProgress=clone(DEFAULT_STATE);Object.assign(miningInProgress.flags,{miningCount:6,miningMinutes:28,miningBUses:4,miningIncidentChoice:'continue',miningInspectionMode:'forced',miningInspectionStage:'diagnosed'});miningInProgress.scene='mineInspection';saveRaw(STORAGE_KEY,miningInProgress);assert.equal(loadState(DEFAULT_STATE).flags.miningInspectionStage,'diagnosed');
 const factoryStopped=clone(DEFAULT_STATE);Object.assign(factoryStopped.flags,{factoryChoice:'stop',factoryMaintenanceDebt:true,factoryRemediationStage:'diagnosed',factoryDisposition:'repair',factoryProductionStage:'awaiting-completion'});factoryStopped.scene='factoryOutcome';saveRaw(STORAGE_KEY,factoryStopped);assert.equal(loadState(DEFAULT_STATE).scene,'factoryOutcome');
 const factoryCarry=clone(DEFAULT_STATE);Object.assign(factoryCarry.flags,{factoryChoice:'continue',factoryMaintenanceDebt:true,factoryRemediationStage:'none',factoryDisposition:'carry',factoryProductionStage:'inspected'});factoryCarry.scene='factoryOutcome';saveRaw(STORAGE_KEY,factoryCarry);assert.equal(loadState(DEFAULT_STATE).flags.factoryDisposition,'carry');
